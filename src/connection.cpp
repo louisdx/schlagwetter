@@ -131,11 +131,13 @@ void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data) 
   }
   else
   {
+    std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes." << std::endl;
+    /*
     std::cout << "Sending data to client #" << eid << ":";
     for (size_t i = 0; i < data.length(); ++i)
       std::cout << " " << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(data[i]);
     std::cout << std::endl;
-
+    */
     (*it)->sendData(data);
   }
 }

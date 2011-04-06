@@ -2,7 +2,9 @@ project(minerd)
 
 cmake_minimum_required(VERSION 2.6)
 
-set(CMAKE_BUILD_TYPE Debug)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug)
+endif()
 
 IF (CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "-W -Wall -W -pedantic -std=c++0x")

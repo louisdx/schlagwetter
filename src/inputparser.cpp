@@ -201,10 +201,14 @@ void InputParser::immediateDispatch(int32_t eid, const std::vector<char> & data)
 
   case (PACKET_TRANSACTION):
   {
+    /*
     const int8_t window_id = READ_INT8(data, 1);
     const int16_t action_number = READ_INT16(data, 2);
     const bool accepted = READ_BOOL(data, 4);
+    */
+    
     /* We may ignore this client packet. */
+    std::cout << "Transaction packet received from #" << eid << ", consider implementing." << std::endl;
     break;
   }
 

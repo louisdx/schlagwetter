@@ -58,6 +58,18 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
 {
   std::cout << "GSM: Received PlayerPosition from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", "
             << stance << ", " << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
+
+  {
+    PacketCrafter p(PACKET_PLAYER_POSITION_AND_LOOK);
+    p.addDouble(X);      // X
+    p.addDouble(Y);      // Y
+    p.addDouble(stance); // stance
+    p.addDouble(Z);      // Z
+    p.addFloat(yaw);     // yaw
+    p.addFloat(pitch);   // pitch
+    p.addBool(ground);   // on ground
+    m_connection_manager.sendDataToClient(eid, p.craft());
+  }
 }
 
 void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, int32_t Z, uint8_t status, uint8_t face)
@@ -68,7 +80,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
 
 void GameStateManager::packetCSHoldingChange(int32_t eid, int16_t slot)
 {
-
+  std::cout << "GSM: Received HoldingChange from #" << eid << ": " << slot << std::endl;
 }
 
 void GameStateManager::packetCSArmAnimation(int32_t eid, int32_t e, int8_t animate)
@@ -78,23 +90,25 @@ void GameStateManager::packetCSArmAnimation(int32_t eid, int32_t e, int8_t anima
 
 void GameStateManager::packetCSEntityCrouchBed(int32_t eid, int32_t e, int8_t action)
 {
-
+  std::cout << "GSM: Received CrouchBed from #" << eid << ": [" << e << ", " << (unsigned int)(action) << "]" << std::endl;
 }
 
 void GameStateManager::packetCSPickupSpawn(int32_t eid, int32_t e, int32_t X, int32_t Y, int32_t Z,
                                            int8_t rotp, int8_t pitchp, int8_t rollp, int8_t count, int16_t item, int16_t data)
 {
-
+  std::cout << "GSM: Received PickupSpawn from #" << eid << ": [" << e << ", " << X << ", " << Y << ", " << Z << ", "
+            << (unsigned int)(rotp) << ", " << (unsigned int)(pitchp) << ", "<< (unsigned int)(rollp) << ", "
+            << (unsigned int)(count) << ", " << item << ", " << data << ", "<< "]" << std::endl;
 }
 
 void GameStateManager::packetCSRespawn(int32_t eid)
 {
-
+  std::cout << "GSM: Received Respawn from #" << eid << std::endl;
 }
 
 void GameStateManager::packetCSCloseWindow(int32_t eid, int8_t window_id)
 {
-
+  std::cout << "GSM: Received CloseWindow from #" << eid << ": " << (unsigned int)(window_id) << std::endl;
 }
 
 void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
@@ -157,6 +171,8 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       p.addInt8(0);
       m_connection_manager.sendDataToClient(eid, p.craft());
     }
+
+    m_states[eid].state = GameState::POSTLOGIN;
     
     {
       PacketCrafter p(PACKET_PRE_CHUNK);
@@ -199,6 +215,9 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       p.addBool(true);     // on ground
       m_connection_manager.sendDataToClient(eid, p.craft());
     }
+
+    m_states[eid].state = GameState::SPAWNED;
+
   }
 }
 
@@ -222,11 +241,12 @@ void GameStateManager::packetCSDisconnect(int32_t eid, std::string message)
 
 void GameStateManager::packetCSWindowClick(int32_t eid, int8_t window_id, int16_t slot, int8_t right_click, int16_t action, int16_t item_id, int8_t item_count, int16_t item_uses)
 {
-
+  std::cout << "GSM: Received WindowClick from #" << eid << ": [" << (unsigned int)(window_id) << ", " << slot << ", " << (unsigned int)(right_click) << ", "
+            << action << ", " << item_id << ", " << (unsigned int)(item_count) << ", " << item_uses << "]" << std::endl;
 }
 
 void GameStateManager::packetCSSign(int32_t eid, int32_t X, int16_t Y, int32_t Z, std::string line1, std::string line2, std::string line3, std::string line4)
 {
-
+  std::cout << "GSM: Received Sign from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", \"" << line1 << "\", " << line2 << "\", " << line3 << "\", " << line4 << "]" << std::endl;
 }
 
