@@ -32,13 +32,17 @@ Map::Map()
 {
 }
 
-const Chunk & Map::generateRandomChunk(const ChunkCoords & cc)
+const Chunk & Map::getChunkOrGnerateNew(const ChunkCoords & cc)
 {
-  auto ins = m_chunkMap.insert(ChunkMap::value_type(cc, Chunk()));
+  auto ins = m_chunkMap.find(cc);
 
-  if (ins.second) generateWithNoise(ins.first->second, cc);
+  if (ins == m_chunkMap.end())
+  {
+    ins = m_chunkMap.insert(ChunkMap::value_type(cc, Chunk())).first;
+    generateWithNoise(ins->second, cc);
+  }
 
-  return ins.first->second;
+  return ins->second;
 }
 
 

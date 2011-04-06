@@ -62,14 +62,14 @@ public:
   inline       unsigned char & blockType    (size_t x, size_t y, size_t z)       { return m_data[offsetBlockType     + index(x, y, z)]; }
   inline const unsigned char & blockType    (size_t x, size_t y, size_t z) const { return m_data[offsetBlockType     + index(x, y, z)]; }
 
-  inline       unsigned char & blockMetaData(size_t x, size_t y, size_t z)       { return m_data[offsetBlockMetaData + index(x, y, z)]; }
-  inline const unsigned char & blockMetaData(size_t x, size_t y, size_t z) const { return m_data[offsetBlockMetaData + index(x, y, z)]; }
+  inline       unsigned char & blockMetaData(size_t x, size_t y, size_t z)       { return m_data[offsetBlockMetaData + index(x, y, z) / 2]; }
+  inline const unsigned char & blockMetaData(size_t x, size_t y, size_t z) const { return m_data[offsetBlockMetaData + index(x, y, z) / 2]; }
 
-  inline       unsigned char & blockLight   (size_t x, size_t y, size_t z)       { return m_data[offsetBlockLight    + index(x, y, z)]; }
-  inline const unsigned char & blockLight   (size_t x, size_t y, size_t z) const { return m_data[offsetBlockLight    + index(x, y, z)]; }
+  inline       unsigned char & blockLight   (size_t x, size_t y, size_t z)       { return m_data[offsetBlockLight    + index(x, y, z) / 2]; }
+  inline const unsigned char & blockLight   (size_t x, size_t y, size_t z) const { return m_data[offsetBlockLight    + index(x, y, z) / 2]; }
 
-  inline       unsigned char & skyLight     (size_t x, size_t y, size_t z)       { return m_data[offsetSkyLight      + index(x, y, z)]; }
-  inline const unsigned char & skyLight     (size_t x, size_t y, size_t z) const { return m_data[offsetSkyLight      + index(x, y, z)]; }
+  inline       unsigned char & skyLight     (size_t x, size_t y, size_t z)       { return m_data[offsetSkyLight      + index(x, y, z) / 2]; }
+  inline const unsigned char & skyLight     (size_t x, size_t y, size_t z) const { return m_data[offsetSkyLight      + index(x, y, z) / 2]; }
 
   std::string compress() const;
 
@@ -89,7 +89,7 @@ public:
   inline const Chunk & getChunk(const ChunkCoords & cc) const { return m_chunkMap.find(cc)->second; }
 
   /* If no chunk exists at cc, create a random one. Always returns the chunk at cc. */
-  const Chunk & generateRandomChunk(const ChunkCoords & cc);
+  const Chunk & getChunkOrGnerateNew(const ChunkCoords & cc);
 
 private:
   ChunkMap m_chunkMap;

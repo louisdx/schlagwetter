@@ -93,7 +93,7 @@ void Server::process_ingress(int32_t eid, std::deque<char> & d, std::shared_ptr<
     {
       const size_t psize = pit->second.size; // excludes initial type byte!
 
-      if (psize != size_t(PACKET_VARIABLE_LEN) && d.size() >= psize)
+      if (psize != size_t(PACKET_VARIABLE_LEN) && d.size() >= psize + 1)
       {
         std::vector<char> x(psize + 1);
 

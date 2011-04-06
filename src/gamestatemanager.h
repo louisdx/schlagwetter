@@ -8,7 +8,7 @@ class Map;
 class GameState
 {
 public:
-  enum EState { INVALID = 0, PRELOGIN, POSTLOGIN, SPAWNED, DEAD, TERMINATED };
+  enum EState { INVALID = 0, PRELOGIN, POSTLOGIN, READYTOSPAWN, SPAWNED, DEAD, TERMINATED };
 
   explicit GameState(EState s = INVALID) : state(s) { }
 

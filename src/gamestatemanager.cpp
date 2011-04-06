@@ -59,6 +59,7 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
   std::cout << "GSM: Received PlayerPosition from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", "
             << stance << ", " << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
 
+  if (m_states[eid].state == GameState::READYTOSPAWN)
   {
     PacketCrafter p(PACKET_PLAYER_POSITION_AND_LOOK);
     p.addDouble(X);      // X
@@ -69,7 +70,10 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
     p.addFloat(pitch);   // pitch
     p.addBool(ground);   // on ground
     m_connection_manager.sendDataToClient(eid, p.craft());
+
+    m_states[eid].state = GameState::SPAWNED;
   }
+
 }
 
 void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, int32_t Z, uint8_t status, uint8_t face)
@@ -174,27 +178,35 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
     m_states[eid].state = GameState::POSTLOGIN;
     
+    std::list<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), 4); // 9x9 around the current chunk
+    for (auto i = ac.begin(); i != ac.end(); ++i)
     {
-      PacketCrafter p(PACKET_PRE_CHUNK);
-      p.addInt32(0);    // X
-      p.addInt32(0);    // Z
-      p.addBool(true);  // Mode
+      std::cout << "Need chunk [" << std::dec << cX(*i) << ", " << cZ(*i) << "]." << std::endl;
+      const Chunk & c = m_map.getChunkOrGnerateNew(*i);
+
+      const std::string zhuck = c.compress();
+
+      // Shouldn't we multiply all the coordinates by 16??
+
+      PacketCrafter q(PACKET_PRE_CHUNK);
+      q.addInt32(cX(*i));    // X
+      q.addInt32(cZ(*i));    // Z
+      q.addBool(true);  // Mode
+      m_connection_manager.sendDataToClient(eid, q.craft());
+
+      PacketCrafter p(PACKET_MAP_CHUNK);
+      p.addInt32(cX(*i));    // X
+      p.addInt16(0);    // Y
+      p.addInt32(cZ(*i));    // Z
+      p.addInt8(15);
+      p.addInt8(127);
+      p.addInt8(15);
+      p.addInt32(zhuck.length());
+      p.addByteArray(zhuck.data(), zhuck.length());
       m_connection_manager.sendDataToClient(eid, p.craft());
     }
 
-    std::list<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), 4); // 9x9 around the current chunk
-    for (auto i = ac.begin(); i != ac.end(); ++i)
-      std::cout << "Need chunk [" << std::dec << cX(*i) << ", " << cZ(*i) << "]." << std::endl;
-
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(0, 0));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(0, 16));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(16, 16));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(16, 0));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(16, -16));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(0, -16));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(-16, -16));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(-16, 0));
-    m_connection_manager.sendDataToClient(eid, makeRandomChunkPacket(-16, 16));
+    m_states[eid].state = GameState::READYTOSPAWN;
 
     {
       PacketCrafter p(PACKET_SPAWN_POSITION);
@@ -212,11 +224,9 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       p.addDouble(8.0);    // Z
       p.addFloat(0.0);     // yaw
       p.addFloat(0.0);     // pitch
-      p.addBool(true);     // on ground
+      p.addBool(false);     // on ground
       m_connection_manager.sendDataToClient(eid, p.craft());
     }
-
-    m_states[eid].state = GameState::SPAWNED;
 
   }
 }
