@@ -1,0 +1,146 @@
+#include <iostream>
+#include <iomanip>
+#include "ui.h"
+#include "server.h"
+#include "packetcrafter.h"
+
+std::string SimpleUI::readline(const std::string & prompt)
+{
+  std::string line;
+  std::cout << prompt;
+  std::getline(std::cin, line);
+  if (std::cin.eof()) return "exit";
+  return line;
+}
+
+
+GNUReadlineUI::GNUReadlineUI(const std::string & histfile)
+  :
+  UI(),
+  m_histfile(histfile)
+{
+  rl_cleanup_after_signal();
+  using_history();
+  read_history(m_histfile.c_str());
+}
+
+GNUReadlineUI::~GNUReadlineUI()
+{
+  write_history(m_histfile.c_str());
+}
+
+std::string GNUReadlineUI::readline(const std::string & prompt)
+{
+  m_line = ::readline(prompt.c_str());
+
+  if (m_line == NULL) return "exit";
+
+  if (*m_line && *m_line != ' ') add_history(m_line);
+
+  std::string line(m_line);
+  free(m_line);
+  return line;
+}
+
+bool pump(Server & server, UI & ui)
+{
+  std::string line = ui.readline(std::string("> "));
+  std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+
+  if (line == "exit" || line == "quit" || line == "bye")
+  {
+    return false;
+  }
+  else if (line == "")
+  {
+    return true;
+  }
+  else if (line == "help" || line == "panic")
+  {
+    std::cout << std::endl
+              << "Welcome, friend. This is the LDX Minecraft Server." << std::endl
+              << "Please help yourself to the following commands:" << std::endl
+              << std::endl
+              << "  list:     Lists all connected users" << std::endl
+              << "  dump:     Dump each connection's data" << std::endl
+              << "  exit:     Shuts down the server" << std::endl
+              << std::endl;
+  }
+  else if (line == "list")
+  {
+    for (std::set<ConnectionPtr>::const_iterator i = server.cm().connections().begin(); i != server.cm().connections().end(); ++i)
+    {
+      auto di = server.cm().clientData().find((*i)->EID());
+      std::cout << "Connection #" << std::dec << (*i)->EID() << ": " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port()
+                << ", #refs = " << i->use_count();
+      if (di != server.cm().clientData().end()) std::cout << ", " << di->second.first.size() << " bytes of unprocessed data";
+      std::cout << std::endl;
+    }
+  }
+  else if (line == "dump")
+  {
+    for (std::set<ConnectionPtr>::const_iterator i = server.cm().connections().begin(); i != server.cm().connections().end(); ++i)
+    {
+      std::cout << "Connection: " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port() << ".";
+      auto di = server.cm().clientData().find((*i)->EID());
+      if (di == server.cm().clientData().end())
+      {
+        std::cout << " ** no data **";
+      }
+      else
+      {
+        for (auto it = di->second.first.begin(); it != di->second.first.end(); ++it)
+          std::cout << " " << std::hex << std::setw(2) << (unsigned int)(*it);
+      }
+      std::cout << std::endl;
+    }
+  }
+  else if (line.compare(0, 4, "ping") == 0)
+  {
+    std::istringstream s(line);
+    std::string tmp;
+    int32_t eid = -1;
+
+    s >> tmp >> eid;
+    std::string t;
+    std::getline(s, t);
+
+    if (eid == -1 || t.empty())
+    {
+      std::cout << "Syntax: ping <client> <message>" << std::endl;
+    }
+    else
+    {
+      std::cout << "Trying to ping client #" << eid << " with data \"" << t.substr(1) << "\"." << std::endl;
+      server.cm().sendDataToClient(eid, t.substr(1));
+    }
+  }
+  else if (line.compare(0, 4, "kick") == 0)
+  {
+    std::istringstream s(line);
+    std::string tmp;
+    int32_t eid = -1;
+
+    s >> tmp >> eid;
+    std::string t;
+    std::getline(s, t);
+
+    if (eid == -1 || t.empty())
+    {
+      std::cout << "Syntax: kick <client> <message>" << std::endl;
+    }
+    else
+    {
+      std::cout << "Kicking client #" << eid << " with message \"" << t.substr(1) << "\"." << std::endl;
+
+      PacketCrafter p(PACKET_DISCONNECT);
+      p.addJString(t.substr(1));
+      server.cm().sendDataToClient(eid, p.craft());
+    }
+  }
+  else
+  {
+    std::cout << "Sorry, I did not understand! Type 'help' for help." << std::endl;
+  }
+  return true;
+}

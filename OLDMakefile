@@ -1,0 +1,44 @@
+OBJECTS=main.o cmdlineoptions.o ui.o server.o connection.o gamestatemanager.o packets.o inputparser.o map.o generator.o
+TARGET=minerd
+
+CXXFLAGS_COMMON=-W -Wall -pedantic -std=c++0x
+LDFLAGS_COMMON=-lboost_system -lboost_program_options -lreadline -lz -lnoise
+
+CXXFLAGS_DEBUG=-g
+CXX_FLAGS_RELEASE=-O4 -march=native
+LD_FLAGS_DEBUG=-g
+LD_FLAGS_RELEASE=-s
+
+
+CXX_FLAGS=$(CXXFLAGS_COMMON) $(CXXFLAGS_DEBUG)
+LD_FLAGS=$(LDFLAGS_COMMON) $(LDFLAGS_DEBUG)
+
+.phony: all clean
+.default: all
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CXX) -o $@ $+ $(LD_FLAGS)
+
+%.o: %.cpp
+	$(CXX) $(CXX_FLAGS) -c -o $@ $<
+
+clean:
+	rm -rf $(TARGET) $(OBJECTS)
+
+
+## Consider static stuff:
+## g++ -o minerd main.o cmdlineoptions.o ui.o server.o connection.o gamestatemanager.o packets.o -lboost_system /usr/lib/libboost_program_options-mt.a /usr/lib/libreadline.a /usr/lib/libncurses.a
+
+
+main.o: main.cpp ui.h server.h connection.h cmdlineoptions.h
+ui.o: ui.cpp ui.h server.h connection.h
+cmdlineoptions.o: cmdlineoptions.cpp cmdlineoptions.h
+connection.o: connection.cpp connection.h
+server.o: server.cpp server.h packets.h connection.h gamestatemanager.h
+packets.o: packets.cpp packets.h
+gamestatemanager.o: gamestatemanager.cpp gamestatemanager.h packetcrafter.h connection.h
+inputparser.o: inputparser.cpp inputparser.h gamestatemanager.h connection.h
+map.o: map.cpp map.h generator.h packetcrafter.h types.h
+generator.o: generator.cpp generator.h map.h types.h

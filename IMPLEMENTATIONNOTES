@@ -1,0 +1,22 @@
+Random things to think about in the future:
+
+
+- In the ConnectionManager, std::unordered_map might be faster than std::map (constant vs. logarithmic lookup)
+  ** Not that it would matter if there aren't thousands of clients
+
+- In Server, Server::runGame() parses the raw data for each client into packets.
+  Two things can happen: Either the packet is of fixed size, in which case we decide
+  immediately if we have enough data, and if yes perform a mutexed extraction of the
+  packet from the queue. Or the packet is of variable size, in which case we pass on
+  the raw queue and the mutex to dispatchIfEnoughData(), which is responsible for
+  mutexing the extraction if it decides to extract.
+
+  Note that we COULD let that function set an additional variable that contains the
+  minimum amount of data it needs before the next attempt; but unless there is strong
+  evidence that there are lots of incomplete variable-length packets in the queue all
+  the time, this is not worthwhile.
+
+- ConnectionManager, Server: Every connection has its own mutex to guard its ingress
+  data queue. Currently done with heap-allocated "shared_ptr<mutex>(new mutex)", if
+  necessary this might be replaced by something more static and faster (but again,
+  only if there is strong evidence that this is worthwhile).
