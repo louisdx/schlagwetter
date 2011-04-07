@@ -10,7 +10,9 @@ public:
 
   /// Processing incoming packets.
   void immediateDispatch(int32_t eid, const std::vector<char> & data);
-  void dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, std::recursive_mutex * ptr_mutex);
+
+  /// Return true if a whole packet was extracted.
+  bool dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, std::recursive_mutex * ptr_mutex);
 
 private:
   GameStateManager & m_gsm;

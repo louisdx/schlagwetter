@@ -78,46 +78,46 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
 
 void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, int32_t Z, uint8_t status, uint8_t face)
 {
-  std::cout << "GSM: Received PlayerDigging from #" << eid << ": [" << X << ", " << (unsigned int)(Y) << ", " << Z << ", "
-            << (unsigned int)(status) << ", " << (unsigned int)(face) << "]" << std::endl;
+  std::cout << "GSM: Received PlayerDigging from #" << std::dec << eid << ": [" << X << ", " << (unsigned int)(Y)
+            << ", " << Z << ", " << (unsigned int)(status) << ", " << (unsigned int)(face) << "]" << std::endl;
 }
 
 void GameStateManager::packetCSHoldingChange(int32_t eid, int16_t slot)
 {
-  std::cout << "GSM: Received HoldingChange from #" << eid << ": " << slot << std::endl;
+  std::cout << "GSM: Received HoldingChange from #" << std::dec << eid << ": " << slot << std::endl;
 }
 
 void GameStateManager::packetCSArmAnimation(int32_t eid, int32_t e, int8_t animate)
 {
-  std::cout << "GSM: Received Animation from #" << eid << ": [" << e << ", " << (unsigned int)(animate) << "]" << std::endl;
+  std::cout << "GSM: Received Animation from #" << std::dec << eid << ": [" << e << ", " << (unsigned int)(animate) << "]" << std::endl;
 }
 
 void GameStateManager::packetCSEntityCrouchBed(int32_t eid, int32_t e, int8_t action)
 {
-  std::cout << "GSM: Received CrouchBed from #" << eid << ": [" << e << ", " << (unsigned int)(action) << "]" << std::endl;
+  std::cout << "GSM: Received CrouchBed from #" << std::dec << eid << ": [" << e << ", " << (unsigned int)(action) << "]" << std::endl;
 }
 
 void GameStateManager::packetCSPickupSpawn(int32_t eid, int32_t e, int32_t X, int32_t Y, int32_t Z,
                                            int8_t rotp, int8_t pitchp, int8_t rollp, int8_t count, int16_t item, int16_t data)
 {
-  std::cout << "GSM: Received PickupSpawn from #" << eid << ": [" << e << ", " << X << ", " << Y << ", " << Z << ", "
+  std::cout << "GSM: Received PickupSpawn from #" << std::dec << eid << ": [" << e << ", " << X << ", " << Y << ", " << Z << ", "
             << (unsigned int)(rotp) << ", " << (unsigned int)(pitchp) << ", "<< (unsigned int)(rollp) << ", "
             << (unsigned int)(count) << ", " << item << ", " << data << ", "<< "]" << std::endl;
 }
 
 void GameStateManager::packetCSRespawn(int32_t eid)
 {
-  std::cout << "GSM: Received Respawn from #" << eid << std::endl;
+  std::cout << "GSM: Received Respawn from #" << std::dec << eid << std::endl;
 }
 
 void GameStateManager::packetCSCloseWindow(int32_t eid, int8_t window_id)
 {
-  std::cout << "GSM: Received CloseWindow from #" << eid << ": " << (unsigned int)(window_id) << std::endl;
+  std::cout << "GSM: Received CloseWindow from #" << std::dec << eid << ": " << (unsigned int)(window_id) << std::endl;
 }
 
 void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
 {
-  std::cout << "GSM: Received Handshake from #" << eid << ": " << name << std::endl;
+  std::cout << "GSM: Received Handshake from #" << std::dec << eid << ": " << name << std::endl;
 
   Connection * c = m_connection_manager.findConnectionByEIDwp(eid);
   if (c) c->nick() = name;
@@ -145,7 +145,7 @@ void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
 
 void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_version, const std::string & username, const std::string & password, int64_t map_seed, int8_t dimension)
 {
-  std::cout << "GSM: Received LoginRequest from #" << eid << ": ["
+  std::cout << "GSM: Received LoginRequest from #" << std::dec << eid << ": ["
             << std::dec << protocol_version << ", "
             << username<< ", "
             << password << ", "
@@ -233,30 +233,30 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
 void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, uint8_t Y, int32_t Z, int8_t direction, int16_t block_id, int8_t amount, int16_t damage)
 {
-  std::cout << "GSM: Received BlockPlacement from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", "
+  std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << Y << ", " << Z << ", "
             << direction << ", " << block_id << ", " << amount << ", " << damage << "]" << std::endl;
 }
 
 void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)
 {
-  std::cout << "GSM: Received ChatMessage from #" << eid << ": \"" << message << "\"" << std::endl;
+  std::cout << "GSM: Received ChatMessage from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
 }
 
 void GameStateManager::packetCSDisconnect(int32_t eid, std::string message)
 {
-  std::cout << "GSM: Received Disconnect from #" << eid << ": \"" << message << "\"" << std::endl;
+  std::cout << "GSM: Received Disconnect from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
   m_connection_manager.stop(eid);
   m_states[eid].state = GameState::TERMINATED;
 }
 
 void GameStateManager::packetCSWindowClick(int32_t eid, int8_t window_id, int16_t slot, int8_t right_click, int16_t action, int16_t item_id, int8_t item_count, int16_t item_uses)
 {
-  std::cout << "GSM: Received WindowClick from #" << eid << ": [" << (unsigned int)(window_id) << ", " << slot << ", " << (unsigned int)(right_click) << ", "
+  std::cout << "GSM: Received WindowClick from #" << std::dec << eid << ": [" << (unsigned int)(window_id) << ", " << slot << ", " << (unsigned int)(right_click) << ", "
             << action << ", " << item_id << ", " << (unsigned int)(item_count) << ", " << item_uses << "]" << std::endl;
 }
 
 void GameStateManager::packetCSSign(int32_t eid, int32_t X, int16_t Y, int32_t Z, std::string line1, std::string line2, std::string line3, std::string line4)
 {
-  std::cout << "GSM: Received Sign from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", \"" << line1 << "\", " << line2 << "\", " << line3 << "\", " << line4 << "]" << std::endl;
+  std::cout << "GSM: Received Sign from #" << std::dec << eid << ": [" << X << ", " << Y << ", " << Z << ", \"" << line1 << "\", " << line2 << "\", " << line3 << "\", " << line4 << "]" << std::endl;
 }
 

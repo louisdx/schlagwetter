@@ -9,8 +9,8 @@
  */
 
 #define READ_INT8(data, i)   ((unsigned int)(data[i]))
-#define READ_INT16(data, i)  ((unsigned int)(data[i]) | ((unsigned int)(data[i+1]) << 8))
-#define READ_INT32(data, i)  ((unsigned int)(data[i]) | ((unsigned int)(data[i+1]) << 8) | ((unsigned int)(data[i+2]) << 16) | ((unsigned int)(data[i+3]) << 24))
+#define READ_INT16(data, i)  (int)((unsigned int)(data[i+1]) | ((unsigned int)(data[i]) << 8))
+#define READ_INT32(data, i)  (int)((unsigned int)(data[i+3]) | (unsigned int)(data[i+2]) << 8 | (unsigned int)(data[i+1]) << 16 | ((unsigned int)(data[i]) << 24))
 #define READ_BOOL(data, i)   (data[i] != 0)
 
 static inline double READ_DOUBLE(const std::vector<char> & data, size_t i)
@@ -220,7 +220,7 @@ void InputParser::immediateDispatch(int32_t eid, const std::vector<char> & data)
 
 #define GUARDLOCK  std::lock_guard<std::recursive_mutex> lock(*ptr_mutex)
 
-void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, std::recursive_mutex * ptr_mutex)
+bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, std::recursive_mutex * ptr_mutex)
 {
   const unsigned int type = (unsigned int)(unsigned char)(queue.front());
   std::list<char> tmp;
@@ -230,7 +230,7 @@ void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, st
 
   case (PACKET_LOGIN_REQUEST):
   {
-    if (queue.size() < 7) return;
+    if (queue.size() < 7) return false;
 
     int32_t     protocol_version;
     int16_t     username_len;
@@ -258,14 +258,14 @@ void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, st
 
     m_gsm.packetCSLoginRequest(eid, protocol_version, username, password, map_seed, dimension);
 
-    break;
+    return true;
   }
 
   case (PACKET_HANDSHAKE):
   case (PACKET_CHAT_MESSAGE):
   case (PACKET_DISCONNECT):
   {
-    if (queue.size() < 3) return;
+    if (queue.size() < 3) return false;
 
     int16_t str_len;
     std::string str;
@@ -281,9 +281,9 @@ void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, st
 
     switch (type)
     {
-    case (PACKET_HANDSHAKE):    { m_gsm.packetCSHandshake(eid, str); break; }
-    case (PACKET_CHAT_MESSAGE): { m_gsm.packetCSChatMessage(eid, str); break; }
-    case (PACKET_DISCONNECT):   { m_gsm.packetCSDisconnect(eid, str); break; }
+    case (PACKET_HANDSHAKE):    { m_gsm.packetCSHandshake(eid, str); return true; }
+    case (PACKET_CHAT_MESSAGE): { m_gsm.packetCSChatMessage(eid, str); return true; }
+    case (PACKET_DISCONNECT):   { m_gsm.packetCSDisconnect(eid, str); return true; }
     }   
 
     break;
@@ -291,7 +291,7 @@ void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, st
 
   case (PACKET_PLAYER_BLOCK_PLACEMENT):
   {
-    if (queue.size() < 13) return;
+    if (queue.size() < 13) return false;
 
     int32_t X, Z;
     int8_t Y, direction, amount = 0;
@@ -316,12 +316,12 @@ void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, st
 
     m_gsm.packetCSBlockPlacement(eid, X, Y, Z, direction, block_id, amount, damage);
 
-    break;
+    return true;
   }
 
   case (PACKET_INVENTORY_CHANGE):
   {
-    if (queue.size() < 9) return;
+    if (queue.size() < 9) return false;
 
     int8_t window_id, right_click, item_count = 0;
     int16_t slot, action, item_id, item_uses = 0;
@@ -345,12 +345,12 @@ void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, st
 
     m_gsm.packetCSWindowClick(eid, window_id, slot, right_click, action, item_id, item_count, item_uses);
 
-    break;
+    return true;
   }
 
   case (PACKET_SIGN):
   {
-    if (queue.size() < 13) return;
+    if (queue.size() < 13) return false;
 
     int32_t X, Z;
     int16_t Y, len1, len2, len3, len4;
@@ -383,11 +383,11 @@ void InputParser::dispatchIfEnoughData(int32_t eid, std::deque<char> & queue, st
 
     m_gsm.packetCSSign(eid, X, Y, Z, line1, line2, line3, line4);
 
-    break;
+    return true;
   }
 
   default:
     std::cerr << "Unknown variable-width data field: Type " << (unsigned int)(type) << std::endl;
   }
-
+  return false;
 }

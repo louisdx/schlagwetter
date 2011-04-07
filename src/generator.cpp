@@ -33,7 +33,7 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
   uint32_t currentHeight;
   uint8_t ymax;
 
-  std::array<uint8_t, 16 * 16> heightmap;;
+  std::array<uint8_t, 16 * 16> heightmap;
 
   for (size_t bX = 0; bX < 16; ++bX)
   {

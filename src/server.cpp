@@ -47,6 +47,7 @@ void Server::runInputProcessing()
 {
   while (!m_server_should_stop)
   {
+    sleepMilli(100);
     std::unique_lock<std::mutex> lock(m_connection_manager.m_input_ready_mutex);
     while (!m_connection_manager.m_input_ready)
     {
@@ -99,7 +100,7 @@ void Server::processSchedule200ms(int dt)
 {
   static long long int timer;
 
-  std::cout << "Tick-200ms: Actual time was " << std::dec << dt << "ms." << std::endl;
+  //std::cout << "Tick-200ms: Actual time was " << std::dec << dt << "ms." << std::endl;
 
   if (dt < 200) sleepMilli(200 - dt);
   timer = clockTick();
@@ -117,7 +118,7 @@ void Server::processSchedule1s()
 
   long long int now = clockTick();
 
-  std::cout << "Tick-1s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
+  //std::cout << "Tick-1s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
 
   /* do stuff */
 
@@ -138,7 +139,7 @@ void Server::processSchedule10s()
 
   long long int now = clockTick();
 
-  std::cout << "Tick-10s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
+  //std::cout << "Tick-10s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
 
   /* do stuff */
 
@@ -147,7 +148,7 @@ void Server::processSchedule10s()
 
 void Server::processIngress(int32_t eid, std::deque<char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex)
 {
-  if (!d.empty())
+  while (!d.empty())
   {
     const unsigned char first_byte(d.front());
     const auto pit = PACKET_INFO.find(EPacketNames(first_byte));
@@ -173,7 +174,14 @@ void Server::processIngress(int32_t eid, std::deque<char> & d, std::shared_ptr<s
       }
       else if (psize == size_t(PACKET_VARIABLE_LEN))
       {
-        m_input_parser.dispatchIfEnoughData(eid, d, ptr_mutex.get());
+        if (!m_input_parser.dispatchIfEnoughData(eid, d, ptr_mutex.get()))
+        {
+          break;
+        }
+      }
+      else
+      {
+        break;
       }
     }
 
@@ -183,6 +191,7 @@ void Server::processIngress(int32_t eid, std::deque<char> & d, std::shared_ptr<s
       std::cout << "Unintellegible data! Clearing buffer for client #" << eid << ". First byte was "
                 << std::setw(2) << std::setfill('0') << std::hex << (unsigned int)(first_byte) << std::endl;
       d.clear();
+      break;
     }
   }
 }
@@ -202,6 +211,7 @@ void Server::stop()
 
 void Server::handleAccept(const boost::system::error_code & error)
 {
+  std::cout << "Server says Hi." << std::endl;
   if (!error)
   {
     m_connection_manager.start(m_next_connection);

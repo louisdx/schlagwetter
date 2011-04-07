@@ -44,9 +44,6 @@ public:
   /// Send data to client.
   void sendData(const std::string & data);
 
-  /// Mutexes to protect access
-  std::recursive_mutex io_mutex;  // for handleRead, handleWrite
-
 private:
   /// Handle completion of a read operation.
   void handleRead(const boost::system::error_code & e, std::size_t bytes_transferred);
@@ -64,7 +61,7 @@ private:
   ConnectionManager & m_connection_manager;
 
   /// Buffer for incoming data.
-  enum { read_buf_size = 4096 };
+  enum { read_buf_size = 8192 };
   char m_data[read_buf_size];
 
   /// The client's Entity ID and nickname.

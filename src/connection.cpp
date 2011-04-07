@@ -16,8 +16,6 @@ Connection::Connection(boost::asio::io_service & io_service, ConnectionManager &
 
 Connection::~Connection()
 {
-  //std::lock_guard<std::recursive_mutex> lock(io_mutex);
-
   std::cout << "Connection destroyed." << std::endl;
 }
 
@@ -40,7 +38,6 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
     std::cout << std::endl;
 
     {
-      //std::lock_guard<std::recursive_mutex> lock(io_mutex);
       m_connection_manager.storeReceivedData(EID(), m_data, m_data + bytes_transferred);
       m_socket.async_read_some(boost::asio::buffer(m_data, read_buf_size), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
     }
