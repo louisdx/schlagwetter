@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <functional>
+
 #include "connection.h"
 
 int32_t Connection::EID_POOL = 0;
@@ -74,9 +75,13 @@ void Connection::sendData(const std::string & data)
 
 ConnectionManager::ConnectionManager()
   :
+  m_cd_mutex(),
   m_connections(),
   m_client_data(),
-  m_egress_queue()
+  m_input_ready(false),
+  m_input_ready_cond(),
+  m_input_ready_mutex(),
+  m_pending_eids()
 {
 }
 
@@ -120,6 +125,9 @@ void ConnectionManager::storeReceivedData(int32_t eid, char * first, char * last
       clit->second.first.insert(clit->second.first.end(), first, last);
     }
   }
+  m_pending_eids.push_back(eid);
+  m_input_ready = true;
+  m_input_ready_cond.notify_one();
 }
 
 void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data) const

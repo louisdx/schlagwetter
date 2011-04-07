@@ -49,7 +49,5 @@ find_package(Readline REQUIRED)
 include_directories(${READLINE_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${READLINE_LIBRARY})
 
-## Testing....
-include_directories("/tmp/cehtl-0.9b/include")
 
 add_subdirectory(src)

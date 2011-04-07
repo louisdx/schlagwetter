@@ -3,6 +3,7 @@
 
 
 #include <string>
+#include <thread>
 #include <chrono>
 
 #include <boost/asio.hpp>
@@ -23,16 +24,21 @@ public:
   /// Run the server's io_service loop.
   void runIO();
 
-  /// Run the server's main game loop.
-  void runGame();
+  /// Run the server's input processing loop.
+  void runInputProcessing();
+
+  /// Run the server's timer processing loop.
+  void runTimerProcessing();
 
   /// Stop the server.
   void stop();
 
   /// Processors.
-  void process_ingress(int32_t eid,  std::deque<char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex);
-  void process_egress(int32_t eid);
-  void process_gamestate(int32_t eid);
+  void processIngress(int32_t eid,  std::deque<char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex);
+  inline void processIngress(ConnectionManager::ClientData::iterator & it) { processIngress(it->first, it->second.first, it->second.second); }
+  void processSchedule200ms(int actual_time_interval);
+  void processSchedule1s();
+  void processSchedule10s();
 
   /// Accessors.
   inline const ConnectionManager & cm() const { return m_connection_manager; }
@@ -58,7 +64,7 @@ private:
   /// Acceptor used to listen for incoming connections.
   boost::asio::ip::tcp::acceptor m_acceptor;
 
-  /// Notify the main loop.
+  /// Synchronisation.
   bool m_server_should_stop;
 
   /// The connection manager which owns all live connections.
@@ -75,6 +81,16 @@ private:
 
   /// The map. (Will eventually have many.)
   Map m_map;
+
+  /// An alarm clock.
+  boost::asio::deadline_timer m_deadline_timer;
+  unsigned int m_sleep_next;
+  inline void sleepMilli(unsigned int t)
+  {
+    m_deadline_timer.expires_from_now(boost::posix_time::milliseconds(t));
+    m_deadline_timer.wait();
+  }
+
 };
 
 

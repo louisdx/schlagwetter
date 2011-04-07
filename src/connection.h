@@ -6,6 +6,7 @@
 #include <array>
 #include <deque>
 #include <mutex>
+#include <condition_variable>
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -82,7 +83,8 @@ typedef std::shared_ptr<Connection> ConnectionPtr;
 class ConnectionManager : private boost::noncopyable
 {
   typedef std::map<int32_t, std::pair<std::deque<char>, std::shared_ptr<std::recursive_mutex>>> ClientData;
-  typedef std::map<int32_t, std::deque<std::string>> ClientEgressQueue;
+
+  friend class Server;
 
 public:
   ConnectionManager();
@@ -102,8 +104,6 @@ public:
   inline const std::set<ConnectionPtr> & connections() const { return m_connections; }
   inline const ClientData & clientData()               const { return m_client_data; }
   inline       ClientData & clientData()                     { return m_client_data; }
-  inline const ClientEgressQueue & clientEgressQ()     const { return m_egress_queue; }
-  inline       ClientEgressQueue & clientEgressQ()           { return m_egress_queue; }
 
   /// Incoming data
   void storeReceivedData(int32_t eid, char * first, char * last);
@@ -116,6 +116,9 @@ public:
   inline std::set<ConnectionPtr>::const_iterator findConnectionByEID(int32_t eid) const { return std::find_if(m_connections.begin(), m_connections.end(), EIDFinder(eid)); }
   inline Connection * findConnectionByEIDwp(int32_t eid) const { auto it = findConnectionByEID(eid); return it == m_connections.end() ? NULL : it->get(); }
 
+  /// Synchronisation.
+  std::mutex m_cd_mutex;
+
 private:
   /// The managed connections.
   std::set<ConnectionPtr> m_connections;
@@ -123,8 +126,11 @@ private:
   /// All incoming data is queued up here for processing.
   ClientData m_client_data;
 
-  /// Likewise for outgoing data.
-  ClientEgressQueue m_egress_queue;
+  /// Synchronisation.
+  bool m_input_ready;
+  std::condition_variable m_input_ready_cond;
+  std::mutex m_input_ready_mutex;
+  std::deque<int32_t> m_pending_eids;
 };
 
 

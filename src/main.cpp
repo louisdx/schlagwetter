@@ -28,7 +28,8 @@ int main(int argc, char* argv[])
     // Run server in background thread.
     Server server(options["bindaddr"].as<std::string>(), options["port"].as<unsigned short int>());
     std::thread thread_io(std::bind(&Server::runIO, &server));
-    std::thread thread_main(std::bind(&Server::runGame, &server));
+    std::thread thread_input(std::bind(&Server::runInputProcessing, &server));
+    std::thread thread_timer(std::bind(&Server::runTimerProcessing, &server));
 
     //GNUReadlineUI ui("/tmp/.minerd_history");
     SimpleUI      ui;
@@ -37,7 +38,8 @@ int main(int argc, char* argv[])
 
     server.stop();
     thread_io.join();
-    thread_main.join();
+    thread_input.join();
+    thread_timer.join();
   }
   catch (std::exception & e)
   {

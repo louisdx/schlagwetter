@@ -7,6 +7,15 @@
 #include "packets.h"
 
 
+template<class T>
+struct Identity
+{
+  inline T operator()() { return _x; }
+  Identity(T x) : _x(x) { }
+private:
+  T _x;
+};
+
 Server::Server(const std::string & bindaddr, unsigned short int port)
   :
   m_io_service(),
@@ -16,7 +25,9 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_next_connection(new Connection(m_io_service, m_connection_manager)),
   m_gsm(m_connection_manager, m_map),
   m_input_parser(m_gsm),
-  m_map()
+  m_map(),
+  m_deadline_timer(m_io_service),
+  m_sleep_next(200)
 {
   boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(bindaddr), port);
 
@@ -32,66 +43,103 @@ void Server::runIO()
   m_io_service.run();
 }
 
-void Server::runGame()
+void Server::runInputProcessing()
 {
-  int32_t current_eid = 0;
-
-  long long int timer = clockTick();
-  boost::asio::deadline_timer bt(m_io_service);
-
   while (!m_server_should_stop)
   {
+    std::unique_lock<std::mutex> lock(m_connection_manager.m_input_ready_mutex);
+    while (!m_connection_manager.m_input_ready)
+    {
+      m_connection_manager.m_input_ready_cond.wait(lock, Identity<const bool &>(m_connection_manager.m_input_ready));
+    }
+
+    while (!m_connection_manager.m_pending_eids.empty())
+    {
+      std::lock_guard<std::mutex> lock(m_connection_manager.m_cd_mutex);
+
+      auto it = m_connection_manager.clientData().find(m_connection_manager.m_pending_eids.front());
+
+      if (it !=  m_connection_manager.clientData().end())
+      {
+        processIngress(it);
+      }
+
+      m_connection_manager.m_pending_eids.pop_front();
+    }
+  }
+}
+
+void Server::runTimerProcessing()
+{
+  long long int timer = clockTick();
+
+  unsigned int counter = 0;
+
+  for ( ; !m_server_should_stop; ++counter)
+  {
+    sleepMilli(m_sleep_next);
+
     const long long int now = clockTick();
     const long long int dt = now - timer;
     timer = now;
 
-    //std::cout << dt << "ms have passed." << (std::chrono::high_resolution_clock::now().time_since_epoch()).count() << std::endl;
+    /* If the 200ms processor runs too long for the 1s and 10s tasks,
+       we can make another thread; or we can make the 1s and 10s tasks
+       launch worker threads if need be. */
 
-    /*** Phase I: Process the IO queues ***/
-    auto it = m_connection_manager.clientData().begin();
-    while (it != m_connection_manager.clientData().end() && it->first <= current_eid) ++it;
-    if (it == m_connection_manager.clientData().end()) it = m_connection_manager.clientData().begin();
-    if (it == m_connection_manager.clientData().end()) continue;
-    current_eid = it->first;
+    processSchedule200ms(dt);
 
-    process_ingress(current_eid, it->second.first, it->second.second);
+    if (counter % 5 == 0) processSchedule1s();
 
-    process_egress(current_eid);
-
-    process_gamestate(current_eid);
-
-    /*** Phase II: Run servery business, timed events, whatnot... ***/
-    {
-
-    }
-
-    bt.expires_from_now(boost::posix_time::milliseconds(1));
-    bt.wait();
-
-  } // while(...)
-}
-
-inline void Server::process_gamestate(int32_t eid)
-{
-  m_gsm.update(eid);
-}
-
-void Server::process_egress(int32_t eid)
-{
-  auto it = m_connection_manager.clientEgressQ().find(eid);
-
-  if (it == m_connection_manager.clientEgressQ().end()) return;
-
-  std::deque<std::string> & d = it->second;
-
-  while(!d.empty())
-  {
-    m_connection_manager.sendDataToClient(eid, d.front());
-    d.pop_front();
+    if (counter % 50 == 0) { counter = 0; processSchedule10s(); }
   }
 }
 
-void Server::process_ingress(int32_t eid, std::deque<char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex)
+void Server::processSchedule200ms(int dt)
+{
+  static long long int timer;
+
+  std::cout << "Tick-200ms: Actual time was " << std::dec << dt << "ms." << std::endl;
+
+  if (dt < 200) sleepMilli(200 - dt);
+  timer = clockTick();
+
+  /* do stuff */
+
+  const long long int work_time = clockTick() - timer;
+  if (work_time < 0) m_sleep_next = 0;
+  else m_sleep_next -= work_time;
+}
+
+void Server::processSchedule1s()
+{
+  static long long int timer = clockTick();
+
+  long long int now = clockTick();
+
+  std::cout << "Tick-1s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
+
+  /* do stuff */
+  //m_gsm.update(eid);
+
+  timer = clockTick();
+}
+
+
+void Server::processSchedule10s()
+{
+  static long long int timer = clockTick();
+
+  long long int now = clockTick();
+
+  std::cout << "Tick-10s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
+
+  /* do stuff */
+
+  timer = clockTick();
+}
+
+void Server::processIngress(int32_t eid, std::deque<char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex)
 {
   if (!d.empty())
   {
@@ -140,6 +188,10 @@ void Server::stop()
 
   // Tell the game thread to stop.
   m_server_should_stop = true;
+
+  // Release the input thread's lock.
+  m_connection_manager.m_input_ready = true;
+  m_connection_manager.m_input_ready_cond.notify_one();
 }
 
 void Server::handleAccept(const boost::system::error_code & error)

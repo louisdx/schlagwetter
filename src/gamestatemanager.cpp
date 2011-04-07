@@ -13,8 +13,8 @@ void GameStateManager::update(int32_t eid)
   if (m_connection_manager.findConnectionByEID(eid) == m_connection_manager.connections().end())
   {
     std::cout << "Client #" << eid << " no longer connected, cleaning up..." << std::endl;
+    std::lock_guard<std::mutex> lock(m_connection_manager.m_cd_mutex);
     m_connection_manager.clientData().erase(eid);
-    m_connection_manager.clientEgressQ().erase(eid);
     return;
   }
 
