@@ -1,10 +1,66 @@
+Server design and implementation notes
+======================================
+
+                 Louis Delacroix, 2011
+
+
+1. Language and libraries
+
+The server is written in C++0x. I am currently using GCC 4.4 on Linux.
+
+The code makes extensive use of the STL and Boost (components "system" and "program_options").
+Further libraries are:
+
+  - zlib:         as required by the protocol
+  - libnoise:     for map generation
+  - GNU Readline: optional for the console UI
+
+It should be possible to compile the server for any platform that supports
+Boost, zlib and libnoise.
+
+
+2. Server design
+
+The server is essentially event-driven. There are only two possible events
+that need to be considered:
+
+   1. Ingress data from the client
+   2. Timer events (regularly scheduled tasks)
+
+This is implemented via multithreading (<thread> and co.). The program must
+start three threads: one to handle Boost's ASIO, one to process the raw
+ingress data and inform the game state, and one to run timed tasks.
+
+The classes are roughly like this:
+
+
+                             +----->              runIO()  (Done by Boost)
+            Server ----------+-----> runInputProcessing()  (cf. InputParser)
+               |             +-----> runTimerProcessing()
+               |
+               +--------------------+---------------+
+               |                    |               |
+               V                    V               V
+       ConnectionManager    GameStateManager      Map
+               |                    |
+        ^      |  +-----------------+
+ingress |      V  V      egress 
+        +-Connection
+          Connection
+          Connection
+             ...
+
+
+
+
+
 Random things to think about in the future:
 
 
 - In the ConnectionManager, std::unordered_map might be faster than std::map (constant vs. logarithmic lookup)
   ** Not that it would matter if there aren't thousands of clients
 
-- In Server, Server::runGame() parses the raw data for each client into packets.
+- In Server, Server::runInputProcessing() parses the raw data for each client into packets.
   Two things can happen: Either the packet is of fixed size, in which case we decide
   immediately if we have enough data, and if yes perform a mutexed extraction of the
   packet from the queue. Or the packet is of variable size, in which case we pass on
@@ -20,3 +76,5 @@ Random things to think about in the future:
   data queue. Currently done with heap-allocated "shared_ptr<mutex>(new mutex)", if
   necessary this might be replaced by something more static and faster (but again,
   only if there is strong evidence that this is worthwhile).
+
+- Maybe the classes Server and ConnectionManager could be merged.

@@ -117,7 +117,7 @@ public:
   inline Connection * findConnectionByEIDwp(int32_t eid) const { auto it = findConnectionByEID(eid); return it == m_connections.end() ? NULL : it->get(); }
 
   /// Synchronisation.
-  std::mutex m_cd_mutex;
+  std::recursive_mutex m_cd_mutex;
 
 private:
   /// The managed connections.

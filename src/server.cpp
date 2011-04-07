@@ -55,7 +55,7 @@ void Server::runInputProcessing()
 
     while (!m_connection_manager.m_pending_eids.empty())
     {
-      std::lock_guard<std::mutex> lock(m_connection_manager.m_cd_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
 
       auto it = m_connection_manager.clientData().find(m_connection_manager.m_pending_eids.front());
 
@@ -120,7 +120,13 @@ void Server::processSchedule1s()
   std::cout << "Tick-1s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
 
   /* do stuff */
-  //m_gsm.update(eid);
+
+  /* Update game state. (At the moment this only cleans up dead connections.) */
+  std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
+  for (auto it = m_connection_manager.clientData().begin(); it != m_connection_manager.clientData().end(); ++it)
+  {
+    m_gsm.update(it->first);
+  }
 
   timer = clockTick();
 }
