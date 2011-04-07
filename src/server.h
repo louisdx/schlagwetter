@@ -3,6 +3,8 @@
 
 
 #include <string>
+#include <chrono>
+
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -10,6 +12,7 @@
 #include "gamestatemanager.h"
 #include "inputparser.h"
 #include "map.h"
+
 
 class Server : private boost::noncopyable
 {
@@ -33,6 +36,14 @@ public:
 
   /// Accessors.
   inline const ConnectionManager & cm() const { return m_connection_manager; }
+  inline boost::asio::io_service & ioService() { return m_io_service; }
+
+  /// A millisecond clock tick.
+  typedef std::chrono::high_resolution_clock::period clock_period;
+  static inline long long int clockTick()
+  {
+    return (long long int)((std::chrono::high_resolution_clock::now().time_since_epoch().count() * clock_period::num * 1000) / clock_period::den);
+  }
 
 private:
   /// Handle completion of an asynchronous accept operation.

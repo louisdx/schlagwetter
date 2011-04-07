@@ -4,28 +4,9 @@
 
 #include <array>
 #include <list>
+#include <memory>
+#include <boost/noncopyable.hpp>
 #include "types.h"
-
-/**
-
-   World coordinates are (int32_t wX, int8_t wY, int32_t wZ),
-   with 0 <= wY <= 127 (but ingame positions may exceed either bound).
-
-   The world is divided into (16 x 128 x 16)-"chunks".
-
-   The chunk grid is indexed by (int32_t cX, int32_t cZ), where:
-
-       cX = wX / 16 = wX >> 4
-       cZ = wZ / 16 = wZ >> 4
-
-    Local coordinates on each chunk are (X, Y, Z). Thus:
-
-       wX = 16 * cX + X
-       wY =           Y
-       wZ = 16 * cZ + Z
-
-
-**/
 
 inline std::list<ChunkCoords> ambientChunks(const ChunkCoords & cc, size_t radius)
 {
@@ -49,10 +30,11 @@ inline std::list<ChunkCoords> ambientChunks(const ChunkCoords & cc, size_t radiu
  * respectively, 1, 1/2, 1/2 and 1/2 byte.
  */
  
-class Chunk
+class Chunk : private boost::noncopyable
 {
 public:
   Chunk() : m_data() { }
+  Chunk(Chunk && other) : m_data(std::move(other.m_data)) { }
 
   inline size_t index(size_t x, size_t y, size_t z) const { return y + (z * 128) + (x * 128 * 16); }
   inline size_t size() const { return m_data.size(); }
@@ -78,6 +60,8 @@ private:
 };
 
 
+typedef std::unordered_map<ChunkCoords, std::shared_ptr<Chunk>, PairHash<int32_t, int32_t>> ChunkMap;
+
 class Map
 {
 public:
@@ -85,8 +69,8 @@ public:
 
   inline bool haveChunk(const ChunkCoords & cc) { return m_chunkMap.count(cc) > 0; }
 
-  inline       Chunk & getChunk(const ChunkCoords & cc)       { return m_chunkMap.find(cc)->second; }
-  inline const Chunk & getChunk(const ChunkCoords & cc) const { return m_chunkMap.find(cc)->second; }
+  inline       Chunk & getChunk(const ChunkCoords & cc)       { return *(m_chunkMap.find(cc)->second); }
+  inline const Chunk & getChunk(const ChunkCoords & cc) const { return *(m_chunkMap.find(cc)->second); }
 
   /* If no chunk exists at cc, create a random one. Always returns the chunk at cc. */
   const Chunk & getChunkOrGnerateNew(const ChunkCoords & cc);

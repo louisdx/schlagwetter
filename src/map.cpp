@@ -38,11 +38,11 @@ const Chunk & Map::getChunkOrGnerateNew(const ChunkCoords & cc)
 
   if (ins == m_chunkMap.end())
   {
-    ins = m_chunkMap.insert(ChunkMap::value_type(cc, Chunk())).first;
-    generateWithNoise(ins->second, cc);
+    ins = m_chunkMap.insert(ChunkMap::value_type(cc, ChunkMap::mapped_type(new Chunk()))).first;
+    generateWithNoise(*ins->second, cc);
   }
 
-  return ins->second;
+  return *ins->second;
 }
 
 

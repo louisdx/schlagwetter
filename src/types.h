@@ -5,6 +5,27 @@
 #include <unordered_map>
 #include <cstdint>
 
+/**
+
+   World coordinates are (int32_t wX, int8_t wY, int32_t wZ),
+   with 0 <= wY <= 127 (but ingame positions may exceed either bound).
+
+   The world is divided into (16 x 128 x 16)-"chunks".
+
+   The chunk grid is indexed by (int32_t cX, int32_t cZ), where:
+
+       cX = wX / 16 = wX >> 4
+       cZ = wZ / 16 = wZ >> 4
+
+    Local coordinates on each chunk are (X, Y, Z). Thus:
+
+       wX = 16 * cX + X
+       wY =           Y
+       wZ = 16 * cZ + Z
+
+
+**/
+
 typedef std::tuple<int32_t, int32_t, int32_t> WorldCoords;
 typedef std::tuple<size_t, size_t, size_t>    LocalCoords;
 typedef std::pair<int32_t, int32_t>           ChunkCoords; // Coordinates _of_ the chunk, not "within" the chunk.
@@ -68,9 +89,5 @@ struct PairHash : public std::unary_function<std::pair<S, T>, size_t>
     return seed;
   }
 };
-
-class Chunk;
-typedef std::unordered_map<ChunkCoords, Chunk, PairHash<int32_t, int32_t>> ChunkMap;
-
 
 #endif

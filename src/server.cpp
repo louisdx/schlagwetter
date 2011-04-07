@@ -1,11 +1,11 @@
 #include <functional>
 #include <thread>
+#include <iostream>
+#include <iomanip>
 #include "server.h"
 #include "inputparser.h"
 #include "packets.h"
 
-#include <iostream>
-#include <iomanip>
 
 Server::Server(const std::string & bindaddr, unsigned short int port)
   :
@@ -36,8 +36,16 @@ void Server::runGame()
 {
   int32_t current_eid = 0;
 
+  long long int timer = clockTick();
+  boost::asio::deadline_timer bt(m_io_service);
+
   while (!m_server_should_stop)
   {
+    const long long int now = clockTick();
+    const long long int dt = now - timer;
+    timer = now;
+
+    //std::cout << dt << "ms have passed." << (std::chrono::high_resolution_clock::now().time_since_epoch()).count() << std::endl;
 
     /*** Phase I: Process the IO queues ***/
     auto it = m_connection_manager.clientData().begin();
@@ -57,7 +65,8 @@ void Server::runGame()
 
     }
 
-    pthread_yield();
+    bt.expires_from_now(boost::posix_time::milliseconds(1));
+    bt.wait();
 
   } // while(...)
 }
