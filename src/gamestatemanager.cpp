@@ -8,6 +8,8 @@
 #include "map.h"
 #include "filereader.h"
 
+#include <zlib.h>
+
 GameStateManager::GameStateManager(ConnectionManager & connection_manager, Map & map)
   : m_connection_manager(connection_manager), m_map(map), m_states()
 {
@@ -193,8 +195,6 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     }
 
     m_states[eid].state = GameState::POSTLOGIN;
-    
-
 
     if (!PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
     {
@@ -210,8 +210,13 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
           std::string chuck = f.getCompressedChunk(x, z);
           if (chuck == "") continue;
+
+          // Compressed chunk is in NBT format. Must process.
+
+          std::string raw_chunk = NBTExtract(chuck);
+
           packetSCPreChunk(eid, ChunkCoords(x, z), true);
-          packetSCMapChunk(eid, 16*x, 0, 16*z, chuck);
+          packetSCMapChunk(eid, 16*x, 0, 16*z, raw_chunk);
 
           ++counter;
           if (counter > 50) break;
@@ -219,6 +224,10 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
         if (counter > 50) break;
       }
 
+      m_states[eid].state = GameState::READYTOSPAWN;
+
+      packetSCSpawn(eid, 15, 100, 15);
+      packetSCPlayerPositionAndLook(eid, 15.0, 100.0, 15.0, 101.6, 0.0, 0.0, false);
     }
     else
     {
@@ -227,36 +236,18 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
       for (auto i = ac.begin(); i != ac.end(); ++i)
       {
-        std::cout << "Need chunk [" << std::dec << cX(*i) << ", " << cZ(*i) << "]." << std::endl;
+        std::cout << "Need chunk " << *i << "." << std::endl;
         const Chunk & c = m_map.getChunkOrGnerateNew(*i);
 
         packetSCPreChunk(eid, *i, true);
         packetSCMapChunk(eid, *i, c.compress());
       }
+
+      m_states[eid].state = GameState::READYTOSPAWN;
+
+      packetSCSpawn(eid, 8, 100, 8);
+      packetSCPlayerPositionAndLook(eid, 8.0, 100.0, 8.0, 101.6, 0.0, 0.0, false);
     }
-
-    m_states[eid].state = GameState::READYTOSPAWN;
-
-    {
-      PacketCrafter p(PACKET_SPAWN_POSITION);
-      p.addInt32(8);    // X
-      p.addInt32(100);  // Y
-      p.addInt32(8);    // Z
-      m_connection_manager.sendDataToClient(eid, p.craft());
-    }
-
-    {
-      PacketCrafter p(PACKET_PLAYER_POSITION_AND_LOOK);
-      p.addDouble(8.0);    // X
-      p.addDouble(100.0);  // Y
-      p.addDouble(101.6);  // stance
-      p.addDouble(8.0);    // Z
-      p.addFloat(0.0);     // yaw
-      p.addFloat(0.0);     // pitch
-      p.addBool(false);     // on ground
-      m_connection_manager.sendDataToClient(eid, p.craft());
-    }
-
   }
 }
 
@@ -323,5 +314,27 @@ void GameStateManager::packetSCMapChunk(int32_t eid, int32_t X, int32_t Y, int32
   p.addInt8(sizeZ);
   p.addInt32(data.length());
   p.addByteArray(data.data(), data.length());
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t Z)
+{
+  PacketCrafter p(PACKET_SPAWN_POSITION);
+  p.addInt32(X);    // X
+  p.addInt32(Y);  // Y
+  p.addInt32(Z);    // Z
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground)
+{
+  PacketCrafter p(PACKET_PLAYER_POSITION_AND_LOOK);
+  p.addDouble(X);       // X
+  p.addDouble(Y);       // Y
+  p.addDouble(stance);  // stance
+  p.addDouble(Z);       // Z
+  p.addFloat(yaw);      // yaw
+  p.addFloat(pitch);    // pitch
+  p.addBool(on_ground); // on ground
   m_connection_manager.sendDataToClient(eid, p.craft());
 }

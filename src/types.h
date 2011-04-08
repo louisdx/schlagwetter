@@ -4,6 +4,8 @@
 #include <tuple>
 #include <unordered_map>
 #include <cstdint>
+#include <iomanip>
+#include <iostream>
 
 /**
 
@@ -48,6 +50,10 @@ inline int32_t cX(const ChunkCoords & cc) { return cc.first; }
 inline int32_t & cX(ChunkCoords & cc) { return cc.first; }
 inline int32_t cZ(const ChunkCoords & cc) { return cc.second; }
 inline int32_t & cZ(ChunkCoords & cc) { return cc.second; }
+
+inline std::ostream & operator<<(std::ostream & o, const WorldCoords & wc) { return o << std::dec << "w[" << wX(wc) << ", " << wY(wc) << ", " << wZ(wc) << "]"; }
+inline std::ostream & operator<<(std::ostream & o, const LocalCoords & lc) { return o << std::dec << "l[" << lX(lc) << ", " << lY(lc) << ", " << lZ(lc) << "]"; }
+inline std::ostream & operator<<(std::ostream & o, const ChunkCoords & cc) { return o << std::dec << "c[" << cX(cc) << ", " << cZ(cc) << "]"; }
 
 
 /* Good old C standard, never fixed the behaviour of signed division... */

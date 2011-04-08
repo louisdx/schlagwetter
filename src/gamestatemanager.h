@@ -55,6 +55,8 @@ public:
   void packetSCPreChunk(int32_t eid, const ChunkCoords & cc, bool mode);
   void packetSCMapChunk(int32_t eid, int32_t X, int32_t Y, int32_t Z, const std::string & data, size_t sizeX = 15, size_t sizeY = 127, size_t sizeZ = 15);
   inline void packetSCMapChunk(int32_t eid, const ChunkCoords & cc, const std::string & data) { packetSCMapChunk(eid, 16 * cX(cc), 0, 16 * cZ(cc), data); }
+  void packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t Z);
+  void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
 
 private:
   ConnectionManager & m_connection_manager;
