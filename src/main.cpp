@@ -7,6 +7,7 @@
 #include "server.h"
 #include "cmdlineoptions.h"
 #include "ui.h"
+#include "filereader.h"
 
 po::variables_map PROGRAM_OPTIONS;
 

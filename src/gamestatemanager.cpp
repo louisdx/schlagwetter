@@ -6,6 +6,7 @@
 #include "gamestatemanager.h"
 #include "packetcrafter.h"
 #include "map.h"
+#include "filereader.h"
 
 GameStateManager::GameStateManager(ConnectionManager & connection_manager, Map & map)
   : m_connection_manager(connection_manager), m_map(map), m_states()
@@ -193,16 +194,45 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
     m_states[eid].state = GameState::POSTLOGIN;
     
-    std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), 4);    // 9x9 around the current chunk
-    std::sort(ac.begin(), ac.end(), L1DistanceFrom(ChunkCoords(0, 0))); // L1-sorted by distance from centre.
 
-    for (auto i = ac.begin(); i != ac.end(); ++i)
+
+    if (!PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
     {
-      std::cout << "Need chunk [" << std::dec << cX(*i) << ", " << cZ(*i) << "]." << std::endl;
-      const Chunk & c = m_map.getChunkOrGnerateNew(*i);
+      RegionFile f(PROGRAM_OPTIONS["testfile"].as<std::string>());
+      f.parse();
 
-      packetSCPreChunk(eid, *i, true);
-      packetSCMapChunk(eid, *i, c.compress());
+      size_t counter = 0;
+      for (size_t x = 0; x < 32; ++x)
+      {
+        for (size_t z = 0; z < 32; ++z)
+        {
+          if (f.chunkSize(x, z) == 0) continue;
+
+          std::string chuck = f.getCompressedChunk(x, z);
+          if (chuck == "") continue;
+          packetSCPreChunk(eid, ChunkCoords(x, z), true);
+          packetSCMapChunk(eid, 16*x, 0, 16*z, chuck);
+
+          ++counter;
+          if (counter > 50) break;
+        }
+        if (counter > 50) break;
+      }
+
+    }
+    else
+    {
+      std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), 4);    // 9x9 around the current chunk
+      std::sort(ac.begin(), ac.end(), L1DistanceFrom(ChunkCoords(0, 0))); // L1-sorted by distance from centre.
+
+      for (auto i = ac.begin(); i != ac.end(); ++i)
+      {
+        std::cout << "Need chunk [" << std::dec << cX(*i) << ", " << cZ(*i) << "]." << std::endl;
+        const Chunk & c = m_map.getChunkOrGnerateNew(*i);
+
+        packetSCPreChunk(eid, *i, true);
+        packetSCMapChunk(eid, *i, c.compress());
+      }
     }
 
     m_states[eid].state = GameState::READYTOSPAWN;

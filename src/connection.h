@@ -64,6 +64,10 @@ private:
   enum { read_buf_size = 8192 };
   char m_data[read_buf_size];
 
+  /// Local queue for incoming data.
+  std::deque<char> m_local_queue;
+  std::recursive_mutex m_local_queue_mutex;
+
   /// The client's Entity ID and nickname.
   const int32_t m_EID;
   std::string m_nick;
@@ -96,19 +100,21 @@ public:
   /// Stop all connections.
   void stopAll();
 
-  /// Accessors
+  /// Accessors.
   inline       std::set<ConnectionPtr> & connections()       { return m_connections; }
   inline const std::set<ConnectionPtr> & connections() const { return m_connections; }
   inline const ClientData & clientData()               const { return m_client_data; }
   inline       ClientData & clientData()                     { return m_client_data; }
 
-  /// Incoming data
-  void storeReceivedData(int32_t eid, char * first, char * last);
+  /// Incoming data. May or may not do anything, depending on whether it can lock access to m_client_data.
+  /// (Since the only other threads that access m_client_data in Server::runInputProcessing() sleep most
+  /// of the time, this should not happen very often.)
+  void storeReceivedData(int32_t eid, std::deque<char> & local_queue);
 
-  /// Outgoing data
+  /// Outgoing data.
   void sendDataToClient(int32_t eid, const std::string & data) const;
 
-  /// Look up a connection pointer by EID
+  /// Look up a connection pointer by EID.
   struct EIDFinder { EIDFinder (int32_t eid) : e(eid) {} int32_t e; inline bool operator()(const ConnectionPtr & c) { return e == c->EID(); } };
   inline std::set<ConnectionPtr>::const_iterator findConnectionByEID(int32_t eid) const { return std::find_if(m_connections.begin(), m_connections.end(), EIDFinder(eid)); }
   inline Connection * findConnectionByEIDwp(int32_t eid) const { auto it = findConnectionByEID(eid); return it == m_connections.end() ? NULL : it->get(); }

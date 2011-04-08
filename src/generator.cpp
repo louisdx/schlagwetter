@@ -27,23 +27,21 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
   const uint8_t sea_level = 64;
 
   // Winterland or Summerland
-  Block topBlock = winter_enabled ? BLOCK_SNOW : BLOCK_GRASS;
+  const Block topBlock = winter_enabled ? BLOCK_SNOW : BLOCK_GRASS;
 
   // Populate blocks in chunk
-  uint32_t currentHeight;
-  uint8_t ymax;
-
-  std::array<uint8_t, 16 * 16> heightmap;
+ 
+  //std::array<uint8_t, 16 * 16> heightmap;
 
   for (size_t bX = 0; bX < 16; ++bX)
   {
     for (size_t bZ = 0; bZ < 16; ++bZ)
     {
-      heightmap[(bZ << 4) + bX] = ymax = currentHeight = (uint8_t)((NG.ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);
+      //heightmap[(bZ << 4) + bX] = currentHeight = (uint8_t)((NG.ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);
+      uint8_t currentHeight = (uint8_t)((NG.ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);
 
-      uint8_t stoneHeight = (currentHeight * 94) / 100;
-
-      if (ymax < sea_level) ymax = sea_level;
+      const uint8_t stoneHeight = (currentHeight * 94) / 100;
+      const uint8_t ymax = std::max(currentHeight, sea_level);
 
       for (size_t bY = 0; bY <= ymax; bY++)
       {

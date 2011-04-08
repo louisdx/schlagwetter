@@ -41,10 +41,17 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
       std::cout << std::endl;
     }
 
+    // We store the data in a local queue, which is very fast. Here we must wait for the lock.
     {
-      m_connection_manager.storeReceivedData(EID(), m_data, m_data + bytes_transferred);
-      m_socket.async_read_some(boost::asio::buffer(m_data, read_buf_size), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+      std::unique_lock<std::recursive_mutex> lock(m_local_queue_mutex);
+      m_local_queue.insert(m_local_queue.end(), m_data, m_data + bytes_transferred);
     }
+
+    // Later, storeReceivedData() may or may not be able to process our queue, but we don't care.
+    m_connection_manager.storeReceivedData(EID(), m_local_queue);
+
+    // Set up the next read operation.
+    m_socket.async_read_some(boost::asio::buffer(m_data, read_buf_size), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
   }
   else if (e != boost::asio::error::operation_aborted)
   {
@@ -104,40 +111,61 @@ void ConnectionManager::stopAll()
   m_connections.clear();
 }
 
-void ConnectionManager::storeReceivedData(int32_t eid, char * first, char * last)
+void ConnectionManager::storeReceivedData(int32_t eid, std::deque<char> & local_queue)
 {
-  ClientData::iterator clit;
-  bool connection_exists = false;
+  // We have to lock access to m_client_data while using the iterator.
+  // An upgradable r/w lock would be apt here, but STL doesn't have one.
+  std::unique_lock<std::recursive_mutex> lock(m_cd_mutex);
 
+  ClientData::iterator clit = m_client_data.find(eid);
+
+  /* Two possibilities:
+   * Either we already have a queue object for this EID,
+   * or we must construct one.
+   */
+
+  // Case 1: The queue already exists.
+  if (clit != m_client_data.end())
   {
-    std::unique_lock<std::recursive_mutex> lock(m_cd_mutex);
-    clit = m_client_data.find(eid);
+    // If we can get the lock, we just store the data and are done. If not, no big deal.
 
-    if (clit != m_client_data.end())
+    if (clit->second.second->try_lock())
     {
-      std::lock_guard<std::recursive_mutex> lock(*clit->second.second);
-      clit->second.first.insert(clit->second.first.end(), first, last);
-      connection_exists = true;
+      try
+      {
+        clit->second.first.insert(clit->second.first.end(), local_queue.begin(), local_queue.end());
+        local_queue.clear();
+      }
+      catch (...)
+      {
+        // OK, this should never happen, but we have to worry about exceptions while holding the lock.
+        std::cerr << "Error while writing to m_client_data[" << std::dec << eid << "]." << std::endl;
+      }
+      clit->second.second->unlock();
     }
   }
 
-  if (!connection_exists)
+  // Case 2: Queue doesn't exist, we create it. No need to lock m_client_data in this case.
+  else
   {
     std::pair<ClientData::iterator, bool> ret;
 
-    {
-      std::unique_lock<std::recursive_mutex> lock(m_cd_mutex);
-      ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<char>(), std::shared_ptr<std::recursive_mutex>(new std::recursive_mutex))));
+    ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<char>(), std::shared_ptr<std::recursive_mutex>(new std::recursive_mutex))));
 
-      if (!ret.second)
+    if (!ret.second)
+    {
+      std::cerr << "Panic: Could not create comm queue!" << std::endl;
+      return;
+    }
+    else
+    {
+      clit = ret.first;
+      if (clit->second.second->try_lock())
       {
-        std::cerr << "Panic: Could not create comm queue!" << std::endl;
-      }
-      else
-      {
-        clit = ret.first;
-        std::lock_guard<std::recursive_mutex> lock(*clit->second.second);
-        clit->second.first.insert(clit->second.first.end(), first, last);
+        clit->second.first.insert(clit->second.first.end(), local_queue.begin(), local_queue.end());
+        local_queue.clear();
+
+        clit->second.second->unlock();
       }
     }
   }

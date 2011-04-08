@@ -9,6 +9,7 @@ bool parseOptions(int argc, char * argv[], po::variables_map & options)
     ("verbose,v", "Print lots of run-time information")
     ("bindaddr,a", po::value<std::string>()->default_value("0.0.0.0"), "Set IP address to bind to (default: all interfaces)")
     ("port,p", po::value<unsigned short int>()->default_value(25565), "Set port to listen on (default: 25565)")
+    ("testfile,f", po::value<std::string>()->default_value(""), "Test a region file")
     ;
 
   try
