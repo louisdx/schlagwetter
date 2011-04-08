@@ -9,7 +9,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 IF (CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-W -Wall -W -pedantic -std=c++0x")
+  set(CMAKE_CXX_FLAGS "-W -Wall -W -pedantic -std=c++0x -Lbin")
   set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g")
   set(CMAKE_CXX_FLAGS_PROFILE "-DDEBUG -g -pg")
   set(CMAKE_CXX_FLAGS_RELEASE "-march=native -O2 -s -DNDEBUG")
@@ -50,7 +50,7 @@ find_package(Readline REQUIRED)
 include_directories(${READLINE_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${READLINE_LIBRARY})
 
-SET(CNBT_LIBRARY "../cNBT")
+SET(CNBT_LIBRARY "cNBT")
 include_directories(${CNBT_LIBRARY})
 
 add_subdirectory(src)
