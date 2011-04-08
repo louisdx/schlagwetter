@@ -50,5 +50,7 @@ find_package(Readline REQUIRED)
 include_directories(${READLINE_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${READLINE_LIBRARY})
 
+SET(CNBT_LIBRARY "/tmp/cNBT")
+include_directories(${CNBT_LIBRARY})
 
 add_subdirectory(src)

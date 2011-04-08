@@ -18,6 +18,6 @@ add_executable(minerd ${SOURCES})
 
 add_executable(tester_filereader tester_filereader.cpp filereader.cpp)
 
-target_link_libraries(minerd ${LIBS})
+target_link_libraries(minerd ${LIBS} "${CNBT_LIBRARY}/libnbt.a")
 
-target_link_libraries(tester_filereader ${ZLIB_LIBRARIES})
+target_link_libraries(tester_filereader ${ZLIB_LIBRARIES} "${CNBT_LIBRARY}/libnbt.a")

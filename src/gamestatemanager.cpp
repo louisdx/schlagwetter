@@ -10,6 +10,7 @@
 
 #include <zlib.h>
 
+
 GameStateManager::GameStateManager(ConnectionManager & connection_manager, Map & map)
   : m_connection_manager(connection_manager), m_map(map), m_states()
 {
@@ -211,9 +212,9 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
           std::string chuck = f.getCompressedChunk(x, z);
           if (chuck == "") continue;
 
-          // Compressed chunk is in NBT format. Must process.
+          // Compressed chunk is in NBT format. Must process. Use mmap()!
 
-          std::string raw_chunk = NBTExtract(chuck);
+          std::string raw_chunk = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length());
 
           packetSCPreChunk(eid, ChunkCoords(x, z), true);
           packetSCMapChunk(eid, 16*x, 0, 16*z, raw_chunk);

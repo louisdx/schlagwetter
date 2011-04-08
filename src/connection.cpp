@@ -154,7 +154,7 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<char> & local_
   {
     std::pair<ClientData::iterator, bool> ret;
 
-    ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<char>(), std::shared_ptr<std::recursive_mutex>(new std::recursive_mutex))));
+    ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<char>(), std::make_shared<std::recursive_mutex>())));
 
     if (!ret.second)
     {
