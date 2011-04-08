@@ -8,25 +8,24 @@
 #include "cmdlineoptions.h"
 #include "ui.h"
 
+po::variables_map PROGRAM_OPTIONS;
+
 int main(int argc, char* argv[])
 {
-  po::variables_map options;
-  if (!parseOptions(argc, argv, options)) return 0;
+  if (!parseOptions(argc, argv, PROGRAM_OPTIONS)) return 0;
 
-  const bool verbose = options.count("verbose");
-
-  if (verbose)
+  if (PROGRAM_OPTIONS.count("verbose"))
   {
     std::cout << "Server options:" << std::endl
-              << "   Bind address: " << options["bindaddr"].as<std::string>() << std::endl
-              << "   Port:         " << options["port"].as<unsigned short int>() << std::endl
+              << "   Bind address: " << PROGRAM_OPTIONS["bindaddr"].as<std::string>() << std::endl
+              << "   Port:         " << PROGRAM_OPTIONS["port"].as<unsigned short int>() << std::endl
               << std::endl;
   }
 
   try
   {
     // Run server in background thread.
-    Server server(options["bindaddr"].as<std::string>(), options["port"].as<unsigned short int>());
+    Server server(PROGRAM_OPTIONS["bindaddr"].as<std::string>(), PROGRAM_OPTIONS["port"].as<unsigned short int>());
     std::thread thread_io(std::bind(&Server::runIO, &server));
     std::thread thread_input(std::bind(&Server::runInputProcessing, &server));
     std::thread thread_timer(std::bind(&Server::runTimerProcessing, &server));

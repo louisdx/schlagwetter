@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <functional>
 
+#include "cmdlineoptions.h"
 #include "connection.h"
 
 int32_t Connection::EID_POOL = 0;
@@ -33,9 +34,12 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
 {
   if (!e)
   {
-    std::cout << "Received data from client #" << EID() << " (" << std::dec << bytes_transferred << " bytes):";
-    for (size_t i = 0; i < bytes_transferred; ++i) std::cout << " " << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(m_data[i]);
-    std::cout << std::endl;
+    if (PROGRAM_OPTIONS.count("verbose"))
+    {
+      std::cout << "Received data from client #" << EID() << " (" << std::dec << bytes_transferred << " bytes):";
+      for (size_t i = 0; i < bytes_transferred; ++i) std::cout << " " << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(m_data[i]);
+      std::cout << std::endl;
+    }
 
     {
       m_connection_manager.storeReceivedData(EID(), m_data, m_data + bytes_transferred);
@@ -102,26 +106,42 @@ void ConnectionManager::stopAll()
 
 void ConnectionManager::storeReceivedData(int32_t eid, char * first, char * last)
 {
-  ClientData::iterator clit = m_client_data.find(eid);
-  if (clit != m_client_data.end())
+  ClientData::iterator clit;
+  bool connection_exists = false;
+
   {
-    std::lock_guard<std::recursive_mutex> lock(*clit->second.second);
-    clit->second.first.insert(clit->second.first.end(), first, last);
-  }
-  else
-  {
-    auto ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<char>(), std::shared_ptr<std::recursive_mutex>(new std::recursive_mutex))));
-    if (!ret.second)
+    std::unique_lock<std::recursive_mutex> lock(m_cd_mutex);
+    clit = m_client_data.find(eid);
+
+    if (clit != m_client_data.end())
     {
-      std::cerr << "Panic: Could not create comm queue!" << std::endl;
-    }
-    else
-    {
-      clit = ret.first;
       std::lock_guard<std::recursive_mutex> lock(*clit->second.second);
       clit->second.first.insert(clit->second.first.end(), first, last);
+      connection_exists = true;
     }
   }
+
+  if (!connection_exists)
+  {
+    std::pair<ClientData::iterator, bool> ret;
+
+    {
+      std::unique_lock<std::recursive_mutex> lock(m_cd_mutex);
+      ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<char>(), std::shared_ptr<std::recursive_mutex>(new std::recursive_mutex))));
+
+      if (!ret.second)
+      {
+        std::cerr << "Panic: Could not create comm queue!" << std::endl;
+      }
+      else
+      {
+        clit = ret.first;
+        std::lock_guard<std::recursive_mutex> lock(*clit->second.second);
+        clit->second.first.insert(clit->second.first.end(), first, last);
+      }
+    }
+  }
+
   m_pending_eids.push_back(eid);
   m_input_ready = true;
   m_input_ready_cond.notify_one();
@@ -136,7 +156,7 @@ void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data) 
   }
   else
   {
-    std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes." << std::endl;
+    if (PROGRAM_OPTIONS.count("verbose")) std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes." << std::endl;
     /*
     std::cout << "Sending data to client #" << eid << ":";
     for (size_t i = 0; i < data.length(); ++i)

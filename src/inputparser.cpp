@@ -12,6 +12,7 @@
 #define READ_INT16(data, i)  (int)((unsigned int)(data[i+1]) | ((unsigned int)(data[i]) << 8))
 #define READ_INT32(data, i)  (int)((unsigned int)(data[i+3]) | (unsigned int)(data[i+2]) << 8 | (unsigned int)(data[i+1]) << 16 | ((unsigned int)(data[i]) << 24))
 #define READ_BOOL(data, i)   (data[i] != 0)
+#define READ_ANGLEFROMBYTE(data, i)   (double(data[i]) / 256. * 360.)
 
 static inline double READ_DOUBLE(const std::vector<char> & data, size_t i)
 {
@@ -182,8 +183,9 @@ void InputParser::immediateDispatch(int32_t eid, const std::vector<char> & data)
   {
     const int32_t e = READ_INT32(data, 1), X = READ_INT32(data, 10), Y = READ_INT32(data, 14), Z = READ_INT32(data, 18);
     const int16_t item = READ_INT16(data, 5), sdata = READ_INT16(data, 8);
-    const int8_t count = READ_INT8(data, 7), rotp = READ_INT8(data, 22), pitchp = READ_INT8(data, 23), rollp = READ_INT8(data, 24);
-    m_gsm.packetCSPickupSpawn(eid, e, X, Y, Z, rotp, pitchp, rollp, count, item, sdata);
+    const int8_t count = READ_INT8(data, 7) /* , rotp = READ_INT8(data, 22), pitchp = READ_INT8(data, 23), rollp = READ_INT8(data, 24) */;
+    const double rot = READ_ANGLEFROMBYTE(data, 22), pitch = READ_ANGLEFROMBYTE(data, 23), roll = READ_ANGLEFROMBYTE(data, 24);
+    m_gsm.packetCSPickupSpawn(eid, e, X, Y, Z, rot, pitch, roll, count, item, sdata);
     break;
   }
 

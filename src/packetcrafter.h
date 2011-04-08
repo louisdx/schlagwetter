@@ -86,6 +86,11 @@ public:
     m_buffer.insert(m_buffer.end(), rev.rbegin(), rev.rend());
   }
 
+  inline void addAngleAsBye(double angle)
+  {
+    m_buffer.push_back((char)(int)(angle / 360. * 256.));
+  }
+
 
 private:
   std::vector<unsigned char> m_buffer;

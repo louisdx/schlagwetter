@@ -56,9 +56,9 @@ void Server::runInputProcessing()
 
     while (!m_connection_manager.m_pending_eids.empty())
     {
-      std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
+      std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
 
-      auto it = m_connection_manager.clientData().find(m_connection_manager.m_pending_eids.front());
+      ConnectionManager::ClientData::iterator it = m_connection_manager.clientData().find(m_connection_manager.m_pending_eids.front());
 
       if (it !=  m_connection_manager.clientData().end())
       {
@@ -123,10 +123,21 @@ void Server::processSchedule1s()
   /* do stuff */
 
   /* Update game state. (At the moment this only cleans up dead connections.) */
-  std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
-  for (auto it = m_connection_manager.clientData().begin(); it != m_connection_manager.clientData().end(); ++it)
+
+  std::list<int32_t> todo;
+
   {
-    m_gsm.update(it->first);
+    std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
+    for (ConnectionManager::ClientData::const_iterator it = m_connection_manager.clientData().begin(); it != m_connection_manager.clientData().end(); ++it)
+    {
+      todo.push_back(it->first);
+    }
+  }
+
+  for (std::list<int32_t>::const_iterator it = todo.begin(); it != todo.end(); ++it)
+  {
+    m_gsm.packetSCKeepAlive(*it);
+    m_gsm.update(*it);
   }
 
   timer = clockTick();

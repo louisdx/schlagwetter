@@ -3,14 +3,16 @@
 
 
 #include <array>
-#include <list>
+#include <vector>
 #include <memory>
 #include <boost/noncopyable.hpp>
 #include "types.h"
 
-inline std::list<ChunkCoords> ambientChunks(const ChunkCoords & cc, size_t radius)
+inline std::vector<ChunkCoords> ambientChunks(const ChunkCoords & cc, size_t radius)
 {
-  std::list<ChunkCoords> res;
+  std::vector<ChunkCoords> res;
+  res.reserve(4 * radius * radius);
+
   const int32_t r(radius);
 
   for (int32_t i = cX(cc) - r; i <= cX(cc) + r; ++i)
@@ -36,7 +38,31 @@ public:
   Chunk() : m_data() { }
   Chunk(Chunk && other) : m_data(std::move(other.m_data)) { }
 
+  /// This is how the client expects the 3D data to be arranged.
+  /// (Layers of (y,z)-slices indexed by x, consisting of y-columns indexed by z.)
   inline size_t index(size_t x, size_t y, size_t z) const { return y + (z * 128) + (x * 128 * 16); }
+
+  /// Meta and light data is only 4 bytes, two consecutive fields share one byte.
+  inline unsigned char getHalf(size_t y, unsigned char data) const
+  {
+    return (y % 2 == 0) ? data & 0x0F : data >> 4;
+  }
+  inline void setHalf(size_t y, unsigned char value, unsigned char & data)
+  {
+    if (y % 2 == 0)
+    {
+      // Set the lower 4 bit
+      data |= 0xF0;
+      data |= (value & 0x0F);
+    }
+    else
+    {
+      // Set the upper 4 bit
+      data |= 0x0F;
+      data |= (value << 4);
+    }
+  }
+
   inline size_t size() const { return m_data.size(); }
 
   enum { offsetBlockType = 0, offsetBlockMetaData = 32768, offsetBlockLight = 49152, offsetSkyLight = 65536 };
@@ -44,18 +70,20 @@ public:
   inline       unsigned char & blockType    (size_t x, size_t y, size_t z)       { return m_data[offsetBlockType     + index(x, y, z)]; }
   inline const unsigned char & blockType    (size_t x, size_t y, size_t z) const { return m_data[offsetBlockType     + index(x, y, z)]; }
 
-  inline       unsigned char & blockMetaData(size_t x, size_t y, size_t z)       { return m_data[offsetBlockMetaData + index(x, y, z) / 2]; }
-  inline const unsigned char & blockMetaData(size_t x, size_t y, size_t z) const { return m_data[offsetBlockMetaData + index(x, y, z) / 2]; }
+  inline void setBlockMetaData(size_t x, size_t y, size_t z, unsigned char val) { setHalf(y, val, m_data[offsetBlockMetaData + index(x, y, z) / 2]); }
+  inline unsigned char getBlockMetaData(size_t x, size_t y, size_t z) const { return getHalf(y, m_data[offsetBlockMetaData + index(x, y, z) / 2]); }
 
-  inline       unsigned char & blockLight   (size_t x, size_t y, size_t z)       { return m_data[offsetBlockLight    + index(x, y, z) / 2]; }
-  inline const unsigned char & blockLight   (size_t x, size_t y, size_t z) const { return m_data[offsetBlockLight    + index(x, y, z) / 2]; }
+  inline void setBlockLight(size_t x, size_t y, size_t z, unsigned char val) { setHalf(y, val, m_data[offsetBlockLight + index(x, y, z) / 2]); }
+  inline unsigned char getBlockLight(size_t x, size_t y, size_t z) const { return getHalf(y, m_data[offsetBlockLight + index(x, y, z) / 2]); }
 
-  inline       unsigned char & skyLight     (size_t x, size_t y, size_t z)       { return m_data[offsetSkyLight      + index(x, y, z) / 2]; }
-  inline const unsigned char & skyLight     (size_t x, size_t y, size_t z) const { return m_data[offsetSkyLight      + index(x, y, z) / 2]; }
+  inline void setSkyLight(size_t x, size_t y, size_t z, unsigned char val) { setHalf(y, val, m_data[offsetSkyLight + index(x, y, z) / 2]); }
+  inline unsigned char getSkyLight(size_t x, size_t y, size_t z) const { return getHalf(y, m_data[offsetSkyLight + index(x, y, z) / 2]); }
 
+  /// The client expects chunks to be deflate()ed. ZLIB to the rescue.
   std::string compress() const;
 
 private:
+  /// Every chunk is exactly 80KiB in size.
   std::array<unsigned char, 81920> m_data;
 };
 
