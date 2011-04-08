@@ -202,33 +202,37 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       RegionFile f(PROGRAM_OPTIONS["testfile"].as<std::string>());
       f.parse();
 
-      size_t counter = 0;
+      std::vector<ChunkCoords> ac;
+
       for (size_t x = 0; x < 32; ++x)
       {
         for (size_t z = 0; z < 32; ++z)
         {
-          if (f.chunkSize(x, z) == 0) continue;
+          if (f.chunkSize(x, z) != 0) ac.push_back(ChunkCoords(x, z));
+        }
+      }
 
-          std::string chuck = f.getCompressedChunk(x, z);
+      std::sort(ac.begin(), ac.end(), L1DistanceFrom(ChunkCoords(0, 0))); // L1-sorted by distance from centre.
+      size_t counter = 0;
+
+      for (auto i = ac.begin(); i != ac.end(); ++i)
+      {
+        std::string chuck = f.getCompressedChunk(cX(*i), cZ(*i));
           if (chuck == "") continue;
-
-          // Compressed chunk is in NBT format. Must process. Use mmap()!
 
           std::string raw_chunk = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length());
 
-          packetSCPreChunk(eid, ChunkCoords(x, z), true);
-          packetSCMapChunk(eid, 16*x, 0, 16*z, raw_chunk);
+          packetSCPreChunk(eid, *i, true);
+          packetSCMapChunk(eid, *i, raw_chunk);
 
           ++counter;
           if (counter > 50) break;
-        }
-        if (counter > 50) break;
       }
 
       m_states[eid].state = GameState::READYTOSPAWN;
 
-      packetSCSpawn(eid, 15, 100, 15);
-      packetSCPlayerPositionAndLook(eid, 15.0, 100.0, 15.0, 101.6, 0.0, 0.0, false);
+      packetSCSpawn(eid, 8, 80, 8);
+      packetSCPlayerPositionAndLook(eid, 8.0, 80.0, 8.0, 81.6, 0.0, 0.0, false);
     }
     else
     {

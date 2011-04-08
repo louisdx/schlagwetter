@@ -1,0 +1,33 @@
+I haven't worked out any particular licensing yet.
+Basically, the source is free for re-use with attribution
+and maintainance of the same terms.
+
+Particular contribution credits are in order:
+
+- cNBT, an NBT library, from https://github.com/FliPPeh/cNBT.
+  This library is used directly and without modifications;
+  apparently it is under a "do whatever you want" beerware license.
+
+- ZLIB and libnoise are used directly as is, see their respective licenses.
+
+- The main inspiration, and hopefully large parts of the code,
+  (will) come from the mineserver project: https://github.com/fador/mineserver
+
+  I will try to mark up code that is used directly, though my design
+  is rather different and bits of that code may end up appearing in refactored
+  form in my code. Here is the current state of affairs:
+  
+  packets.h/.cpp: I have taken over the block definitions verbatim.
+
+  generator.h/.cpp: I have taken over the code for heightmap generation
+     and cave generation in large parts, though refactored. Probably a lot
+     more map generation code will be taken from this project (and maybe from
+     craftd).
+
+  Many thanks to everyone on the mineserver team!
+
+- The information about the Minecraft protocol has been taken with
+  all my gratitude from http://mc.kev009.com/Protocol.
+
+- Further information about the file formats is taken with gratitude
+  from http://www.minecraftwiki.net/wiki/Beta_Level_Format.
