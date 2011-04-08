@@ -42,6 +42,7 @@ public:
 
   /// Accessors.
   inline const ConnectionManager & cm() const { return m_connection_manager; }
+  inline       ConnectionManager & cm()       { return m_connection_manager; }
   inline boost::asio::io_service & ioService() { return m_io_service; }
 
   /// A millisecond clock tick.

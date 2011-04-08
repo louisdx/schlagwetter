@@ -21,9 +21,6 @@ public:
   Connection(boost::asio::io_service & io_service,  ConnectionManager & manager);
   ~Connection();
 
-  static int32_t GenerateEID() { return ++EID_POOL; }
-  static int32_t EID_POOL;
-
   /// Get the socket and peer associated with the connection.
   inline       boost::asio::ip::tcp::socket & socket()       { return m_socket; }
   inline const boost::asio::ip::tcp::socket & socket() const { return m_socket; }
@@ -89,6 +86,9 @@ class ConnectionManager : private boost::noncopyable
 
 public:
   ConnectionManager();
+
+  static int32_t GenerateEID() { return ++EID_POOL; }
+  static int32_t EID_POOL;
 
   /// Add the specified connection to the manager and start it.
   void start(ConnectionPtr c);

@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     //GNUReadlineUI ui("/tmp/.minerd_history");
     SimpleUI      ui;
 
-    while (pump(server, ui)) { }
+    while (pump(server.cm(), ui)) { }
 
     server.stop();
     thread_io.join();

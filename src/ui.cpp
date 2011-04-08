@@ -1,7 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include "ui.h"
-#include "server.h"
+#include "connection.h"
 #include "packetcrafter.h"
 
 std::string SimpleUI::readline(const std::string & prompt)
@@ -42,7 +42,7 @@ std::string GNUReadlineUI::readline(const std::string & prompt)
   return line;
 }
 
-bool pump(Server & server, UI & ui)
+bool pump(ConnectionManager & connection_manager, UI & ui)
 {
   std::string line = ui.readline(std::string("> "));
   std::transform(line.begin(), line.end(), line.begin(), ::tolower);
@@ -68,22 +68,22 @@ bool pump(Server & server, UI & ui)
   }
   else if (line == "list")
   {
-    for (std::set<ConnectionPtr>::const_iterator i = server.cm().connections().begin(); i != server.cm().connections().end(); ++i)
+    for (std::set<ConnectionPtr>::const_iterator i = connection_manager.connections().begin(); i != connection_manager.connections().end(); ++i)
     {
-      auto di = server.cm().clientData().find((*i)->EID());
+      auto di = connection_manager.clientData().find((*i)->EID());
       std::cout << "Connection #" << std::dec << (*i)->EID() << ": " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port()
                 << ", #refs = " << i->use_count();
-      if (di != server.cm().clientData().end()) std::cout << ", " << di->second.first.size() << " bytes of unprocessed data";
+      if (di != connection_manager.clientData().end()) std::cout << ", " << di->second.first.size() << " bytes of unprocessed data";
       std::cout << std::endl;
     }
   }
   else if (line == "dump")
   {
-    for (std::set<ConnectionPtr>::const_iterator i = server.cm().connections().begin(); i != server.cm().connections().end(); ++i)
+    for (std::set<ConnectionPtr>::const_iterator i = connection_manager.connections().begin(); i != connection_manager.connections().end(); ++i)
     {
       std::cout << "Connection: " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port() << ".";
-      auto di = server.cm().clientData().find((*i)->EID());
-      if (di == server.cm().clientData().end())
+      auto di = connection_manager.clientData().find((*i)->EID());
+      if (di == connection_manager.clientData().end())
       {
         std::cout << " ** no data **";
       }
@@ -112,7 +112,7 @@ bool pump(Server & server, UI & ui)
     else
     {
       std::cout << "Trying to ping client #" << eid << " with data \"" << t.substr(1) << "\"." << std::endl;
-      server.cm().sendDataToClient(eid, t.substr(1));
+      connection_manager.sendDataToClient(eid, t.substr(1));
     }
   }
   else if (line.compare(0, 4, "kick") == 0)
@@ -135,7 +135,7 @@ bool pump(Server & server, UI & ui)
 
       PacketCrafter p(PACKET_DISCONNECT);
       p.addJString(t.substr(1));
-      server.cm().sendDataToClient(eid, p.craft());
+      connection_manager.sendDataToClient(eid, p.craft());
     }
   }
   else

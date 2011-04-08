@@ -7,10 +7,14 @@
 #include "cmdlineoptions.h"
 #include "connection.h"
 
-int32_t Connection::EID_POOL = 0;
+int32_t ConnectionManager::EID_POOL = 0;
 
 Connection::Connection(boost::asio::io_service & io_service, ConnectionManager & manager)
-  : m_socket(io_service), m_connection_manager(manager), m_EID(GenerateEID()), m_nick()
+  :
+  m_socket(io_service),
+  m_connection_manager(manager),
+  m_EID(ConnectionManager::GenerateEID()),
+  m_nick()
 {
   std::cout << "Connection created." << std::endl;
 }

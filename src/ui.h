@@ -41,8 +41,8 @@ public:
 
 
 /* Pumping the UI lets the admin interact with the running server. */
-class Server;
-bool pump(Server & server, UI & ui);
+class ConnectionManager;
+bool pump(ConnectionManager & connection_manager, UI & ui);
 
 
 #endif

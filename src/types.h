@@ -49,8 +49,22 @@ inline int32_t & cX(ChunkCoords & cc) { return cc.first; }
 inline int32_t cZ(const ChunkCoords & cc) { return cc.second; }
 inline int32_t & cZ(ChunkCoords & cc) { return cc.second; }
 
+
+/* Good old C standard, never fixed the behaviour of signed division... */
+
 inline unsigned int MyMod(int a, unsigned int b) { int c = a % b; while (c < 0) c += b; return (unsigned int)(c); }
 inline unsigned int MyMod16(int a) { return MyMod(a, 16); }
+inline   signed int MyDiv(int num, int den)
+{
+  if ((num < 0 && den < 0) || (num >= 0 && den >= 0)) return num / den;
+
+  if (num < 0) return -((-num) / den + 1);
+
+  return MyDiv(-num, -den);
+}
+inline   signed int MyDiv16(int num) { return MyDiv(num, 16); }
+
+
 
 inline LocalCoords getLocalCoords(const WorldCoords & wc)
 {
@@ -58,7 +72,7 @@ inline LocalCoords getLocalCoords(const WorldCoords & wc)
 }
 inline ChunkCoords getChunkCoords(const WorldCoords & wc)
 {
-  return ChunkCoords(wX(wc) / 16, wZ(wc) / 16);
+  return ChunkCoords(MyDiv16(wX(wc)), MyDiv16(wZ(wc)));
 }
 inline WorldCoords getWorldCoords(const LocalCoords & lc, const ChunkCoords & cc)
 {
