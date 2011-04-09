@@ -2,6 +2,8 @@ project(schlagwetter)
 
 cmake_minimum_required(VERSION 2.6)
 
+message("Welcome, friend.")
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -46,9 +48,18 @@ find_package(Noise REQUIRED)
 include_directories(${NOISE_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${NOISE_LIBRARY})
 
-find_package(Readline REQUIRED)
+find_package(Readline)
+IF (XREADLINE_FOUND)
+message("Found GNU Readline library, very good.")
 include_directories(${READLINE_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${READLINE_LIBRARY})
+IF (CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_GNUREADLINE")
+ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+IF (MSVC_IDE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DHAVE_GNUREADLINE")
+ENDIF (MSVC_IDE)
+ENDIF (XREADLINE_FOUND)
 
 SET(CNBT_LIBRARY "cNBT")
 include_directories(${CNBT_LIBRARY})

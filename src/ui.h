@@ -1,9 +1,6 @@
 #ifndef H_UI
 #define H_UI
 
-#include <readline/readline.h>
-#include <readline/history.h>
-
 #include <iostream>
 
 /* Abstract UI interface. */
@@ -25,6 +22,11 @@ class SimpleUI : public UI
 };
 
 
+
+#ifdef HAVE_GNUREADLINE
+#  include <readline/readline.h>
+#  include <readline/history.h>
+
 /* GNU Readline power! */
 
 class GNUReadlineUI : public UI
@@ -38,6 +40,8 @@ public:
   ~GNUReadlineUI();
   std::string readline(const std::string & prompt);
 };
+
+#endif // HAVE_GNUREADLINE
 
 
 /* Pumping the UI lets the admin interact with the running server. */

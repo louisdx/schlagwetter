@@ -13,6 +13,7 @@ std::string SimpleUI::readline(const std::string & prompt)
   return line;
 }
 
+#ifdef HAVE_GNUREADLINE
 
 GNUReadlineUI::GNUReadlineUI(const std::string & histfile)
   :
@@ -42,6 +43,8 @@ std::string GNUReadlineUI::readline(const std::string & prompt)
   return line;
 }
 
+#endif
+
 bool pump(ConnectionManager & connection_manager, UI & ui)
 {
   std::string line = ui.readline(std::string("> "));
@@ -61,9 +64,12 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
               << "Welcome, friend. This is the LDX Minecraft Server." << std::endl
               << "Please help yourself to the following commands:" << std::endl
               << std::endl
-              << "  list:     Lists all connected users" << std::endl
-              << "  dump:     Dump each connection's data" << std::endl
-              << "  exit:     Shuts down the server" << std::endl
+              << "  list:                    Lists all connected users" << std::endl
+              << "  dump:                    Dump each connection's data" << std::endl
+              << "  raw <client> <data>:     Sends raw data to a client (prob. not very useful)" << std::endl
+              << "  kcik <client> <message>: Kicks a client with a given message" << std::endl
+              << "  dump:                    Dump each connection's data" << std::endl
+              << "  exit:                    Shuts down the server" << std::endl
               << std::endl;
   }
   else if (line == "list")
@@ -95,7 +101,7 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
       std::cout << std::endl;
     }
   }
-  else if (line.compare(0, 4, "ping") == 0)
+  else if (line.compare(0, 3, "raw") == 0)
   {
     std::istringstream s(line);
     std::string tmp;
@@ -107,11 +113,11 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
 
     if (eid == -1 || t.empty())
     {
-      std::cout << "Syntax: ping <client> <message>" << std::endl;
+      std::cout << "Syntax: raw <client> <message>" << std::endl;
     }
     else
     {
-      std::cout << "Trying to ping client #" << eid << " with data \"" << t.substr(1) << "\"." << std::endl;
+      std::cout << "Trying to send to client #" << eid << " the data \"" << t.substr(1) << "\"." << std::endl;
       connection_manager.sendDataToClient(eid, t.substr(1));
     }
   }

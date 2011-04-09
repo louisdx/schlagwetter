@@ -31,8 +31,12 @@ int main(int argc, char* argv[])
     std::thread thread_input(std::bind(&Server::runInputProcessing, &server));
     std::thread thread_timer(std::bind(&Server::runTimerProcessing, &server));
 
-    //GNUReadlineUI ui("/tmp/.minerd_history");
+#ifdef HAVE_GNUREADLINE
+    // We must fix the path somehow.
+    GNUReadlineUI ui("/tmp/.minerd_history");
+#else
     SimpleUI      ui;
+#endif
 
     while (pump(server.cm(), ui)) { }
 
