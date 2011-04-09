@@ -3,6 +3,15 @@ Schlagwetter, a Minecraft server
 Inspired and hopefully collaborating with Fador's "mineserver: https://github.com/fador/mineserver
 
 
+When fetching this repository, make sure to get the cNBT submodule, too. Try this:
+
+  mkdir /tmp/workspace
+  cd /tmp/workspace
+  git clone git://github.com/louisdx/schlagwetter.git
+  cd schlagwetter
+  git submodule update --init cNBT/
+
+
 Design goals:
 
   *  Portability. Idiomatic C++0x and boost::ASIO, boost::program_options. (Other libraries: cNBT, ZLib, Noise, GNU Readline [optional]).
