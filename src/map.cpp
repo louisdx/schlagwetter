@@ -65,7 +65,7 @@ const Chunk & Map::getChunkOrGenerateNew(const ChunkCoords & cc)
   {
     ins = m_chunkMap.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>(cc))).first;
     generateWithNoise(*ins->second, cc);
-    (*ins->second).updateLightAndHeightMaps(*this);
+    //(*ins->second).updateLightAndHeightMaps(*this); // Off for now so you can marvel at the Cave :-)
   }
 
   return *ins->second;
