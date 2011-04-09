@@ -29,7 +29,7 @@
 
 // ATTENTION: Packet size EXCLUDES the initial type byte!
 
-template struct std::hash<EPacketNames>;
+std::hash<int> std::hash<EPacketNames>::hasher;
 
 std::unordered_map<EPacketNames, PacketInfo> PACKET_INFO = {
   { PACKET_KEEP_ALIVE,               PacketInfo(0,                   "keep-alive") },
