@@ -57,7 +57,7 @@ public:
   inline void packetSCMapChunk(int32_t eid, const ChunkCoords & cc, const std::string & data) { packetSCMapChunk(eid, 16 * cX(cc), 0, 16 * cZ(cc), data); }
   void packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t Z);
   void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
-
+  void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
 private:
   ConnectionManager & m_connection_manager;
   Map & m_map;

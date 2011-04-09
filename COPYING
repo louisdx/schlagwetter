@@ -18,6 +18,7 @@ Particular contribution credits are in order:
   form in my code. Here is the current state of affairs:
   
   packets.h/.cpp: I have taken over the block definitions verbatim.
+  constants.h:    Taken verbatim.
 
   generator.h/.cpp: I have taken over the code for heightmap generation
      and cave generation in large parts, though refactored. Probably a lot

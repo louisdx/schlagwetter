@@ -7,6 +7,7 @@
 #include "packetcrafter.h"
 #include "map.h"
 #include "filereader.h"
+#include "constants.h"
 
 #include <zlib.h>
 
@@ -104,6 +105,17 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerDigging from #" << std::dec << eid << ": [" << X << ", " << (unsigned int)(Y)
             << ", " << Z << ", " << (unsigned int)(status) << ", " << (unsigned int)(face) << "]" << std::endl;
+
+  if (status == 2)
+  {
+    PacketCrafter p(PACKET_BLOCK_CHANGE);
+    p.addInt32(X);      // X
+    p.addInt8(Y);       // Y
+    p.addInt32(Z);      // Z
+    p.addInt8(m_map.chunk(getChunkCoords(WorldCoords(X, Y, Z))).blockType(X, Y, Z) = BLOCK_AIR);
+    p.addInt8(0);
+    m_connection_manager.sendDataToClient(eid, p.craft());
+  }
 }
 
 void GameStateManager::packetCSHoldingChange(int32_t eid, int16_t slot)
@@ -236,8 +248,9 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     }
     else
     {
-      std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), 4);    // 9x9 around the current chunk
-      std::sort(ac.begin(), ac.end(), L1DistanceFrom(ChunkCoords(0, 0))); // L1-sorted by distance from centre.
+      const ChunkCoords start_chunk(0, 0);
+      std::vector<ChunkCoords> ac = ambientChunks(start_chunk, 5);    // 21x21 around the current chunk
+      std::sort(ac.begin(), ac.end(), L1DistanceFrom(start_chunk)); // L1-sorted by distance from centre.
 
       for (auto i = ac.begin(); i != ac.end(); ++i)
       {
@@ -250,8 +263,14 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
       m_states[eid].state = GameState::READYTOSPAWN;
 
-      packetSCSpawn(eid, 8, 100, 8);
-      packetSCPlayerPositionAndLook(eid, 8.0, 100.0, 8.0, 101.6, 0.0, 0.0, false);
+      packetSCSpawn(eid, cX(start_chunk) + 8, 100, cZ(start_chunk) + 8);
+      packetSCPlayerPositionAndLook(eid, cX(start_chunk) + 8, 100.0, cZ(start_chunk) + 8, 101.6, 0.0, 0.0, true);
+
+      packetSCSetSlot(eid, 0, 27, ITEM_DIAMOND_PICKAXE, 1, 0);
+      packetSCSetSlot(eid, 0, 28, BLOCK_TORCH, 50, 0);
+      packetSCSetSlot(eid, 0, 29, ITEM_COAL, 50, 0);
+      packetSCSetSlot(eid, 0, 30, BLOCK_WOOD, 50, 0);
+      packetSCSetSlot(eid, 0, 31, ITEM_DIAMOND_SPADE, 1, 0);
     }
   }
 }
@@ -326,7 +345,7 @@ void GameStateManager::packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t 
 {
   PacketCrafter p(PACKET_SPAWN_POSITION);
   p.addInt32(X);    // X
-  p.addInt32(Y);  // Y
+  p.addInt32(Y);    // Y
   p.addInt32(Z);    // Z
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
@@ -341,5 +360,16 @@ void GameStateManager::packetSCPlayerPositionAndLook(int32_t eid, double X, doub
   p.addFloat(yaw);      // yaw
   p.addFloat(pitch);    // pitch
   p.addBool(on_ground); // on ground
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count, int16_t uses)
+{
+  PacketCrafter p(PACKET_SET_SLOT);
+  p.addInt8(window);  // window #, 0 = inventory
+  p.addInt16(slot);   // slot #
+  p.addInt16(item);   // item id
+  p.addInt8(count);   // item count
+  p.addInt16(uses);   // uses
   m_connection_manager.sendDataToClient(eid, p.craft());
 }

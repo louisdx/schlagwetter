@@ -192,45 +192,4 @@ struct packet_player_position_and_look
   uint8_t    onground;
 };
 
-
-
-
-/*
-class PacketHandler
-{
-public:
-  void init();
-
-  // Information of all the packets
-  // around 2kB of memory
-  Packets packets[256];
-
-  // The packet functions
-  int keep_alive(User* user);
-  int login_request(User* user);
-  int handshake(User* user);
-  int chat_message(User* user);
-  int player(User* user);
-  int player_position(User* user);
-  int player_look(User* user);
-  int player_position_and_look(User* user);
-  int player_digging(User* user);
-  int player_block_placement(User* user);
-  int holding_change(User* user);
-  int arm_animation(User* user);
-  int pickup_spawn(User* user);
-  int disconnect(User* user);
-  int use_entity(User* user);
-  int respawn(User* user);
-  int change_sign(User* user);
-  int inventory_transaction(User* user);
-
-  int inventory_change(User* user);
-  int inventory_close(User* user);
-  int destroy_entity(User* user);
-
-  int entity_crouch(User* user);
-};
-*/
-
 #endif

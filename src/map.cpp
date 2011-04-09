@@ -34,32 +34,13 @@ Map::Map()
 
 const Chunk & Map::getChunkOrGnerateNew(const ChunkCoords & cc)
 {
-  auto ins = m_chunkMap.find(cc);
+  ChunkMap::iterator ins = m_chunkMap.find(cc);
 
   if (ins == m_chunkMap.end())
   {
-    ins = m_chunkMap.insert(ChunkMap::value_type(cc, ChunkMap::mapped_type(new Chunk()))).first;
+    ins = m_chunkMap.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>())).first;
     generateWithNoise(*ins->second, cc);
   }
 
   return *ins->second;
-}
-
-
-std::string makeRandomChunkPacket(int32_t X, int32_t Z)
-{
-  Chunk chuck;
-  generateWithNoise(chuck, ChunkCoords(X, Z));
-  const std::string zhuck = chuck.compress();
-
-  PacketCrafter p(PACKET_MAP_CHUNK);
-  p.addInt32(X);    // X
-  p.addInt16(0);    // Y
-  p.addInt32(Z);    // Z
-  p.addInt8(15);
-  p.addInt8(127);
-  p.addInt8(15);
-  p.addInt32(zhuck.length());
-  p.addByteArray(zhuck.data(), zhuck.length());
-  return p.craft();
 }

@@ -33,9 +33,9 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
  
   //std::array<uint8_t, 16 * 16> heightmap;
 
-  for (size_t bX = 0; bX < 16; ++bX)
+  for (int bX = 0; bX < 16; ++bX)
   {
-    for (size_t bZ = 0; bZ < 16; ++bZ)
+    for (int bZ = 0; bZ < 16; ++bZ)
     {
       //heightmap[(bZ << 4) + bX] = currentHeight = (uint8_t)((NG.ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);
       uint8_t currentHeight = (uint8_t)((NG.ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);

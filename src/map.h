@@ -97,8 +97,8 @@ public:
 
   inline bool haveChunk(const ChunkCoords & cc) { return m_chunkMap.count(cc) > 0; }
 
-  inline       Chunk & getChunk(const ChunkCoords & cc)       { return *(m_chunkMap.find(cc)->second); }
-  inline const Chunk & getChunk(const ChunkCoords & cc) const { return *(m_chunkMap.find(cc)->second); }
+  inline       Chunk & chunk(const ChunkCoords & cc)       { return *(m_chunkMap.find(cc)->second); }
+  inline const Chunk & chunk(const ChunkCoords & cc) const { return *(m_chunkMap.find(cc)->second); }
 
   /* If no chunk exists at cc, create a random one. Always returns the chunk at cc. */
   const Chunk & getChunkOrGnerateNew(const ChunkCoords & cc);
@@ -106,9 +106,5 @@ public:
 private:
   ChunkMap m_chunkMap;
 };
-
-
-std::string makeRandomChunkPacket(int32_t X, int32_t Z);
-
 
 #endif
