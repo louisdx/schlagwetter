@@ -7,6 +7,26 @@
 #include <iomanip>
 #include <iostream>
 
+
+
+/* Good old C standard, never fixed the behaviour of signed division... */
+
+inline unsigned int MyMod(int a, unsigned int b) { int c = a % b; while (c < 0) c += b; return (unsigned int)(c); }
+inline unsigned int MyMod16(int a) { return MyMod(a, 16); }
+inline unsigned int MyMod32(int a) { return MyMod(a, 32); }
+inline   signed int MyDiv(int num, int den)
+{
+  if ((num < 0 && den < 0) || (num >= 0 && den >= 0)) return num / den;
+
+  if (num < 0) return -((-num) / den + 1);
+
+  return MyDiv(-num, -den);
+}
+inline   signed int MyDiv16(int num) { return MyDiv(num, 16); }
+inline   signed int MyDiv32(int num) { return MyDiv(num, 32); }
+
+
+
 /**
 
    World coordinates are (int32_t wX, int8_t wY, int32_t wZ),
@@ -31,6 +51,7 @@
 typedef std::tuple<int32_t, int32_t, int32_t> WorldCoords;
 typedef std::tuple<size_t, size_t, size_t>    LocalCoords;
 typedef std::pair<int32_t, int32_t>           ChunkCoords; // Coordinates _of_ the chunk, not "within" the chunk.
+typedef std::tuple<int64_t, int64_t, int64_t> FractionalCoords; // 32 units per block, fixed-point with 5 fractional bits.
 
 inline int32_t wX(const WorldCoords & wc) { return std::get<0>(wc); }
 inline int32_t & wX(WorldCoords & wc) { return std::get<0>(wc); }
@@ -51,26 +72,34 @@ inline int32_t & cX(ChunkCoords & cc) { return cc.first; }
 inline int32_t cZ(const ChunkCoords & cc) { return cc.second; }
 inline int32_t & cZ(ChunkCoords & cc) { return cc.second; }
 
-inline std::ostream & operator<<(std::ostream & o, const WorldCoords & wc) { return o << std::dec << "w[" << wX(wc) << ", " << wY(wc) << ", " << wZ(wc) << "]"; }
-inline std::ostream & operator<<(std::ostream & o, const LocalCoords & lc) { return o << std::dec << "l[" << lX(lc) << ", " << lY(lc) << ", " << lZ(lc) << "]"; }
-inline std::ostream & operator<<(std::ostream & o, const ChunkCoords & cc) { return o << std::dec << "c[" << cX(cc) << ", " << cZ(cc) << "]"; }
+inline int64_t fX(const FractionalCoords & fc) { return std::get<0>(fc); }
+inline int64_t & fX(FractionalCoords & fc) { return std::get<0>(fc); }
+inline int64_t fY(const FractionalCoords & fc) { return std::get<1>(fc); }
+inline int64_t & fY(FractionalCoords & fc) { return std::get<1>(fc); }
+inline int64_t fZ(const FractionalCoords & fc) { return std::get<2>(fc); }
+inline int64_t & fZ(FractionalCoords & fc) { return std::get<2>(fc); }
 
-
-/* Good old C standard, never fixed the behaviour of signed division... */
-
-inline unsigned int MyMod(int a, unsigned int b) { int c = a % b; while (c < 0) c += b; return (unsigned int)(c); }
-inline unsigned int MyMod16(int a) { return MyMod(a, 16); }
-inline   signed int MyDiv(int num, int den)
+inline std::ostream & operator<<(std::ostream & o, const WorldCoords & wc)
 {
-  if ((num < 0 && den < 0) || (num >= 0 && den >= 0)) return num / den;
-
-  if (num < 0) return -((-num) / den + 1);
-
-  return MyDiv(-num, -den);
+  return o << std::dec << "w[" << wX(wc) << ", " << wY(wc) << ", " << wZ(wc) << "]";
 }
-inline   signed int MyDiv16(int num) { return MyDiv(num, 16); }
+inline std::ostream & operator<<(std::ostream & o, const LocalCoords & lc)
+{
+  return o << std::dec << "l[" << lX(lc) << ", " << lY(lc) << ", " << lZ(lc) << "]";
+}
+inline std::ostream & operator<<(std::ostream & o, const ChunkCoords & cc)
+{
+  return o << std::dec << "c[" << cX(cc) << ", " << cZ(cc) << "]";
+}
+inline std::ostream & operator<<(std::ostream & o, const FractionalCoords & fc)
+{
+  return o << std::dec << "c[" << MyDiv32(fX(fc)) << " " << MyMod32(fX(fc)) << "/32, "
+           << MyDiv32(fY(fc)) << " " << MyMod32(fY(fc)) << "/32, "
+           << MyDiv32(fZ(fc)) << " " << MyMod32(fZ(fc)) << "/32]";
+}
 
-
+/* Transform between the various coordinate types. We COULD actually
+   implement most of those as cast operators. */
 
 inline LocalCoords getLocalCoords(const WorldCoords & wc)
 {
@@ -84,7 +113,18 @@ inline WorldCoords getWorldCoords(const LocalCoords & lc, const ChunkCoords & cc
 {
   return WorldCoords(cX(cc) * 16 + int32_t(lX(lc)), int32_t(lY(lc)), cZ(cc) * 16 + int32_t(lZ(lc)));
 }
-
+inline WorldCoords getWorldCoords(const FractionalCoords & fc)
+{
+  return WorldCoords(MyDiv32(fX(fc)), MyDiv32(fY(fc)), MyDiv32(fZ(fc)));
+}
+inline LocalCoords getLocalCoords(const FractionalCoords & fc)
+{
+  return getLocalCoords(getWorldCoords(fc));
+}
+inline ChunkCoords getChunkCoords(const FractionalCoords & fc)
+{
+  return getChunkCoords(getWorldCoords(fc));
+}
 
 /* STL does not yet come with a hash_combine(), so I'm lifting this
    implementation from boost. It creates a hash function for every
