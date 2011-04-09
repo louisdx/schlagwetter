@@ -13,6 +13,7 @@ Further libraries are:
 
   - zlib:         as required by the protocol
   - libnoise:     for map generation
+  - cNBT:         for serializing NBT data
   - GNU Readline: optional for the console UI
 
 It should be possible to compile the server for any platform that supports
@@ -54,7 +55,8 @@ ingress |      V  V      egress           update
 3. Source code style
 
 Yes, I would like to stick to a strict source code formatting style.
-Please contact me if anything is ambiguous or missing.
+The style is half informed by my Emacs default settins and by immitation
+of the mineserver style. Please contact me if anything is ambiguous or missing.
 
 - Class and struct names "UpperCamelCase", (member) functions "lowerCamelCase",
   (member) objects "with_under_scores", private member object start with "m_".
@@ -89,10 +91,18 @@ Please contact me if anything is ambiguous or missing.
 
   if (foo()) return false;
 
+- Single-line explanations of class methods should be written whenver possible,
+  like this:
+
+  /// Three slashes, stop with a full stop.
+  inline void doNothing() const { }
+
 
 4. Language style
 
 Idiomatic, modern C++0x.
+
+- Make good data structures. Inline.
 
 - Use of "new" should entirely unneccessary. Consider std::shared_ptr<T>,
   std::make_shared<T>(...), std::array<T, n> etc.

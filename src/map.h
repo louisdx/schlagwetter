@@ -42,8 +42,8 @@ public:
   typedef std::array<unsigned char, 256>   ChunkHeightMap;
 
   Chunk(const ChunkCoords & cc) : m_coords(cc), m_data(), m_heightmap() { }
-  Chunk(const ChunkData & data, const ChunkHeightMap & hm) : m_data(data), m_heightmap(hm) { }
-  Chunk(ChunkData && data, ChunkHeightMap && hm) : m_data(std::move(data)), m_heightmap(std::move(hm)) { }
+  Chunk(const ChunkCoords & cc, const ChunkData & data, const ChunkHeightMap & hm) : m_coords(cc), m_data(data), m_heightmap(hm) { }
+  Chunk(ChunkCoords && cc, ChunkData && data, ChunkHeightMap && hm) : m_coords(std::move(cc)), m_data(std::move(data)), m_heightmap(std::move(hm)) { }
 
   Chunk(Chunk && other) : m_data(std::move(other.m_data)), m_heightmap(std::move(other.m_heightmap)) { }
 

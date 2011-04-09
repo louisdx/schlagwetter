@@ -234,7 +234,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
         std::string chuck = f.getCompressedChunk(cX(*i), cZ(*i));
           if (chuck == "") continue;
 
-          auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length());
+          auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
           m_map.insertChunk(c, *i);
 
           if (counter < 50)
