@@ -1,11 +1,11 @@
-LDX Minecraft Server
+Schlagwetter, a Minecraft server
 
 Inspired and hopefully collaborating with Fador's "mineserver: https://github.com/fador/mineserver
 
 
 Design goals:
 
-  *  Portability. Idiomatic C++0x and boost::ASIO, boost::program_options. (Other libraries: ZLib, Noise, GNU Readline [optional]).
+  *  Portability. Idiomatic C++0x and boost::ASIO, boost::program_options. (Other libraries: cNBT, ZLib, Noise, GNU Readline [optional]).
 
   *  Robustness: Server code must be 100% correct.
      Commits are only accepted if they pass memory debugging (valgrind) without errors.

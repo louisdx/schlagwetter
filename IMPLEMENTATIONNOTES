@@ -51,10 +51,64 @@ ingress |      V  V      egress           update
              ...
 
 
+3. Source code style
+
+Yes, I would like to stick to a strict source code formatting style.
+Please contact me if anything is ambiguous or missing.
+
+- Class and struct names "UpperCamelCase", (member) functions "lowerCamelCase",
+  (member) objects "with_under_scores", private member object start with "m_".
+
+- Pointer and reference type markers (*, &) with two-sided spacing, "int * x, double & y".
+
+- Brackets: function like this: void foo(int a, double & b)
+            control structures with space: while (x < 0), for(auto i = ... )
+
+- Binary operators surrounded by spaces, "a + b".
+
+- Unary operators without spaces; "++i", "&buf", "*ref".
+
+- Indentation: two spaces per level, no tabs. Braces on a separate line, like so:
+
+  for(int a = 0; ; )
+  {
+    if (b)
+    {
+      /* nasty stuff */
+    }
+
+    doSomething();
+  }
+
+- It's OK to omit braces for oneliners or even write oneliners on a single line:
+
+  for (int i = 0; i < N; ++i)
+    for (int j = 0; j < N; ++j)
+      if (i == j)
+        woot(j, i) = 0;
+
+  if (foo()) return false;
 
 
+4. Language style
 
-Random things to think about in the future:
+Idiomatic, modern C++0x.
+
+- Use of "new" should entirely unneccessary. Consider std::shared_ptr<T>,
+  std::make_shared<T>(...), std::array<T, n> etc.
+
+- Use initialiser lists in constructors, and remember that we have uniform
+  initialisation available when appropriate. 
+
+- Use clever containers, e.g. std::unordered_map has O(1) access.
+
+- The server is multithreaded, if you work with server.* and connection.*,
+  make sure to guard access as necessary. Remember std::lock_guard and friends.
+
+[To be expanded.]
+
+
+5. Random things to think about in the future:
 
 
 - In the ConnectionManager, std::unordered_map might be faster than std::map (constant vs. logarithmic lookup)
