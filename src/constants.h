@@ -169,7 +169,30 @@ struct packet_player_position_and_look
 
 // Light emission/absorption
 
-extern std::unordered_map<unsigned char, unsigned char> EMIT_LIGHT, STOP_LIGHT;
+typedef std::unordered_map<unsigned char, unsigned char> LightMapMap;
+
+struct LightMap
+{
+public:
+
+  LightMap(unsigned char defval, std::initializer_list<LightMapMap::value_type> lm)
+  :  m_defval(defval), m_light_map(lm), m_it(), m_end(m_light_map.end())
+  {  }
+
+  inline unsigned char operator[](unsigned char block)
+  {
+    m_it = m_light_map.find(block);
+    return m_it == m_end ? m_defval : m_it->second;
+  }
+private:
+  const unsigned char            m_defval;
+  const LightMapMap           m_light_map;
+        LightMapMap::const_iterator  m_it;
+  const LightMapMap::const_iterator m_end;
+};
+
+extern LightMap EMIT_LIGHT;
+extern LightMap STOP_LIGHT;
 
 //Player digging status
 enum

@@ -54,7 +54,7 @@ std::unordered_map<EPacketNames, PacketInfo> PACKET_INFO = {
 };
 
 
-std::unordered_map<unsigned char, unsigned char> EMIT_LIGHT = {
+LightMap EMIT_LIGHT(0, {
   { 0x0A, 15 }, // Lava
   { 0x0B, 15 }, // Stationary Lava
   { 0x27,  1 }, // Brown mushroom
@@ -66,9 +66,9 @@ std::unordered_map<unsigned char, unsigned char> EMIT_LIGHT = {
   { 0x59, 15 }, // Lightstone
   { 0x5A, 11 }, // Portal
   { 0x5B, 15 }, // Jack-O-Lantern
-};
+    } );
 
-std::unordered_map<unsigned char, unsigned char> STOP_LIGHT = {
+LightMap STOP_LIGHT(16, {
   { 0x00, 0 }, // Empty
   { 0x06, 0 }, // Sapling
   { 0x08, 3 }, // Water
@@ -98,4 +98,4 @@ std::unordered_map<unsigned char, unsigned char> STOP_LIGHT = {
   { 0x5B, 0 }, // Jack-O-Lantern
   { BLOCK_SIGN_POST, 0 }, // Sign post
   { BLOCK_WALL_SIGN, 0 }, // Wall sign
-};
+    } );

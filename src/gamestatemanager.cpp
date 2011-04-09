@@ -271,11 +271,11 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       packetSCSpawn(eid, cX(start_chunk) + 8, 100, cZ(start_chunk) + 8);
       packetSCPlayerPositionAndLook(eid, cX(start_chunk) + 8, 100.0, cZ(start_chunk) + 8, 101.6, 0.0, 0.0, true);
 
-      packetSCSetSlot(eid, 0, 27, ITEM_DIAMOND_PICKAXE, 1, 0);
-      packetSCSetSlot(eid, 0, 28, BLOCK_TORCH, 50, 0);
+      packetSCSetSlot(eid, 0, 37, ITEM_DIAMOND_PICKAXE, 1, 0);
+      packetSCSetSlot(eid, 0, 36, BLOCK_TORCH, 50, 0);
       packetSCSetSlot(eid, 0, 29, ITEM_COAL, 50, 0);
       packetSCSetSlot(eid, 0, 30, BLOCK_WOOD, 50, 0);
-      packetSCSetSlot(eid, 0, 31, ITEM_DIAMOND_SPADE, 1, 0);
+      packetSCSetSlot(eid, 0, 38, ITEM_DIAMOND_SPADE, 1, 0);
     }
   }
 }
