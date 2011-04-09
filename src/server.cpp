@@ -23,9 +23,9 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_server_should_stop(false),
   m_connection_manager(),
   m_next_connection(new Connection(m_io_service, m_connection_manager)),
+  m_map(),
   m_gsm(m_connection_manager, m_map),
   m_input_parser(m_gsm),
-  m_map(),
   m_deadline_timer(m_io_service),
   m_sleep_next(200)
 {
@@ -122,10 +122,9 @@ void Server::processSchedule1s()
 
   /* do stuff */
 
-  /* Update game state. (At the moment this only cleans up dead connections.) */
 
+  // We just gather the active eids quickly and don't hang on to the mutex...
   std::list<int32_t> todo;
-
   {
     std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
     for (ConnectionManager::ClientData::const_iterator it = m_connection_manager.clientData().begin(); it != m_connection_manager.clientData().end(); ++it)
@@ -134,6 +133,7 @@ void Server::processSchedule1s()
     }
   }
 
+  // Now we get to work. Update game state, send keepalives. (At the moment "update" only cleans up dead connections.)
   for (std::list<int32_t>::const_iterator it = todo.begin(); it != todo.end(); ++it)
   {
     m_gsm.packetSCKeepAlive(*it);

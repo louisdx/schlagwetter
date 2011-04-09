@@ -74,14 +74,14 @@ private:
   /// The next connection to be accepted.
   ConnectionPtr m_next_connection;
 
+  /// The map. (Will eventually have many.)
+  Map m_map;
+
   /// The game state manager.
   GameStateManager m_gsm;
 
   /// The input parser.
   InputParser m_input_parser;
-
-  /// The map. (Will eventually have many.)
-  Map m_map;
 
   /// An alarm clock.
   boost::asio::deadline_timer m_deadline_timer;
