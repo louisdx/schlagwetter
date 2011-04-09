@@ -126,6 +126,35 @@ inline ChunkCoords getChunkCoords(const FractionalCoords & fc)
   return getChunkCoords(getWorldCoords(fc));
 }
 
+/* Direction. We allow adding those to WorldCoords. */
+
+enum Direction
+{
+  BLOCK_YMINUS = 0,
+  BLOCK_YPLUS  = 1,
+  BLOCK_ZMINUS = 2,
+  BLOCK_ZPLUS  = 3,
+  BLOCK_XMINUS = 4,
+  BLOCK_XPLUS  = 5
+};
+
+inline WorldCoords & operator+=(WorldCoords & wc, Direction dir)
+{
+  switch (dir)
+  {
+  case BLOCK_XMINUS: { --wX(wc); break; }
+  case BLOCK_XPLUS:  { ++wX(wc); break; }
+  case BLOCK_YMINUS: { --wY(wc); break; }
+  case BLOCK_YPLUS:  { ++wY(wc); break; }
+  case BLOCK_ZMINUS: { --wZ(wc); break; }
+  case BLOCK_ZPLUS:  { ++wZ(wc); break; }
+  default: { std::cout << "Invalid direction received!" << std::endl; }
+  }
+  return wc;
+}
+
+
+
 /* STL does not yet come with a hash_combine(), so I'm lifting this
    implementation from boost. It creates a hash function for every
    pair of hashable types. For further generalizations, see boost/functional/hash.
