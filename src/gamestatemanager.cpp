@@ -224,21 +224,26 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
         }
       }
 
+      /// Load all available chunks to memory, but only send the first 50 to the client.
+
       std::sort(ac.begin(), ac.end(), L1DistanceFrom(ChunkCoords(0, 0))); // L1-sorted by distance from centre.
       size_t counter = 0;
 
-      for (auto i = ac.begin(); i != ac.end(); ++i)
+      for (auto i = ac.begin(); i != ac.end(); ++i, ++counter)
       {
         std::string chuck = f.getCompressedChunk(cX(*i), cZ(*i));
           if (chuck == "") continue;
 
-          std::string raw_chunk = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length());
+          auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length());
+          m_map.insertChunk(c, *i);
 
-          packetSCPreChunk(eid, *i, true);
-          packetSCMapChunk(eid, *i, raw_chunk);
+          if (counter < 50)
+          {
+            std::string raw_chunk = c->compress();
 
-          ++counter;
-          if (counter > 50) break;
+            packetSCPreChunk(eid, *i, true);
+            packetSCMapChunk(eid, *i, raw_chunk);
+          }
       }
 
       m_states[eid].state = GameState::READYTOSPAWN;
@@ -255,7 +260,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       for (auto i = ac.begin(); i != ac.end(); ++i)
       {
         std::cout << "Need chunk " << *i << "." << std::endl;
-        const Chunk & c = m_map.getChunkOrGnerateNew(*i);
+        const Chunk & c = m_map.getChunkOrGenerateNew(*i);
 
         packetSCPreChunk(eid, *i, true);
         packetSCMapChunk(eid, *i, c.compress());

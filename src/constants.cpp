@@ -25,11 +25,11 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "packets.h"
+#include "constants.h"
 
-// ATTENTION: size EXCLUDES the initial type byte!
+// ATTENTION: Packet size EXCLUDES the initial type byte!
 
-std::map<EPacketNames, PacketInfo> PACKET_INFO = {
+std::unordered_map<EPacketNames, PacketInfo> PACKET_INFO = {
   { PACKET_KEEP_ALIVE,               PacketInfo(0,                   "keep-alive") },
   { PACKET_LOGIN_REQUEST,            PacketInfo(PACKET_VARIABLE_LEN, "login request") },
   { PACKET_HANDSHAKE,                PacketInfo(PACKET_VARIABLE_LEN, "handshake") },
@@ -51,4 +51,51 @@ std::map<EPacketNames, PacketInfo> PACKET_INFO = {
   { PACKET_SIGN,                     PacketInfo(PACKET_VARIABLE_LEN, "sign") },
   { PACKET_TRANSACTION,              PacketInfo(4,                   "transaction") },
   { PACKET_ENTITY_CROUCH,            PacketInfo(5,                   "entity crouch") }
+};
+
+
+std::unordered_map<unsigned char, unsigned char> EMIT_LIGHT = {
+  { 0x0A, 15 }, // Lava
+  { 0x0B, 15 }, // Stationary Lava
+  { 0x27,  1 }, // Brown mushroom
+  { 0x32, 14 }, // Torch
+  { 0x33, 15 }, // Fire
+  { 0x3E, 14 }, // Lit furnace
+  { 0x4A,  9 }, // Redstone ore (Glowing)
+  { 0x4C,  7 }, // Redstone Torch (On)
+  { 0x59, 15 }, // Lightstone
+  { 0x5A, 11 }, // Portal
+  { 0x5B, 15 }, // Jack-O-Lantern
+};
+
+std::unordered_map<unsigned char, unsigned char> STOP_LIGHT = {
+  { 0x00, 0 }, // Empty
+  { 0x06, 0 }, // Sapling
+  { 0x08, 3 }, // Water
+  { 0x09, 3 }, // Stationary water
+  { 0x12, 3 }, // Leaves
+  { 0x14, 0 }, // Glass
+  { 0x25, 0 }, // Yellow flower
+  { 0x26, 0 }, // Red rose
+  { 0x27, 0 }, // Brown mushroom
+  { 0x28, 0 }, // Red mushroom
+  { 0x32, 0 }, // Torch
+  { 0x33, 0 }, // Fire
+  { 0x34, 0 }, // Mob spawner
+  { 0x35, 0 }, // Wooden stairs
+  { 0x37, 0 }, // Redstone wire
+  { 0x40, 0 }, // Wooden door
+  { 0x41, 0 }, // Ladder
+  { 0x42, 0 }, // Minecart track
+  { 0x43, 0 }, // Cobblestone stairs
+  { 0x47, 0 }, // Iron door
+  { 0x4b, 0 }, // Redstone Torch (Off)
+  { 0x4C, 0 }, // Redstone Torch (On)
+  { 0x4e, 0 }, // Snow
+  { 0x4f, 3 }, // Ice
+  { 0x55, 0 }, // Fence
+  { 0x5A, 0 }, // Portal
+  { 0x5B, 0 }, // Jack-O-Lantern
+  { BLOCK_SIGN_POST, 0 }, // Sign post
+  { BLOCK_WALL_SIGN, 0 }, // Wall sign
 };

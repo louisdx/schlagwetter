@@ -1,4 +1,4 @@
-project(minerd)
+project(schlagwetter)
 
 cmake_minimum_required(VERSION 2.6)
 

@@ -42,9 +42,9 @@ The classes are roughly like this:
                |                    |               |
                V                    V               V
        ConnectionManager    GameStateManager      Map
-               |                    |
-        ^      |  +-----------------+
-ingress |      V  V      egress 
+               |                    |  |           |
+        ^      |  +-----------------+  +===<===>===+
+ingress |      V  V      egress           update 
         +-Connection
           Connection
           Connection
@@ -77,4 +77,5 @@ Random things to think about in the future:
   necessary this might be replaced by something more static and faster (but again,
   only if there is strong evidence that this is worthwhile).
 
-- Maybe the classes Server and ConnectionManager could be merged.
+- Maybe the classes Server and ConnectionManager could be merged. (Maybe not, though,
+  as lots of modules only need ConnectionManager, not Server.)

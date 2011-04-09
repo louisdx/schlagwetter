@@ -10,6 +10,8 @@ Particular contribution credits are in order:
 
 - ZLIB and libnoise are used directly as is, see their respective licenses.
 
+- Ditto GNU Readline, if you enable it.
+
 - The main inspiration, and hopefully large parts of the code,
   (will) come from the mineserver project: https://github.com/fador/mineserver
 
@@ -17,8 +19,9 @@ Particular contribution credits are in order:
   is rather different and bits of that code may end up appearing in refactored
   form in my code. Here is the current state of affairs:
   
-  packets.h/.cpp: I have taken over the block definitions verbatim.
-  constants.h:    Taken verbatim.
+  constants.h/.cpp: I have taken over all the definitions verbatim.
+
+  map.cpp: I have taken over the code for the light map generation in large parts.
 
   generator.h/.cpp: I have taken over the code for heightmap generation
      and cave generation in large parts, though refactored. Probably a lot

@@ -4,7 +4,7 @@
 #include <iomanip>
 #include "server.h"
 #include "inputparser.h"
-#include "packets.h"
+#include "constants.h"
 
 
 template<class T>

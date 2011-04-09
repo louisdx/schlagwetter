@@ -4,7 +4,7 @@
 
 #include <vector>
 #include <string>
-#include "packets.h"
+#include "constants.h"
 
 static inline void convertToJavaString(std::string & s)
 {
