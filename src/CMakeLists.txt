@@ -10,6 +10,7 @@ set(SOURCES
   inputparser.cpp
   main.cpp
   map.cpp
+  serializer.cpp
   server.cpp
   ui.cpp
 )

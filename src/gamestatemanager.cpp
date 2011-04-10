@@ -304,8 +304,9 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
 void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t direction, int16_t block_id, int8_t amount, int16_t damage)
 {
-  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", " << Z << ", "
-                                                  << direction << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
+  //if (PROGRAM_OPTIONS.count("verbose"))
+  std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", " << Z << ", "
+            << direction << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
 
   if (X == -1 && Y == -1 && Z == -1)
   {

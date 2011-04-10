@@ -53,7 +53,8 @@ std::string Chunk::compress() const
 
 Map::Map()
   :
-  m_chunkMap()
+  m_chunkMap(),
+  m_serializer()
 {
 }
 
