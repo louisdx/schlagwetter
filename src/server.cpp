@@ -157,7 +157,7 @@ void Server::processSchedule10s()
   timer = clockTick();
 }
 
-void Server::processIngress(int32_t eid, std::deque<char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex)
+void Server::processIngress(int32_t eid, std::deque<unsigned char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex)
 {
   while (!d.empty())
   {
@@ -170,7 +170,7 @@ void Server::processIngress(int32_t eid, std::deque<char> & d, std::shared_ptr<s
 
       if (psize != size_t(PACKET_VARIABLE_LEN) && d.size() >= psize + 1)
       {
-        std::vector<char> x(psize + 1);
+        std::vector<unsigned char> x(psize + 1);
 
         { // lock guard
           std::lock_guard<std::recursive_mutex> lock(*ptr_mutex);

@@ -74,15 +74,15 @@ public:
 
   inline void addDouble(double x)
   {
-    char * c = reinterpret_cast<char*>(&x);
-    std::vector<char> rev(c, c + 8);
+    unsigned char * c = reinterpret_cast<unsigned char*>(&x);
+    std::vector<unsigned char> rev(c, c + 8);
     m_buffer.insert(m_buffer.end(), rev.rbegin(), rev.rend());
   }
 
   inline void addFloat(float x)
   {
-    char * c = reinterpret_cast<char*>(&x);
-    std::vector<char> rev(c, c + 4);
+    unsigned char * c = reinterpret_cast<unsigned char*>(&x);
+    std::vector<unsigned char> rev(c, c + 4);
     m_buffer.insert(m_buffer.end(), rev.rbegin(), rev.rend());
   }
 

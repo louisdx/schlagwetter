@@ -35,6 +35,7 @@ std::unordered_map<EPacketNames, PacketInfo> PACKET_INFO = {
   { PACKET_KEEP_ALIVE,               PacketInfo(0,                   "keep-alive") },
   { PACKET_LOGIN_REQUEST,            PacketInfo(PACKET_VARIABLE_LEN, "login request") },
   { PACKET_HANDSHAKE,                PacketInfo(PACKET_VARIABLE_LEN, "handshake") },
+  { PACKET_PRE_CHUNK,                PacketInfo(9,                   "chunk request") },
   { PACKET_CHAT_MESSAGE,             PacketInfo(PACKET_VARIABLE_LEN, "chat message") },
   { PACKET_USE_ENTITY,               PacketInfo(9,                   "use entity") },
   { PACKET_PLAYER,                   PacketInfo(1,                   "player") },

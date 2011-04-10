@@ -26,7 +26,7 @@ Connection::~Connection()
 
 void Connection::start()
 {
-  m_socket.async_read_some(boost::asio::buffer(m_data, read_buf_size), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+  m_socket.async_read_some(boost::asio::buffer(m_data.data(), m_data.size()), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
 }
 
 void Connection::stop()
@@ -48,14 +48,14 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
     // We store the data in a local queue, which is very fast. Here we must wait for the lock.
     {
       std::unique_lock<std::recursive_mutex> lock(m_local_queue_mutex);
-      m_local_queue.insert(m_local_queue.end(), m_data, m_data + bytes_transferred);
+      m_local_queue.insert(m_local_queue.end(), m_data.data(), m_data.data() + bytes_transferred);
     }
 
     // Later, storeReceivedData() may or may not be able to process our queue, but we don't care.
     m_connection_manager.storeReceivedData(EID(), m_local_queue);
 
     // Set up the next read operation.
-    m_socket.async_read_some(boost::asio::buffer(m_data, read_buf_size), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+    m_socket.async_read_some(boost::asio::buffer(m_data.data(), m_data.size()), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
   }
   else if (e != boost::asio::error::operation_aborted)
   {
@@ -115,7 +115,7 @@ void ConnectionManager::stopAll()
   m_connections.clear();
 }
 
-void ConnectionManager::storeReceivedData(int32_t eid, std::deque<char> & local_queue)
+void ConnectionManager::storeReceivedData(int32_t eid, std::deque<unsigned char> & local_queue)
 {
   // We have to lock access to m_client_data while using the iterator.
   // An upgradable r/w lock would be apt here, but STL doesn't have one.
@@ -154,7 +154,7 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<char> & local_
   {
     std::pair<ClientData::iterator, bool> ret;
 
-    ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<char>(), std::make_shared<std::recursive_mutex>())));
+    ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<unsigned char>(), std::make_shared<std::recursive_mutex>())));
 
     if (!ret.second)
     {
@@ -179,7 +179,7 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<char> & local_
   m_input_ready_cond.notify_one();
 }
 
-void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data) const
+void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data, const char * debug_message) const
 {
   auto it = findConnectionByEID(eid);
   if (it == m_connections.end())
@@ -188,7 +188,17 @@ void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data) 
   }
   else
   {
-    if (PROGRAM_OPTIONS.count("verbose")) std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes." << std::endl;
+    if (PROGRAM_OPTIONS.count("verbose"))
+    {
+      std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes." << (debug_message ? debug_message : "") << std::endl;
+    }
+#ifdef DEBUG
+    else if (debug_message) // No need for "verbose", just print annotated packets.
+    {
+      std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes." << debug_message << std::endl;
+    }
+#endif
+
     /*
     std::cout << "Sending data to client #" << eid << ":";
     for (size_t i = 0; i < data.length(); ++i)

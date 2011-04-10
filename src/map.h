@@ -84,6 +84,7 @@ public:
 
   inline       unsigned char & blockType(size_t x, size_t y, size_t z)       { return m_data[offsetBlockType + index(x, y, z)]; }
   inline const unsigned char & blockType(size_t x, size_t y, size_t z) const { return m_data[offsetBlockType + index(x, y, z)]; }
+  inline       unsigned char & blockType(const LocalCoords& lc)              { return blockType(lX(lc), lY(lc), lZ(lc)); }
   inline const unsigned char & blockType(const LocalCoords& lc)        const { return blockType(lX(lc), lY(lc), lZ(lc)); }
 
   inline void setBlockMetaData(size_t x, size_t y, size_t z, unsigned char val) { setHalf(y, val, m_data[offsetBlockMetaData + index(x, y, z) / 2]); }
@@ -133,10 +134,8 @@ public:
 
   /// If no chunk exists at cc, create a random one. Always returns the chunk at cc.
   const Chunk & getChunkOrGenerateNew(const ChunkCoords & cc);
-  inline       Chunk & getExistingChunk(const ChunkCoords & cc)       { return *m_chunkMap.find(cc)->second; }
-  inline const Chunk & getExistingChunk(const ChunkCoords & cc) const { return *m_chunkMap.find(cc)->second; }
 
-  inline void insertChunk(std::shared_ptr<Chunk> chunk, const ChunkCoords & cc) { m_chunkMap.insert(ChunkMap::value_type(cc, chunk)); }
+  inline void insertChunk(std::shared_ptr<Chunk> chunk) { m_chunkMap.insert(ChunkMap::value_type(chunk->coords(), chunk)); }
 
 private:
   ChunkMap m_chunkMap;

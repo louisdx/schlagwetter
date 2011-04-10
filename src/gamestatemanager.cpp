@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <functional>
 
 #include "cmdlineoptions.h"
 #include "gamestatemanager.h"
@@ -39,6 +40,7 @@ void GameStateManager::update(int32_t eid)
   {
     std::cout << "Client #" << eid << " should leave, closing connection." << std::endl;
     m_connection_manager.stop(eid);
+    m_states.erase(it);
   }
 
 }
@@ -53,10 +55,30 @@ struct L1DistanceFrom
   ChunkCoords cc;
 };
 
+void GameStateManager::sendToAll(std::function<void(int32_t)> f)
+{
+  std::list<int32_t> todo;
+
+  {
+    std::lock_guard<std::mutex> lock(m_gs_mutex);
+    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+      todo.push_back(it->first);
+  }
+
+  for (auto it = todo.begin(); it != todo.end(); ++it)
+    f(*it);
+}
+
 void GameStateManager::packetCSKeepAlive(int32_t eid)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received KeepAlive from #" << eid << std::endl;
   packetSCKeepAlive(eid);
+}
+
+void GameStateManager::packetCSChunkRequest(int32_t eid, int32_t X, int32_t Z, bool mode)
+{
+  //if (PROGRAM_OPTIONS.count("verbose"))
+    std::cout << "GSM: Received ChunkRequest from #" << eid << ": [" << X << ", " << Z << ", " << mode << "]" << std::endl;
 }
 
 void GameStateManager::packetCSUseEntity(int32_t eid, int32_t e, int32_t target, bool leftclick)
@@ -114,7 +136,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
     p.addInt32(Z);      // Z
     p.addInt8(m_map.chunk(getChunkCoords(WorldCoords(X, Y, Z))).blockType(X, Y, Z) = BLOCK_AIR);
     p.addInt8(0);
-    m_connection_manager.sendDataToClient(eid, p.craft());
+    m_connection_manager.sendDataToClient(eid, p.craft(), "[dig response]");
   }
 }
 
@@ -235,7 +257,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
           if (chuck == "") continue;
 
           auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
-          m_map.insertChunk(c, *i);
+          m_map.insertChunk(c);
 
           if (counter < 50)
           {
@@ -280,10 +302,57 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
   }
 }
 
-void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, uint8_t Y, int32_t Z, int8_t direction, int16_t block_id, int8_t amount, int16_t damage)
+void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t direction, int16_t block_id, int8_t amount, int16_t damage)
 {
-  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << Y << ", " << Z << ", "
-            << direction << ", " << block_id << ", " << amount << ", " << damage << "]" << std::endl;
+  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", " << Z << ", "
+                                                  << direction << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
+
+  if (X == -1 && Y == -1 && Z == -1)
+  {
+
+  }
+
+  else if (block_id < 0) return /* empty-handed */ ;
+
+  else if (false && block_id < 256)
+  {
+    WorldCoords wc(X, Y, Z);
+    wc += Direction(direction);
+    if (m_map.haveChunk(getChunkCoords(wc)))
+    {
+      Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+      chunk.blockType(getLocalCoords(wc)) = block_id;
+
+      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
+
+      /*
+        I used to have this:
+
+  template<typename ... Args>
+  void GameStateManager::sendToAll(std::function<void(int32_t, Args ...)> f, Args && ... args)
+  {
+    // [... loop ...]
+    f(*it, std::forward<Args>(args)...);
+  }
+
+        Used like this:
+
+      using namespace std::placeholders;
+      //void (GameStateManager::*f)(int32_t, const WorldCoords &, int8_t, int8_t) = &GameStateManager::packetSCBlockChange;
+      //sendToAll(std::function<void(int32_t, const WorldCoords &, int8_t, int8_t)>(std::bind(f, this, _1, _2, _3, _4)), (const WorldCoords &)(wc), int8_t(block_id), int8_t(0));
+
+        Or even (jikes!) this:
+
+
+      /// I don't know if I should feel victorious about this construct.
+      sendToAll(std::function<void(int32_t, const WorldCoords &, int8_t, int8_t)>(
+          std::bind((void(GameStateManager::*)(int32_t, const WorldCoords &, int8_t, int8_t))(&GameStateManager::packetSCBlockChange), this, _1, _2, _3, _4)
+        ), (const WorldCoords &)(wc), int8_t(block_id), int8_t(0));
+      */
+
+
+    }
+  }
 }
 
 void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)
@@ -376,5 +445,16 @@ void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot,
   p.addInt16(item);   // item id
   p.addInt8(count);   // item count
   p.addInt16(uses);   // uses
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md)
+{
+  PacketCrafter p(PACKET_SET_SLOT);
+  p.addInt32(X);         // X
+  p.addInt8(Y);          // Y
+  p.addInt32(Z);         // Z
+  p.addInt8(block_type); // block type
+  p.addInt8(block_md);   // block metadata
   m_connection_manager.sendDataToClient(eid, p.craft());
 }

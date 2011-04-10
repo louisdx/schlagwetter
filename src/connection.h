@@ -58,11 +58,10 @@ private:
   ConnectionManager & m_connection_manager;
 
   /// Buffer for incoming data.
-  enum { read_buf_size = 8192 };
-  char m_data[read_buf_size];
+  std::array<unsigned char, 8192> m_data;
 
   /// Local queue for incoming data.
-  std::deque<char> m_local_queue;
+  std::deque<unsigned char> m_local_queue;
   std::recursive_mutex m_local_queue_mutex;
 
   /// The client's Entity ID and nickname.
@@ -80,7 +79,7 @@ typedef std::shared_ptr<Connection> ConnectionPtr;
 
 class ConnectionManager : private boost::noncopyable
 {
-  typedef std::map<int32_t, std::pair<std::deque<char>, std::shared_ptr<std::recursive_mutex>>> ClientData;
+  typedef std::map<int32_t, std::pair<std::deque<unsigned char>, std::shared_ptr<std::recursive_mutex>>> ClientData;
 
   friend class Server;
 
@@ -109,10 +108,10 @@ public:
   /// Incoming data. May or may not do anything, depending on whether it can lock access to m_client_data.
   /// (Since the only other threads that access m_client_data in Server::runInputProcessing() sleep most
   /// of the time, this should not happen very often.)
-  void storeReceivedData(int32_t eid, std::deque<char> & local_queue);
+  void storeReceivedData(int32_t eid, std::deque<unsigned char> & local_queue);
 
   /// Outgoing data.
-  void sendDataToClient(int32_t eid, const std::string & data) const;
+  void sendDataToClient(int32_t eid, const std::string & data, const char * debug_message = NULL) const;
 
   /// Look up a connection pointer by EID.
   struct EIDFinder { EIDFinder (int32_t eid) : e(eid) {} int32_t e; inline bool operator()(const ConnectionPtr & c) { return e == c->EID(); } };

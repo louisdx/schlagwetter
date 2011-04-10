@@ -42,7 +42,7 @@
 
 enum EPacketNames
 {
-  //Client to server
+  //Client to server (not exclusively)
   PACKET_KEEP_ALIVE                = 0x00,
   PACKET_LOGIN_REQUEST             = 0x01,
   PACKET_HANDSHAKE                 = 0x02,
@@ -65,7 +65,7 @@ enum EPacketNames
   PACKET_SIGN                      = 0x82,
   PACKET_DISCONNECT                = 0xff,
 
-  //Server to client
+  //Server to client (not exclusively)
   PACKET_LOGIN_RESPONSE            = 0x01,
   PACKET_TIME_UPDATE               = 0x04,
   PACKET_SPAWN_POSITION            = 0x06,
@@ -197,11 +197,9 @@ extern LightMap STOP_LIGHT;
 //Player digging status
 enum
 {
-  BLOCK_STATUS_STARTED_DIGGING,
-  BLOCK_STATUS_DIGGING,
-  //BLOCK_STATUS_STOPPED_DIGGING,
-  BLOCK_STATUS_BLOCK_BROKEN,
-  BLOCK_STATUS_PICKUP_SPAWN = 0x4
+  DIGGING_STARTED = 0,
+  DIGGING_FINISHED = 2,
+  DIGGING_DROPITEM = 4
 };
 
 // Chat colors
@@ -221,12 +219,6 @@ enum
 #define MC_COLOR_MAGENTA std::string("§d")
 #define MC_COLOR_YELLOW std::string("§e")
 #define MC_COLOR_WHITE std::string("§f")
-
-// Direction
-enum Direction
-{
-  BLOCK_BOTTOM, BLOCK_NORTH, BLOCK_SOUTH, BLOCK_EAST, BLOCK_WEST, BLOCK_TOP
-};
 
 // Blocks
 enum Block

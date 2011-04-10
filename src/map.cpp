@@ -179,7 +179,7 @@ void Chunk::spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigne
 
     if (map.haveChunk(getChunkCoords(to_set)))
     {
-      Chunk & chunk = map.getExistingChunk(getChunkCoords(to_set)); // Most times chunk == *this.
+      Chunk & chunk = map.chunk(getChunkCoords(to_set)); // Most times chunk == *this.
       const unsigned char & block = chunk.blockType(getLocalCoords(to_set));
 
       const unsigned char sky_light_new   = std::max(0, sky_light   - STOP_LIGHT[block] - 1);
