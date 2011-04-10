@@ -13,8 +13,11 @@
 #include <zlib.h>
 
 
-GameStateManager::GameStateManager(ConnectionManager & connection_manager, Map & map)
-  : m_connection_manager(connection_manager), m_map(map), m_states()
+enum { PLAYER_CHUNK_HORIZON = 5 };
+
+
+GameStateManager::GameStateManager(std::function<void(unsigned int)> sleep, ConnectionManager & connection_manager, Map & map)
+  : sleepMilli(sleep), m_connection_manager(connection_manager), m_map(map), m_states()
 {
 }
 
@@ -69,6 +72,36 @@ void GameStateManager::sendToAll(std::function<void(int32_t)> f)
     f(*it);
 }
 
+void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
+{
+  GameState & player = m_states[eid];
+
+  std::vector<ChunkCoords> ac = ambientChunks(getChunkCoords(player.position), PLAYER_CHUNK_HORIZON);
+  std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(player.position)));
+
+  for (auto i = ac.begin(); i != ac.end(); ++i)
+  {
+    if (player.known_chunks.count(*i) > 0) continue;
+
+    std::cout << "Player #" << std::dec << eid << " needs chunk " << *i << "." << std::endl;
+    const Chunk & c = m_map.getChunkOrGenerateNew(*i);
+
+    sleepMilli(50);
+
+    packetSCPreChunk(eid, *i, true);
+    packetSCMapChunk(eid, *i, c.compress());
+
+    player.known_chunks.insert(*i);
+  }
+}
+
+
+
+/******************                  ****************
+ ******************  Packet Handlers ****************
+ ******************                  ****************/
+
+
 void GameStateManager::packetCSKeepAlive(int32_t eid)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received KeepAlive from #" << eid << std::endl;
@@ -119,6 +152,17 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
     m_connection_manager.sendDataToClient(eid, p.craft());
 
     m_states[eid].state = GameState::SPAWNED;
+    m_states[eid].position = WorldCoords(X, Y, Z);
+  }
+
+  else
+  {
+    WorldCoords wc(X, Y, Z);
+    if (getChunkCoords(m_states[eid].position) != getChunkCoords(wc))
+    {
+      m_states[eid].position = wc;
+      sendMoreChunksToPlayer(eid);
+    }
   }
 
 }
@@ -275,23 +319,18 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     }
     else
     {
-      const ChunkCoords start_chunk(0, 0);
-      std::vector<ChunkCoords> ac = ambientChunks(start_chunk, 5);    // 21x21 around the current chunk
-      std::sort(ac.begin(), ac.end(), L1DistanceFrom(start_chunk)); // L1-sorted by distance from centre.
+      GameState & player = m_states[eid];
 
-      for (auto i = ac.begin(); i != ac.end(); ++i)
-      {
-        std::cout << "Need chunk " << *i << "." << std::endl;
-        const Chunk & c = m_map.getChunkOrGenerateNew(*i);
+      WorldCoords start_pos(8, 100, 8);
 
-        packetSCPreChunk(eid, *i, true);
-        packetSCMapChunk(eid, *i, c.compress());
-      }
+      player.position = start_pos;
+
+      sendMoreChunksToPlayer(eid);
 
       m_states[eid].state = GameState::READYTOSPAWN;
 
-      packetSCSpawn(eid, cX(start_chunk) + 8, 100, cZ(start_chunk) + 8);
-      packetSCPlayerPositionAndLook(eid, cX(start_chunk) + 8, 100.0, cZ(start_chunk) + 8, 101.6, 0.0, 0.0, false);
+      packetSCSpawn(eid, start_pos);
+      packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, false);
 
       packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
       packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
@@ -319,7 +358,7 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
 
   else if (block_id < 0) return /* empty-handed */ ;
 
-  else if (false && block_id < 256)
+  else if (it != BLOCKITEM_INFO.end() && it->type() == BlockItemInfo::BLOCK)
   {
     WorldCoords wc(X, Y, Z);
     wc += Direction(direction);
@@ -455,6 +494,9 @@ void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot,
 
 void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md)
 {
+  std::cout << "Sending BlockChange to #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", "
+            << Z << ", block type " << int(block_type) << ", block md " << int(block_md) << "]" << std::endl;
+
   PacketCrafter p(PACKET_SET_SLOT);
   p.addInt32(X);         // X
   p.addInt8(Y);          // Y

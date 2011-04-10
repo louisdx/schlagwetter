@@ -2,6 +2,7 @@
 #define H_GAMESTATEMANAGER
 
 #include <unordered_map>
+#include <unordered_set>
 #include "connection.h"
 #include "types.h"
 
@@ -12,16 +13,17 @@ class GameState
 public:
   enum EState { INVALID = 0, PRELOGIN, POSTLOGIN, READYTOSPAWN, SPAWNED, DEAD, TERMINATED };
 
-  explicit GameState(EState s = INVALID) : state(s), position() { }
+  explicit GameState(EState s = INVALID) : state(s), position(), known_chunks() { }
 
   EState state;
-  FractionalCoords position;
+  WorldCoords position;
+  std::unordered_set<ChunkCoords, PairHash<int32_t, int32_t>> known_chunks;
 };
 
 class GameStateManager
 {
 public:
-  GameStateManager(ConnectionManager & connection_mananger, Map & map);
+  GameStateManager(std::function<void(unsigned int)> sleep, ConnectionManager & connection_mananger, Map & map);
 
   void update(int32_t);
 
@@ -49,6 +51,9 @@ public:
 #define MAKE_CALLBACK(f, ...) std::bind(&GameStateManager::f, this, std::placeholders::_1, __VA_ARGS__)
 #define MAKE_EXPLICIT_CALLBACK(f, ...) std::bind(f, this, std::placeholders::_1, __VA_ARGS__)
 #define MAKE_SIGNED_CALLBACK(p, SIGNATURE, ...) MAKE_EXPLICIT_CALLBACK(  (void (GameStateManager::*)SIGNATURE)(&GameStateManager::p), __VA_ARGS__)
+
+  /// Determine chunks the player might need and send.
+  void sendMoreChunksToPlayer(int32_t eid);
 
 
   /* Incoming packet handlers */
@@ -84,10 +89,13 @@ public:
   void packetSCMapChunk(int32_t eid, int32_t X, int32_t Y, int32_t Z, const std::string & data, size_t sizeX = 15, size_t sizeY = 127, size_t sizeZ = 15);
   inline void packetSCMapChunk(int32_t eid, const ChunkCoords & cc, const std::string & data) { packetSCMapChunk(eid, 16 * cX(cc), 0, 16 * cZ(cc), data); }
   void packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t Z);
+  inline void packetSCSpawn(int32_t eid, const WorldCoords & wc) { packetSCSpawn(eid, wX(wc), wY(wc), wZ(wc)); }
   void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
   void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
   void packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md);
   inline void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md) { packetSCBlockChange(eid, wX(wc), wY(wc), wZ(wc), block_type, block_md); }
+
+  std::function<void(unsigned int)> sleepMilli;
 
 private:
   ConnectionManager & m_connection_manager;

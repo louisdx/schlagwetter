@@ -2,10 +2,11 @@
 #include <thread>
 #include <iostream>
 #include <iomanip>
+
 #include "server.h"
 #include "inputparser.h"
 #include "constants.h"
-
+#include "cmdlineoptions.h"
 
 template<class T>
 struct Identity
@@ -24,7 +25,7 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_connection_manager(),
   m_next_connection(new Connection(m_io_service, m_connection_manager)),
   m_map(),
-  m_gsm(m_connection_manager, m_map),
+  m_gsm(std::bind(&Server::sleepMilli, this, std::placeholders::_1), m_connection_manager, m_map),
   m_input_parser(m_gsm),
   m_deadline_timer(m_io_service),
   m_sleep_next(200)
@@ -36,6 +37,21 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_acceptor.bind(endpoint);
   m_acceptor.listen();
   m_acceptor.async_accept(m_next_connection->socket(), m_next_connection->peer(), std::bind(&Server::handleAccept, this, std::placeholders::_1));
+
+  /*
+  if (PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
+  {
+    std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), 5);
+    std::cout << "Precomputing map... (" << std::dec << ac.size() << " chunks, one '*' each) ";
+
+    for (auto i = ac.begin(); i != ac.end(); ++i)
+    {
+      (void)m_map.getChunkOrGenerateNew(*i);
+      std::cout << "*"; std::cout.flush();
+    }
+    std::cout << "done!" << std::endl;;
+  }
+  */
 }
 
 void Server::runIO()
@@ -56,6 +72,8 @@ void Server::runInputProcessing()
       {
         m_connection_manager.m_input_ready_cond.wait(lock, Identity<const bool &>(m_connection_manager.m_input_ready));
       }
+
+      std::cout << "runInputProcessor() has work to do." << std::endl;
 
       while (!m_connection_manager.m_pending_eids.empty())
       {
@@ -80,6 +98,7 @@ void Server::runInputProcessing()
         }
         else
         {
+          m_connection_manager.m_pending_eids.pop_front();
           m_connection_manager.m_cd_mutex.unlock();
         }
       }

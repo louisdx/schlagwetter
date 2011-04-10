@@ -1,0 +1,25 @@
+Highest Priority
+----------------
+
+* The network protocol isn't working right. A client can connect
+  once after server start, but subsequent connections fail with
+  varying errors. Getting the basic networking to function reliably
+  is of the greatest importance.
+
+
+High Priority
+-------------
+
+* Lots of the protocol has not been implemented yet and is only a stub.
+  Block removal (digging) works, but placement doesn't. Getting basic
+  creative mode play style going is the first step.
+
+* Persistent map storage. Doesn't have to be NBT, anything sensible would be good.
+  Maybe Boost::serialize.
+
+
+Further Goals
+-------------
+
+* Completely server-side judication. Inventory and placement could be
+  determined and validated entirely by the server.
