@@ -79,7 +79,7 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
       auto di = connection_manager.clientData().find((*i)->EID());
       std::cout << "Connection #" << std::dec << (*i)->EID() << ": " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port()
                 << ", #refs = " << i->use_count();
-      if (di != connection_manager.clientData().end()) std::cout << ", " << di->second.first.size() << " bytes of unprocessed data";
+      if (di != connection_manager.clientData().end()) std::cout << ", " << di->second->size() << " bytes of unprocessed data";
       std::cout << std::endl;
     }
   }
@@ -95,8 +95,9 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
       }
       else
       {
-        for (auto it = di->second.first.begin(); it != di->second.first.end(); ++it)
-          std::cout << " " << std::hex << std::setw(2) << (unsigned int)(*it);
+        // Sorry, we have no thread-safe iteration at the moment, this function has to go.
+//        for (auto it = di->second.first.begin(); it != di->second.first.end(); ++it)
+//          std::cout << " " << std::hex << std::setw(2) << (unsigned int)(*it);
       }
       std::cout << std::endl;
     }

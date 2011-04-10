@@ -52,6 +52,7 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
     }
 
     // Later, storeReceivedData() may or may not be able to process our queue, but we don't care.
+    // If it succeeds, it will clear the local queue for us.
     m_connection_manager.storeReceivedData(EID(), m_local_queue);
 
     // Set up the next read operation.
@@ -132,21 +133,7 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<unsigned char>
   if (clit != m_client_data.end())
   {
     // If we can get the lock, we just store the data and are done. If not, no big deal.
-
-    if (clit->second.second->try_lock())
-    {
-      try
-      {
-        clit->second.first.insert(clit->second.first.end(), local_queue.begin(), local_queue.end());
-        local_queue.clear();
-      }
-      catch (...)
-      {
-        // OK, this should never happen, but we have to worry about exceptions while holding the lock.
-        std::cerr << "Error while writing to m_client_data[" << std::dec << eid << "]." << std::endl;
-      }
-      clit->second.second->unlock();
-    }
+    clit->second->pushMaybeAndClear(local_queue);
   }
 
   // Case 2: Queue doesn't exist, we create it. No need to lock m_client_data in this case.
@@ -154,24 +141,10 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<unsigned char>
   {
     std::pair<ClientData::iterator, bool> ret;
 
-    ret = m_client_data.insert(ClientData::value_type(eid, ClientData::mapped_type(std::deque<unsigned char>(), std::make_shared<std::recursive_mutex>())));
+    ret = m_client_data.insert(ClientData::value_type(eid, std::make_shared<SyncQueue>()));
 
-    if (!ret.second)
-    {
-      std::cerr << "Panic: Could not create comm queue!" << std::endl;
-      return;
-    }
-    else
-    {
-      clit = ret.first;
-      if (clit->second.second->try_lock())
-      {
-        clit->second.first.insert(clit->second.first.end(), local_queue.begin(), local_queue.end());
-        local_queue.clear();
-
-        clit->second.second->unlock();
-      }
-    }
+    if (ret.second) ret.first->second->pushMaybeAndClear(local_queue);
+    else { std::cerr << "Panic: Could not create comm queue!" << std::endl; return; }
   }
 
   m_pending_eids.push_back(eid);

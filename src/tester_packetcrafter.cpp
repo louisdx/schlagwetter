@@ -5,7 +5,7 @@
 #include "inputhelper.h"
 
 template<typename S>
-void hexString(std::deque<S> d)
+void hexString(SyncQueue d)
 {
   printf("Deque of size = %u. Data: ", d.size());
   for (auto i = d.begin(); i != d.end(); ++i)

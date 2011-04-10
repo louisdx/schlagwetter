@@ -55,7 +55,9 @@ std::unordered_set<PacketInfo, std::hash<size_t>> PACKET_INFO = {
 };
 
 std::unordered_set<BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO = {
-  { BLOCK_Air, "Air" }
+  { BLOCK_Air, "Air" },
+  { BLOCK_Torch, "Torch"},
+  { ITEM_DiamondShovel, "Diamond Shovel"}
 };
 
 LightMap EMIT_LIGHT(0, {

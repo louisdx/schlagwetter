@@ -34,8 +34,7 @@ public:
   void stop();
 
   /// Processors.
-  void processIngress(int32_t eid,  std::deque<unsigned char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex);
-  inline void processIngress(ConnectionManager::ClientData::iterator & it) { processIngress(it->first, it->second.first, it->second.second); }
+  bool processIngress(int32_t eid, std::shared_ptr<SyncQueue> d);
   void processSchedule200ms(int actual_time_interval);
   void processSchedule1s();
   void processSchedule10s();

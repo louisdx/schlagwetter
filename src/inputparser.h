@@ -13,7 +13,7 @@ public:
   void immediateDispatch(int32_t eid, const std::vector<unsigned char> & data);
 
   /// Return true if a whole packet was extracted.
-  bool dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & queue, std::recursive_mutex * ptr_mutex);
+  bool dispatchIfEnoughData(int32_t eid, std::shared_ptr<SyncQueue> queue);
 
 private:
   GameStateManager & m_gsm;

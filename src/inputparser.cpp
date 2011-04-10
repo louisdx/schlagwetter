@@ -144,11 +144,11 @@ void InputParser::immediateDispatch(int32_t eid, const std::vector<unsigned char
   }
 }
 
-#define GUARDLOCK  std::lock_guard<std::recursive_mutex> lock(*ptr_mutex)
+#define GUARDLOCK  std::lock_guard<SyncQueue> lock(*queue)
 
-bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & queue, std::recursive_mutex * ptr_mutex)
+bool InputParser::dispatchIfEnoughData(int32_t eid, std::shared_ptr<SyncQueue> queue)
 {
-  const unsigned int type = (unsigned int)(queue.front());
+  const unsigned int type = (unsigned int)(queue->front());
   std::list<unsigned char> tmp;
 
   switch (type)
@@ -156,7 +156,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
 
   case (PACKET_LOGIN_REQUEST):
   {
-    if (queue.size() < 7) return false;
+    if (queue->size() < 7) return false;
 
     int32_t     protocol_version;
     int16_t     username_len;
@@ -172,12 +172,12 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
       readInt8(queue, tmp);
       protocol_version = readInt32(queue, tmp);
       username_len     = readInt16(queue, tmp);
-      if (int(queue.size()) < username_len) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < username_len) { rewindJournal(queue, tmp); break; }
       username         = readString(queue, tmp, username_len);
       password_len     = readInt16(queue, tmp);
-      if (int(queue.size()) < password_len) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < password_len) { rewindJournal(queue, tmp); break; }
       password         = readString(queue, tmp, password_len);
-      if (int(queue.size()) < 9) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < 9) { rewindJournal(queue, tmp); break; }
       map_seed         = readInt64(queue, tmp);
       dimension        = readInt8(queue, tmp);
     }
@@ -191,7 +191,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
   case (PACKET_CHAT_MESSAGE):
   case (PACKET_DISCONNECT):
   {
-    if (queue.size() < 3) return false;
+    if (queue->size() < 3) return false;
 
     int16_t str_len;
     std::string str;
@@ -201,8 +201,10 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
 
       readInt8(queue, tmp);
       str_len = readInt16(queue, tmp);
-      if (int(queue.size()) < str_len) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < str_len) { rewindJournal(queue, tmp); break; }
       str = readString(queue, tmp, str_len);
+
+      std::cout << "Remaining queue size = " << queue->size() << std::endl;
     }
 
     switch (type)
@@ -217,7 +219,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
 
   case (PACKET_PLAYER_BLOCK_PLACEMENT):
   {
-    if (queue.size() < 13) return false;
+    if (queue->size() < 13) return false;
 
     int32_t X, Z;
     int8_t Y, direction, amount = 0;
@@ -234,7 +236,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
       block_id = readInt16(queue, tmp);
       if (block_id >= 0)
       {
-        if (queue.size() < 16) { rewindJournal(queue, tmp); break; }
+        if (queue->size() < 16) { rewindJournal(queue, tmp); break; }
         amount = readInt8(queue, tmp);
         damage = readInt16(queue, tmp);
       }
@@ -247,7 +249,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
 
   case (PACKET_INVENTORY_CHANGE):
   {
-    if (queue.size() < 9) return false;
+    if (queue->size() < 9) return false;
 
     int8_t window_id, right_click, item_count = 0;
     int16_t slot, action, item_id, item_uses = 0;
@@ -263,7 +265,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
       item_id = readInt16(queue, tmp);
       if (item_id != -1)
       {
-        if (queue.size() < 3) { rewindJournal(queue, tmp); break; }
+        if (queue->size() < 3) { rewindJournal(queue, tmp); break; }
         item_count = readInt8(queue, tmp);
         item_uses = readInt16(queue, tmp);
       }
@@ -276,7 +278,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
 
   case (PACKET_SIGN):
   {
-    if (queue.size() < 13) return false;
+    if (queue->size() < 13) return false;
 
     int32_t X, Z;
     int16_t Y, len1, len2, len3, len4;
@@ -291,19 +293,19 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::deque<unsigned char> & 
       Z = readInt32(queue, tmp);
 
       len1 = readInt16(queue, tmp);
-      if (int(queue.size()) < len1) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < len1) { rewindJournal(queue, tmp); break; }
       line1 = readString(queue, tmp, len1);
 
       len2 = readInt16(queue, tmp);
-      if (int(queue.size()) < len2) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < len2) { rewindJournal(queue, tmp); break; }
       line2 = readString(queue, tmp, len2);
 
       len3 = readInt16(queue, tmp);
-      if (int(queue.size()) < len3) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < len3) { rewindJournal(queue, tmp); break; }
       line3 = readString(queue, tmp, len3);
 
       len4 = readInt16(queue, tmp);
-      if (int(queue.size()) < len4) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < len4) { rewindJournal(queue, tmp); break; }
       line4 = readString(queue, tmp, len4);
     }
 

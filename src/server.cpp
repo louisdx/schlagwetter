@@ -47,27 +47,37 @@ void Server::runInputProcessing()
 {
   while (!m_server_should_stop)
   {
+    // Be extra nice.
     sleepMilli(100);
-    std::unique_lock<std::mutex> lock(m_connection_manager.m_input_ready_mutex);
-    while (!m_connection_manager.m_input_ready)
+
     {
-      m_connection_manager.m_input_ready_cond.wait(lock, Identity<const bool &>(m_connection_manager.m_input_ready));
-    }
-
-    while (!m_connection_manager.m_pending_eids.empty())
-    {
-      std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
-
-      ConnectionManager::ClientData::iterator it = m_connection_manager.clientData().find(m_connection_manager.m_pending_eids.front());
-
-      if (it !=  m_connection_manager.clientData().end())
+      std::unique_lock<std::mutex> lock(m_connection_manager.m_input_ready_mutex);
+      while (!m_connection_manager.m_input_ready)
       {
-        processIngress(it);
+        m_connection_manager.m_input_ready_cond.wait(lock, Identity<const bool &>(m_connection_manager.m_input_ready));
       }
 
-      m_connection_manager.m_pending_eids.pop_front();
-    }
-  }
+      while (!m_connection_manager.m_pending_eids.empty())
+      {
+        std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
+
+        ConnectionManager::ClientData::iterator it = m_connection_manager.clientData().find(m_connection_manager.m_pending_eids.front());
+
+        if (it != m_connection_manager.clientData().end())
+        {
+          // processIngress() only returns true if all data has been processed.
+          if (processIngress(it->first, it->second))
+          {
+            // We only remove an EID from the list if its queue is empty.
+            m_connection_manager.m_pending_eids.pop_front();
+          }
+        }
+      }
+
+    } // scope of the lock
+    m_connection_manager.m_input_ready = false;
+
+  } // while (server is running)
 }
 
 void Server::runTimerProcessing()
@@ -157,54 +167,51 @@ void Server::processSchedule10s()
   timer = clockTick();
 }
 
-void Server::processIngress(int32_t eid, std::deque<unsigned char> & d, std::shared_ptr<std::recursive_mutex> ptr_mutex)
+bool Server::processIngress(int32_t eid, std::shared_ptr<SyncQueue> d)
 {
-  while (!d.empty())
+  while (!d->empty())
   {
-    const unsigned char first_byte(d.front());
+    const unsigned char first_byte(d->front());
     const auto pit = std::find(PACKET_INFO.begin(), PACKET_INFO.end(), first_byte);
 
     if (pit != PACKET_INFO.end())
     {
       const size_t psize = pit->size; // excludes initial type byte!
 
-      if (psize != size_t(PACKET_VARIABLE_LEN) && d.size() >= psize + 1)
+      if (psize != size_t(PACKET_VARIABLE_LEN) && d->size() >= psize + 1)
       {
         std::vector<unsigned char> x(psize + 1);
+        for (size_t k = 0; k < psize + 1; ++k)  x[k] = d->pop();
 
-        { // lock guard
-          std::lock_guard<std::recursive_mutex> lock(*ptr_mutex);
-          for (size_t k = 0; k < psize + 1; ++k)
-          {
-            x[k] = d.front();
-            d.pop_front();
-          }
-        }
-
+        // Here we are guaranteed to process a whole packet.
         m_input_parser.immediateDispatch(eid, x);
       }
       else if (psize == size_t(PACKET_VARIABLE_LEN))
       {
-        if (!m_input_parser.dispatchIfEnoughData(eid, d, ptr_mutex.get()))
+        if (!m_input_parser.dispatchIfEnoughData(eid, d)) 
         {
-          break;
+          // At this stage, the queue didn't have enough data...
+          return false;
         }
+        // ... while at this stage we managed to extract a whole packet.
+
       }
       else
       {
-        break;
+        return false;
       }
     }
 
     else // pit == end()
     {
-      if (pit == PACKET_INFO.end()) std::cout <<"ZZZ";
+      if (pit == PACKET_INFO.end()) std::cout << "[Packet ID unkown] ";
       std::cout << "Unintellegible data! Clearing buffer for client #" << eid << ". First byte was "
                 << std::setw(2) << std::setfill('0') << std::hex << (unsigned int)(first_byte) << std::endl;
-      d.clear();
-      break;
+      d->clear();
+      return true;
     }
   }
+  return true;
 }
 
 void Server::stop()

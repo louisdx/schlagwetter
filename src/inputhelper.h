@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 
+#include "syncqueue.h"
 
 /* The #defines are for reading from a std::vector,
  *  the read*() functions are for reversible reading from the deque.
@@ -34,62 +35,61 @@ static inline float READ_FLOAT(const std::vector<unsigned char> & data, size_t i
   return y;
 }
 
-static inline int8_t readInt8(std::deque<unsigned char> & q, std::list<unsigned char> journal)
+static inline int8_t readInt8(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal)
 {
-  char c = q.front(); journal.push_back(c); q.pop_front();
+  char c = q->pop_unsafe(); journal.push_back(c);
   return c;
 }
 
-static inline int16_t readInt16(std::deque<unsigned char> & q, std::list<unsigned char> journal)
+static inline int16_t readInt16(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal)
 {
   char c;
   uint16_t r = 0;
-  c = q.front(); journal.push_back(c); r |= ((uint16_t)(unsigned char)(c) <<  8); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint16_t)(unsigned char)(c) <<  0); q.pop_front();
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint16_t)(unsigned char)(c) <<  8);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint16_t)(unsigned char)(c) <<  0);
   return int16_t(r);
 }
 
-static inline int32_t readInt32(std::deque<unsigned char> & q, std::list<unsigned char> journal)
+static inline int32_t readInt32(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal)
 {
   char c;
   uint32_t r = 0;
-  c = q.front(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) << 24); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) << 16); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) <<  8); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) <<  0); q.pop_front();
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) << 24);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) << 16);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) <<  8);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint32_t)(unsigned char)(c) <<  0);
   return int32_t(r);
 }
 
-static inline int64_t readInt64(std::deque<unsigned char> & q, std::list<unsigned char> journal)
+static inline int64_t readInt64(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal)
 {
   char c;
   uint64_t r = 0;
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 56); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 48); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 40); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 32); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 24); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 16); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) <<  8); q.pop_front();
-  c = q.front(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) <<  0); q.pop_front();
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 56);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 48);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 40);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 32);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 24);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) << 16);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) <<  8);
+  c = q->pop_unsafe(); journal.push_back(c); r |= ((uint64_t)(unsigned char)(c) <<  0);
   return int64_t(r);
 }
 
-static inline std::string readString(std::deque<unsigned char> & q, std::list<unsigned char> journal, uint16_t len)
+static inline std::string readString(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal, uint16_t len)
 {
   std::string r(len, 0);
   for (size_t i = 0; i < len; ++i)
   {
-    r[i] = q.front();
-    journal.push_back(q.front());
-    q.pop_front();
+    r[i] = q->pop_unsafe();
+    journal.push_back(r[i]);
   }
   return r;
 }
 
-static inline void rewindJournal(std::deque<unsigned char> & q, std::list<unsigned char> journal)
+static inline void rewindJournal(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal)
 {
-  q.insert(q.begin(), journal.begin(), journal.end());
+  q->pushFrontUnsafe(journal.begin(), journal.end());
 }
 
 

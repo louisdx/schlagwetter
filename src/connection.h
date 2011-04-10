@@ -10,6 +10,8 @@
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 
+#include "syncqueue.h"
+
 class ConnectionManager;
 
 
@@ -72,14 +74,15 @@ private:
 typedef std::shared_ptr<Connection> ConnectionPtr;
 
 
-/* Class ConnectionManager: manages open connections so that they may be cleanly
- * stopped when the server needs to shut down; gathers incoming data and sends
- * out data to clients.
+
+/*  Class ConnectionManager: manages open connections so that they may be cleanly
+ *  stopped when the server needs to shut down; gathers incoming data and sends
+ *  out data to clients.
  */
 
 class ConnectionManager : private boost::noncopyable
 {
-  typedef std::map<int32_t, std::pair<std::deque<unsigned char>, std::shared_ptr<std::recursive_mutex>>> ClientData;
+  typedef std::map<int32_t, std::shared_ptr<SyncQueue>> ClientData;
 
   friend class Server;
 

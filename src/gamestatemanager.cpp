@@ -276,7 +276,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     else
     {
       const ChunkCoords start_chunk(0, 0);
-      std::vector<ChunkCoords> ac = ambientChunks(start_chunk, 5);    // 21x21 around the current chunk
+      std::vector<ChunkCoords> ac = ambientChunks(start_chunk, 1);    // 21x21 around the current chunk
       std::sort(ac.begin(), ac.end(), L1DistanceFrom(start_chunk)); // L1-sorted by distance from centre.
 
       for (auto i = ac.begin(); i != ac.end(); ++i)
@@ -291,7 +291,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       m_states[eid].state = GameState::READYTOSPAWN;
 
       packetSCSpawn(eid, cX(start_chunk) + 8, 100, cZ(start_chunk) + 8);
-      packetSCPlayerPositionAndLook(eid, cX(start_chunk) + 8, 100.0, cZ(start_chunk) + 8, 101.6, 0.0, 0.0, true);
+      packetSCPlayerPositionAndLook(eid, cX(start_chunk) + 8, 100.0, cZ(start_chunk) + 8, 101.6, 0.0, 0.0, false);
 
       packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
       packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
