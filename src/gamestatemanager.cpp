@@ -134,7 +134,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
     p.addInt32(X);      // X
     p.addInt8(Y);       // Y
     p.addInt32(Z);      // Z
-    p.addInt8(m_map.chunk(getChunkCoords(WorldCoords(X, Y, Z))).blockType(X, Y, Z) = BLOCK_AIR);
+    p.addInt8(m_map.chunk(getChunkCoords(WorldCoords(X, Y, Z))).blockType(X, Y, Z) = BLOCK_Air);
     p.addInt8(0);
     m_connection_manager.sendDataToClient(eid, p.craft(), "[dig response]");
   }
@@ -293,11 +293,11 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       packetSCSpawn(eid, cX(start_chunk) + 8, 100, cZ(start_chunk) + 8);
       packetSCPlayerPositionAndLook(eid, cX(start_chunk) + 8, 100.0, cZ(start_chunk) + 8, 101.6, 0.0, 0.0, true);
 
-      packetSCSetSlot(eid, 0, 37, ITEM_DIAMOND_PICKAXE, 1, 0);
-      packetSCSetSlot(eid, 0, 36, BLOCK_TORCH, 50, 0);
-      packetSCSetSlot(eid, 0, 29, ITEM_COAL, 50, 0);
-      packetSCSetSlot(eid, 0, 30, BLOCK_WOOD, 50, 0);
-      packetSCSetSlot(eid, 0, 38, ITEM_DIAMOND_SPADE, 1, 0);
+      packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
+      packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
+      packetSCSetSlot(eid, 0, 29, ITEM_Coal, 50, 0);
+      packetSCSetSlot(eid, 0, 30, BLOCK_Wood, 50, 0);
+      packetSCSetSlot(eid, 0, 38, ITEM_DiamondShovel, 1, 0);
     }
   }
 }
@@ -306,11 +306,15 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
 {
   //if (PROGRAM_OPTIONS.count("verbose"))
   std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", " << Z << ", "
-            << direction << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
+            << Direction(direction) << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
+
+  auto it = std::find(BLOCKITEM_INFO.begin(), BLOCKITEM_INFO.end(), block_id);
 
   if (X == -1 && Y == -1 && Z == -1)
   {
-
+    std::cout << "   Player " << eid << " slashes thin air ";
+    if (it != BLOCKITEM_INFO.end()) std::cout << "with " << it->name;
+    std::cout << std::endl;
   }
 
   else if (block_id < 0) return /* empty-handed */ ;

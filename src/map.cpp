@@ -64,9 +64,16 @@ const Chunk & Map::getChunkOrGenerateNew(const ChunkCoords & cc)
 
   if (ins == m_chunkMap.end())
   {
-    ins = m_chunkMap.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>(cc))).first;
-    generateWithNoise(*ins->second, cc);
-    (*ins->second).updateLightAndHeightMaps(*this); // Off for now so you can marvel at the Cave :-)
+    if (m_serializer.haveChunk(cc) == true)
+    {
+      ins = m_chunkMap.insert(ChunkMap::value_type(cc, m_serializer.loadChunk(cc))).first;
+    }
+    else
+    {
+      ins = m_chunkMap.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>(cc))).first;
+      generateWithNoise(*ins->second, cc);
+      (*ins->second).updateLightAndHeightMaps(*this); // Off for now so you can marvel at the Cave :-)
+    }
   }
 
   return *ins->second;
@@ -99,7 +106,7 @@ void Chunk::updateLightAndHeightMaps(Map & map)
         light = std::max(light, 0);
 
         // Calculate height map while looping this
-        if (!foundheight && (block != BLOCK_AIR))
+        if (!foundheight && (block != BLOCK_Air))
         {
           height(x, z) = (y == 127 ? y : y + 1);
           foundheight = true;

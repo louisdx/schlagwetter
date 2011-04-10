@@ -162,11 +162,11 @@ void Server::processIngress(int32_t eid, std::deque<unsigned char> & d, std::sha
   while (!d.empty())
   {
     const unsigned char first_byte(d.front());
-    const auto pit = PACKET_INFO.find(EPacketNames(first_byte));
+    const auto pit = std::find(PACKET_INFO.begin(), PACKET_INFO.end(), first_byte);
 
     if (pit != PACKET_INFO.end())
     {
-      const size_t psize = pit->second.size; // excludes initial type byte!
+      const size_t psize = pit->size; // excludes initial type byte!
 
       if (psize != size_t(PACKET_VARIABLE_LEN) && d.size() >= psize + 1)
       {

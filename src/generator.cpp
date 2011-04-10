@@ -27,7 +27,7 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
   const uint8_t sea_level = 64;
 
   // Winterland or Summerland
-  const Block topBlock = winter_enabled ? BLOCK_SNOW : BLOCK_GRASS;
+  const EBlockItem topBlock = winter_enabled ? BLOCK_Snow : BLOCK_Grass;
 
   // Populate blocks in chunk
  
@@ -48,7 +48,7 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
         // Place bedrock
         if (bY == 0)
         {
-          c.blockType(bX, bY, bZ) = BLOCK_BEDROCK;
+          c.blockType(bX, bY, bZ) = BLOCK_Bedrock;
           continue;
         }
 
@@ -56,25 +56,25 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
         {
           if (bY < stoneHeight)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_STONE;
+            c.blockType(bX, bY, bZ) = BLOCK_Stone;
 
             // Add caves
             if (add_caves) NG.addCaves(c.blockType(bX, bY, bZ), bX + 16 * cX(cc), bY, bZ + 16 * cZ(cc));
           }
           else
           {
-            c.blockType(bX, bY, bZ) = BLOCK_DIRT;
+            c.blockType(bX, bY, bZ) = BLOCK_Dirt;
           }
         }
         else if (bY == currentHeight)
         {
           if (bY == sea_level || bY == sea_level - 1 || bY == sea_level - 2)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_SAND;  // FF
+            c.blockType(bX, bY, bZ) = BLOCK_Sand;  // FF
           }
           else if (bY < sea_level - 1)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_GRAVEL;  // FF
+            c.blockType(bX, bY, bZ) = BLOCK_Gravel;  // FF
           }
           else
           {
@@ -85,11 +85,11 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
         {
           if (bY <= sea_level)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_WATER;  // FF
+            c.blockType(bX, bY, bZ) = BLOCK_Water;  // FF
           }
           else
           {
-            c.blockType(bX, bY, bZ) = BLOCK_AIR;  // FF
+            c.blockType(bX, bY, bZ) = BLOCK_Air;  // FF
           }
         }
       }

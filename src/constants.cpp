@@ -29,40 +29,41 @@
 
 // ATTENTION: Packet size EXCLUDES the initial type byte!
 
-std::hash<int> std::hash<EPacketNames>::hasher;
-
-std::unordered_map<EPacketNames, PacketInfo> PACKET_INFO = {
-  { PACKET_KEEP_ALIVE,               PacketInfo(0,                   "keep-alive") },
-  { PACKET_LOGIN_REQUEST,            PacketInfo(PACKET_VARIABLE_LEN, "login request") },
-  { PACKET_HANDSHAKE,                PacketInfo(PACKET_VARIABLE_LEN, "handshake") },
-  { PACKET_PRE_CHUNK,                PacketInfo(9,                   "chunk request") },
-  { PACKET_CHAT_MESSAGE,             PacketInfo(PACKET_VARIABLE_LEN, "chat message") },
-  { PACKET_USE_ENTITY,               PacketInfo(9,                   "use entity") },
-  { PACKET_PLAYER,                   PacketInfo(1,                   "player") },
-  { PACKET_PLAYER_POSITION,          PacketInfo(33,                  "player position") },
-  { PACKET_PLAYER_LOOK,              PacketInfo(9,                   "player look") },
-  { PACKET_PLAYER_POSITION_AND_LOOK, PacketInfo(41,                  "player pos+look") },
-  { PACKET_PLAYER_DIGGING,           PacketInfo(11,                  "player digging") },
-  { PACKET_PLAYER_BLOCK_PLACEMENT,   PacketInfo(PACKET_VARIABLE_LEN, "player block placement") },
-  { PACKET_HOLDING_CHANGE,           PacketInfo(2,                   "player holding change") },
-  { PACKET_ARM_ANIMATION,            PacketInfo(5,                   "arm animation") },
-  { PACKET_PICKUP_SPAWN,             PacketInfo(22,                  "pickup spawn") },
-  { PACKET_DISCONNECT,               PacketInfo(PACKET_VARIABLE_LEN, "disconnect") },
-  { PACKET_RESPAWN,                  PacketInfo(0,                   "respawn") },
-  { PACKET_INVENTORY_CHANGE,         PacketInfo(PACKET_VARIABLE_LEN, "inventory change") },
-  { PACKET_INVENTORY_CLOSE,          PacketInfo(1,                   "inventory close") },
-  { PACKET_SIGN,                     PacketInfo(PACKET_VARIABLE_LEN, "sign") },
-  { PACKET_TRANSACTION,              PacketInfo(4,                   "transaction") },
-  { PACKET_ENTITY_CROUCH,            PacketInfo(5,                   "entity crouch") }
+std::unordered_set<PacketInfo, std::hash<size_t>> PACKET_INFO = {
+  { PACKET_KEEP_ALIVE,               0,                   "keep-alive"},
+  { PACKET_LOGIN_REQUEST,            PACKET_VARIABLE_LEN, "login request"},
+  { PACKET_HANDSHAKE,                PACKET_VARIABLE_LEN, "handshake"},
+  { PACKET_PRE_CHUNK,                9,                   "chunk request"},
+  { PACKET_CHAT_MESSAGE,             PACKET_VARIABLE_LEN, "chat message"},
+  { PACKET_USE_ENTITY,               9,                   "use entity"},
+  { PACKET_PLAYER,                   1,                   "player"},
+  { PACKET_PLAYER_POSITION,          33,                  "player position"},
+  { PACKET_PLAYER_LOOK,              9,                   "player look"},
+  { PACKET_PLAYER_POSITION_AND_LOOK, 41,                  "player pos+look"},
+  { PACKET_PLAYER_DIGGING,           11,                  "player digging"},
+  { PACKET_PLAYER_BLOCK_PLACEMENT,   PACKET_VARIABLE_LEN, "player block placement"},
+  { PACKET_HOLDING_CHANGE,           2,                   "player holding change"},
+  { PACKET_ARM_ANIMATION,            5,                   "arm animation"},
+  { PACKET_PICKUP_SPAWN,             22,                  "pickup spawn"},
+  { PACKET_DISCONNECT,               PACKET_VARIABLE_LEN, "disconnect"},
+  { PACKET_RESPAWN,                  0,                   "respawn"},
+  { PACKET_INVENTORY_CHANGE,         PACKET_VARIABLE_LEN, "inventory change"},
+  { PACKET_INVENTORY_CLOSE,          1,                   "inventory close"},
+  { PACKET_SIGN,                     PACKET_VARIABLE_LEN, "sign"},
+  { PACKET_TRANSACTION,              4,                   "transaction"},
+  { PACKET_ENTITY_CROUCH,            5,                   "entity crouch"}
 };
 
+std::unordered_set<BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO = {
+  { BLOCK_Air, "Air" }
+};
 
 LightMap EMIT_LIGHT(0, {
-  { 0x0A, 15 }, // Lava
-  { 0x0B, 15 }, // Stationary Lava
-  { 0x27,  1 }, // Brown mushroom
-  { 0x32, 14 }, // Torch
-  { 0x33, 15 }, // Fire
+  { BLOCK_Lava, 15 }, // Lava
+  { BLOCK_StationaryLava, 15 }, // Stationary Lava
+  { BLOCK_BrownMushroom,  1 }, // Brown mushroom
+  { BLOCK_Torch, 14 }, // Torch
+  { BLOCK_Fire, 15 }, // Fire
   { 0x3E, 14 }, // Lit furnace
   { 0x4A,  9 }, // Redstone ore (Glowing)
   { 0x4C,  7 }, // Redstone Torch (On)
@@ -72,10 +73,10 @@ LightMap EMIT_LIGHT(0, {
     } );
 
 LightMap STOP_LIGHT(16, {
-  { 0x00, 0 }, // Empty
-  { 0x06, 0 }, // Sapling
-  { 0x08, 3 }, // Water
-  { 0x09, 3 }, // Stationary water
+  { BLOCK_Air, 0 },
+  { BLOCK_Sapling, 0 }, // Sapling
+  { BLOCK_Water, 3 }, // Water
+  { BLOCK_StationaryWater, 3 }, // Stationary water
   { 0x12, 3 }, // Leaves
   { 0x14, 0 }, // Glass
   { 0x25, 0 }, // Yellow flower
@@ -99,6 +100,6 @@ LightMap STOP_LIGHT(16, {
   { 0x55, 0 }, // Fence
   { 0x5A, 0 }, // Portal
   { 0x5B, 0 }, // Jack-O-Lantern
-  { BLOCK_SIGN_POST, 0 }, // Sign post
-  { BLOCK_WALL_SIGN, 0 }, // Wall sign
+  { BLOCK_SignPost, 0 }, // Sign post
+  { BLOCK_WallSign, 0 }, // Wall sign
     } );

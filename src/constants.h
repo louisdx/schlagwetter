@@ -31,7 +31,10 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <array>
+
+
 
 #define PACKET_NEED_MORE_DATA -3
 #define PACKET_DOES_NOT_EXIST -2
@@ -101,29 +104,231 @@ enum EPacketNames
 };
 
 
-/*********** Packet Info Types ***********/
+/************ Blocks and Items *************/
+
+/// Taken from the "craftd" project, "minecraft.h".
+
+enum EBlockItem
+{
+  ITEM_IronShovel          = 0x100,
+  ITEM_IronPickaxe         = 0x101,
+  ITEM_IronAxe             = 0x102,
+  ITEM_FlintAndSteel       = 0x103,
+  ITEM_Apple               = 0x104,
+  ITEM_Bow                 = 0x105,
+  ITEM_ArrowItem           = 0x106,
+  ITEM_Coal                = 0x107,
+  ITEM_Diamond             = 0x108,
+  ITEM_IronIngot           = 0x109,
+  ITEM_GoldIngot           = 0x10A,
+  ITEM_IronSword           = 0x10B,
+  ITEM_WoodenSword         = 0x10C,
+  ITEM_WoodenShovel        = 0x10D,
+  ITEM_WoodenPickaxe       = 0x10E,
+  ITEM_WoodenAxe           = 0x10F,
+  ITEM_StoneSword          = 0x110,
+  ITEM_StoneShovel         = 0x111,
+  ITEM_StonePickaxe        = 0x112,
+  ITEM_StoneAxe            = 0x113,
+  ITEM_DiamondSword        = 0x114,
+  ITEM_DiamondShovel       = 0x115,
+  ITEM_DiamondPickaxe      = 0x116,
+  ITEM_DiamondAxe          = 0x117,
+  ITEM_Stick               = 0x118,
+  ITEM_Bowl                = 0x119,
+  ITEM_MushroomSoup        = 0x11A,
+  ITEM_GoldSword           = 0x11B,
+  ITEM_GoldShovel          = 0x11C,
+  ITEM_GoldPickaxe         = 0x11D,
+  ITEM_GoldAxe             = 0x11E,
+  ITEM_StringItem          = 0x11F,
+  ITEM_Feather             = 0x120,
+  ITEM_Gunpowder           = 0x121,
+  ITEM_WoodenHoe           = 0x122,
+  ITEM_StoneHoe            = 0x123,
+  ITEM_IronHoe             = 0x124,
+  ITEM_DiamondHoe          = 0x125,
+  ITEM_GoldHoe             = 0x126,
+  ITEM_Seeds               = 0x127,
+  ITEM_Wheat               = 0x128,
+  ITEM_Bread               = 0x129,
+  ITEM_LeatherHelmet       = 0x12A,
+  ITEM_LeatherChestPlate   = 0x12B,
+  ITEM_LeatherLeggings     = 0x12C,
+  ITEM_LeatherBoots        = 0x12D,
+  ITEM_ChainmailHelmet     = 0x12E,
+  ITEM_ChainmailChestPlate = 0x12F,
+  ITEM_ChainmailLeggings   = 0x130,
+  ITEM_ChainmailBoots      = 0x131,
+  ITEM_IronHelmet          = 0x132,
+  ITEM_IronChestPlate      = 0x133,
+  ITEM_IronLeggings        = 0x134,
+  ITEM_IronBoots           = 0x135,
+  ITEM_DiamondHelmet       = 0x136,
+  ITEM_DiamondChestPlate   = 0x137,
+  ITEM_DiamondLeggings     = 0x138,
+  ITEM_DiamondBoots        = 0x139,
+  ITEM_GoldHelmet          = 0x13A,
+  ITEM_GoldChestPlate      = 0x13B,
+  ITEM_GoldLeggings        = 0x13C,
+  ITEM_GoldBoots           = 0x13D,
+  ITEM_Flint               = 0x13E,
+  ITEM_RawPorkchop         = 0x13F,
+  ITEM_CookedPortchop      = 0x140,
+  ITEM_PaintingItem        = 0x141,
+  ITEM_GoldApple           = 0x142,
+  ITEM_Sign                = 0x143,
+  ITEM_WoodenDoorBlock     = 0x144,
+  ITEM_Bucket              = 0x145,
+  ITEM_BucketWithWater     = 0x146,
+  ITEM_BucketWithLava      = 0x147,
+  ITEM_MineCart            = 0x148,
+  ITEM_Saddle              = 0x149,
+  ITEM_IronDoor            = 0x14A,
+  ITEM_Redstone            = 0x14B,
+  ITEM_Snowball            = 0x14C,
+  ITEM_BoatItem            = 0x14D,
+  ITEM_Leather             = 0x14E,
+  ITEM_BucketWithMilk      = 0x14F,
+  ITEM_ClayBrick           = 0x150,
+  ITEM_ClayBalls           = 0x151,
+  ITEM_SugarCane           = 0x152,
+  ITEM_Paper               = 0x153,
+  ITEM_Book                = 0x154,
+  ITEM_Slimeball           = 0x155,
+  ITEM_StorageMinecart     = 0x156,
+  ITEM_PoweredMinecart     = 0x157,
+  ITEM_Egg                 = 0x158,
+  ITEM_Compass             = 0x159,
+  ITEM_FishingRod          = 0x15A,
+  ITEM_Clock               = 0x15B,
+  ITEM_GlowstoneDust       = 0x15C,
+  ITEM_RawFish             = 0x15D,
+  ITEM_CookedFish          = 0x15E,
+  ITEM_Dye                 = 0x15F,
+  ITEM_Bone                = 0x160,
+  ITEM_Sugar               = 0x161,
+  ITEM_Cake                = 0x162,
+  ITEM_BedBlock            = 0x163,
+  ITEM_RedstoneRepeater    = 0x164,
+  ITEM_GoldMusicDisc       = 0x8D0,
+  ITEM_GreenMusicDisc      = 0x8D1,
+
+  BLOCK_Air                 = 0x00,
+  BLOCK_Stone               = 0x01,
+  BLOCK_Grass               = 0x02,
+  BLOCK_Dirt                = 0x03,
+  BLOCK_Cobblestone         = 0x04,
+  BLOCK_WoodenPlank         = 0x05,
+  BLOCK_Sapling             = 0x06,
+  BLOCK_Bedrock             = 0x07,
+  BLOCK_Water               = 0x08,
+  BLOCK_StationaryWater     = 0x09,
+  BLOCK_Lava                = 0x0A,
+  BLOCK_StationaryLava      = 0x0B,
+  BLOCK_Sand                = 0x0C,
+  BLOCK_Gravel              = 0x0D,
+  BLOCK_GoldOre             = 0x0E,
+  BLOCK_IronOre             = 0x0F,
+  BLOCK_CoalOre             = 0x10,
+  BLOCK_Wood                = 0x11,
+  BLOCK_Leaves              = 0x12,
+  BLOCK_Sponge              = 0x13,
+  BLOCK_Glass               = 0x14,
+  BLOCK_LapisLazuliOre      = 0x15,
+  BLOCK_LapisLazuliBlock    = 0x16,
+  BLOCK_DispenserBlock      = 0x17,
+  BLOCK_Sandstone           = 0x18,
+  BLOCK_Note                = 0x19,
+  BLOCK_Bed                 = 0x1A,
+  BLOCK_Wool                = 0x23,
+  BLOCK_YellowFlower        = 0x25,
+  BLOCK_RedRose             = 0x26,
+  BLOCK_BrownMushroom       = 0x27,
+  BLOCK_RedMushroom         = 0x28,
+  BLOCK_GoldBlock           = 0x29,
+  BLOCK_IronBlock           = 0x2A,
+  BLOCK_DoubleSlab          = 0x2B,
+  BLOCK_Slab                = 0x2C,
+  BLOCK_BrickBlock          = 0x2D,
+  BLOCK_TNT                 = 0x2E,
+  BLOCK_Bookshelf           = 0x2F,
+  BLOCK_MossStone           = 0x30,
+  BLOCK_Obsidian            = 0x31,
+  BLOCK_Torch               = 0x32,
+  BLOCK_Fire                = 0x33,
+  BLOCK_MonsterSpawner      = 0x34,
+  BLOCK_WoodenStairs        = 0x35,
+  BLOCK_ChestBlock          = 0x36,
+  BLOCK_RedstoneWire        = 0x37,
+  BLOCK_DiamondOre          = 0x38,
+  BLOCK_DiamondBlock        = 0x39,
+  BLOCK_CraftingTable       = 0x3A,
+  BLOCK_Crops               = 0x3B,
+  BLOCK_Farmland            = 0x3C,
+  BLOCK_FurnaceBlock        = 0x3E,
+  BLOCK_SignPost            = 0x3F,
+  BLOCK_WoodenDoor          = 0x40,
+  BLOCK_Ladder              = 0x41,
+  BLOCK_Rails               = 0x42,
+  BLOCK_CobblestoneStairs   = 0x43,
+  BLOCK_WallSign            = 0x44,
+  BLOCK_Lever               = 0x45,
+  BLOCK_StonePressurePlate  = 0x46,
+  BLOCK_IronDoorBlock       = 0x47,
+  BLOCK_WoodenPressurePlate = 0x48,
+  BLOCK_RedstoneOre         = 0x49,
+  BLOCK_GlowingRedstoneOre  = 0x4A,
+  BLOCK_RedstoneTorchOff    = 0x4B,
+  BLOCK_RedstoneTorchOn     = 0x4C,
+  BLOCK_StoneButton         = 0x4D,
+  BLOCK_Snow                = 0x4E,
+  BLOCK_Ice                 = 0x4F,
+  BLOCK_SnowBlock           = 0x50,
+  BLOCK_Cactus              = 0x51,
+  BLOCK_ClayBlock           = 0x52,
+  BLOCK_SugarCaneBlock      = 0x53,
+  BLOCK_Jukebox             = 0x54,
+  BLOCK_Fence               = 0x55,
+  BLOCK_Pumpkin             = 0x56,
+  BLOCK_Netherrack          = 0x57,
+  BLOCK_SoulSand            = 0x58,
+  BLOCK_GlowstoneBlock      = 0x59,
+  BLOCK_Portal              = 0x5A,
+  BLOCK_JackOLantern        = 0x5B,
+  BLOCK_CackeBlock          = 0x5C,
+  BLOCK_RedstoneRepeaterOff = 0x5D,
+  BLOCK_RedstoneRepeaterOn  = 0x5E
+};
+
+/*********** Info Types ***********/
 
 struct PacketInfo
 {
+  inline operator size_t() const { return size_t(code); }
+  inline bool operator==(const PacketInfo & other) const { return code == other.code; }
+
+  EPacketNames code;
   size_t size;
   std::string name;
-  explicit PacketInfo(size_t size = 0, std::string name = "") : size(size), name(name) { }
 };
 
-/// enums don't hash by default, but since they're integral types, we can just use the int hasher.
-namespace std {
-  template<>
-  struct hash<EPacketNames> : public unary_function<EPacketNames, size_t>
-  {
-    static hash<int> hasher;
-    inline size_t operator()(const EPacketNames & v) const
-    {
-      return hasher(int(v));
-    }
-  };
-}
+struct BlockItemInfo
+{
+  enum Type { BLOCK = 0, ITEM = 1 };
 
-extern std::unordered_map<EPacketNames, PacketInfo> PACKET_INFO;
+  inline Type type() const { return code < 256 ? BLOCK : ITEM ; }
+  inline operator size_t() const { return size_t(code); }
+  inline bool operator==(const BlockItemInfo & other) const { return code == other.code; }
+
+  EBlockItem code;
+  std::string name;
+};
+
+extern std::unordered_set<PacketInfo, std::hash<size_t>> PACKET_INFO;
+
+extern std::unordered_set<BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO;
+
 
 
 /******** Packet Data Structures *********/
@@ -220,57 +425,6 @@ enum
 #define MC_COLOR_YELLOW std::string("§e")
 #define MC_COLOR_WHITE std::string("§f")
 
-// Blocks
-enum Block
-{
-  BLOCK_AIR, BLOCK_STONE, BLOCK_GRASS, BLOCK_DIRT, BLOCK_COBBLESTONE, BLOCK_PLANK,
-  BLOCK_SAPLING, BLOCK_BEDROCK, BLOCK_WATER, BLOCK_STATIONARY_WATER, BLOCK_LAVA,
-  BLOCK_STATIONARY_LAVA, BLOCK_SAND, BLOCK_GRAVEL, BLOCK_GOLD_ORE, BLOCK_IRON_ORE,
-  BLOCK_COAL_ORE, BLOCK_WOOD, BLOCK_LEAVES, BLOCK_SPONGE, BLOCK_GLASS, BLOCK_LAPIS_ORE,
-  BLOCK_LAPIS_BLOCK, BLOCK_DISPENSER, BLOCK_SANDSTONE, BLOCK_NOTE_BLOCK, BLOCK_BED,
-  BLOCK_YELLOW_FLOWER = 37, BLOCK_RED_ROSE, BLOCK_BROWN_MUSHROOM, BLOCK_RED_MUSHROOM,
-  BLOCK_GOLD_BLOCK, BLOCK_IRON_BLOCK, BLOCK_DOUBLE_STEP, BLOCK_STEP, BLOCK_BRICK,
-  BLOCK_TNT, BLOCK_BOOKSHELF, BLOCK_MOSSY_COBBLESTONE, BLOCK_OBSIDIAN, BLOCK_TORCH,
-  BLOCK_FIRE, BLOCK_MOB_SPAWNER, BLOCK_WOODEN_STAIRS, BLOCK_CHEST, BLOCK_REDSTONE_WIRE,
-  BLOCK_DIAMOND_ORE, BLOCK_DIAMOND_BLOCK, BLOCK_WORKBENCH, BLOCK_CROPS, BLOCK_SOIL,
-  BLOCK_FURNACE, BLOCK_BURNING_FURNACE, BLOCK_SIGN_POST, BLOCK_WOODEN_DOOR,
-  BLOCK_LADDER, BLOCK_MINECART_TRACKS, BLOCK_COBBLESTONE_STAIRS, BLOCK_WALL_SIGN,
-  BLOCK_LEVER, BLOCK_STONE_PRESSURE_PLATE, BLOCK_IRON_DOOR, BLOCK_WOODEN_PRESSURE_PLATE,
-  BLOCK_REDSTONE_ORE, BLOCK_GLOWING_REDSTONE_ORE, BLOCK_REDSTONE_TORCH_OFF,
-  BLOCK_REDSTONE_TORCH_ON, BLOCK_STONE_BUTTON, BLOCK_SNOW, BLOCK_ICE, BLOCK_SNOW_BLOCK,
-  BLOCK_CACTUS, BLOCK_CLAY, BLOCK_REED, BLOCK_JUKEBOX, BLOCK_FENCE, BLOCK_PUMPKIN,
-  BLOCK_NETHERSTONE, BLOCK_SLOW_SAND, BLOCK_GLOWSTONE, BLOCK_PORTAL, BLOCK_JACK_O_LANTERN,
-  BLOCK_CAKE, BLOCK_REDSTONE_REPEATER_OFF, BLOCK_REDSTONE_REPEATER_ON, BLOCK_LOCKED_CHEST,
-  BLOCK_AQUA_GREEN_CLOTH, BLOCK_CYAN_CLOTH, BLOCK_BLUE_CLOTH, BLOCK_PURPLE_CLOTH,
-  BLOCK_INDIGO_CLOTH, BLOCK_VIOLET_CLOTH, BLOCK_MAGENTA_CLOTH, BLOCK_PINK_CLOTH,
-  BLOCK_BLACK_CLOTH, BLOCK_WHITE_CLOTH, BLOCK_GRAY_CLOTH = 35
-};
-
-// Items
-enum
-{
-  ITEM_IRON_SPADE = 256, ITEM_IRON_PICKAXE, ITEM_IRON_AXE, ITEM_FLINT_AND_STEEL, ITEM_APPLE,
-  ITEM_BOW, ITEM_ARROW, ITEM_COAL, ITEM_DIAMOND, ITEM_IRON_INGOT, ITEM_GOLD_INGOT, ITEM_IRON_SWORD,
-  ITEM_WOODEN_SWORD, ITEM_WOODEN_SPADE, ITEM_WOODEN_PICKAXE, ITEM_WOODEN_AXE, ITEM_STONE_SWORD,
-  ITEM_STONE_SPADE, ITEM_STONE_PICKAXE, ITEM_STONE_AXE, ITEM_DIAMOND_SWORD,
-  ITEM_DIAMOND_SPADE, ITEM_DIAMOND_PICKAXE, ITEM_DIAMOND_AXE, ITEM_STICK, ITEM_BOWL,
-  ITEM_MUSHROOM_SOUP, ITEM_GOLD_SWORD, ITEM_GOLD_SPADE, ITEM_GOLD_PICKAXE, ITEM_GOLD_AXE,
-  ITEM_STRING, ITEM_FEATHER, ITEM_GUNPOWDER, ITEM_WOODEN_HOE, ITEM_STONE_HOE,
-  ITEM_IRON_HOE, ITEM_DIAMOND_HOE, ITEM_GOLD_HOE, ITEM_SEEDS, ITEM_WHEAT, ITEM_BREAD,
-  ITEM_LEATHER_HELMET, ITEM_LEATHER_CHESTPLATE, ITEM_LEATHER_LEGGINGS, ITEM_LEATHER_BOOTS,
-  ITEM_CHAINMAIL_HELMET, ITEM_CHAINMAIL_CHESTPLATE, ITEM_CHAINMAIL_LEGGINGS,
-  ITEM_CHAINMAIL_BOOTS, ITEM_IRON_HELMET, ITEM_IRON_CHESTPLATE, ITEM_IRON_LEGGINGS,
-  ITEM_IRON_BOOTS, ITEM_DIAMOND_HELMET, ITEM_DIAMOND_CHESTPLATE, ITEM_DIAMOND_LEGGINGS,
-  ITEM_DIAMOND_BOOTS, ITEM_GOLD_HELMET, ITEM_GOLD_CHESTPLATE, ITEM_GOLD_LEGGINGS,
-  ITEM_GOLD_BOOTS, ITEM_FLINT, ITEM_PORK, ITEM_GRILLED_PORK, ITEM_PAINTINGS,
-  ITEM_GOLDEN_APPLE, ITEM_SIGN, ITEM_WOODEN_DOOR, ITEM_BUCKET, ITEM_WATER_BUCKET,
-  ITEM_LAVA_BUCKET, ITEM_MINECART, ITEM_SADDLE, ITEM_IRON_DOOR, ITEM_REDSTONE,
-  ITEM_SNOWBALL, ITEM_BOAT, ITEM_LEATHER, ITEM_MILK_BUCKET, ITEM_CLAY_BRICK,
-  ITEM_CLAY_BALLS, ITEM_REED, ITEM_PAPER, ITEM_BOOK, ITEM_SLIME_BALL,
-  ITEM_STORAGE_MINECART, ITEM_POWERED_MINECART, ITEM_EGG, ITEM_COMPASS, ITEM_FISHING_ROD,
-  ITEM_WATCH, ITEM_GLOWSTONE_DUST, ITEM_RAW_FISH, ITEM_COOKED_FISH, ITEM_DYE,
-  ITEM_BONE, ITEM_SUGAR, ITEM_CAKE, ITEM_BED
-};
 
 // Records
 enum

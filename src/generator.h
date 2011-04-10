@@ -14,7 +14,7 @@ public:
   inline void addCaves(uint8_t & block, int32_t wX, int32_t wY, int32_t wZ)
   {
     if (caveNoise.GetValue(wX / 4.0, wY / 1.5, wZ / 4.0) > m_caveThreshold)
-      block = (wY < 10 && m_addCaveLava) ? BLOCK_LAVA : BLOCK_AIR;
+      block = (wY < 10 && m_addCaveLava) ? BLOCK_Lava : BLOCK_Air;
   }
 
   noise::module::RidgedMulti caveNoise;
