@@ -276,7 +276,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     else
     {
       const ChunkCoords start_chunk(0, 0);
-      std::vector<ChunkCoords> ac = ambientChunks(start_chunk, 1);    // 21x21 around the current chunk
+      std::vector<ChunkCoords> ac = ambientChunks(start_chunk, 5);    // 21x21 around the current chunk
       std::sort(ac.begin(), ac.end(), L1DistanceFrom(start_chunk)); // L1-sorted by distance from centre.
 
       for (auto i = ac.begin(); i != ac.end(); ++i)
@@ -387,7 +387,7 @@ void GameStateManager::packetCSSign(int32_t eid, int32_t X, int16_t Y, int32_t Z
 void GameStateManager::packetSCKeepAlive(int32_t eid)
 {
   PacketCrafter p(PACKET_KEEP_ALIVE);
-  m_connection_manager.sendDataToClient(eid, p.craft());
+  m_connection_manager.sendDataToClient(eid, p.craft(), "<keep alive>");
 }
 
 void GameStateManager::packetSCKick(int32_t eid, const std::string & message)

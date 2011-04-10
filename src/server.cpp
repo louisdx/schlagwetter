@@ -59,18 +59,28 @@ void Server::runInputProcessing()
 
       while (!m_connection_manager.m_pending_eids.empty())
       {
-        std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
+        m_connection_manager.m_cd_mutex.lock();
 
         ConnectionManager::ClientData::iterator it = m_connection_manager.clientData().find(m_connection_manager.m_pending_eids.front());
 
         if (it != m_connection_manager.clientData().end())
         {
+          const int32_t eid = it->first;
+          auto & cd = it->second;
+
+          m_connection_manager.m_cd_mutex.unlock();
+
           // processIngress() only returns true if all data has been processed.
-          if (processIngress(it->first, it->second))
+          if (processIngress(eid, cd))
           {
             // We only remove an EID from the list if its queue is empty.
+            std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
             m_connection_manager.m_pending_eids.pop_front();
           }
+        }
+        else
+        {
+          m_connection_manager.m_cd_mutex.unlock();
         }
       }
 
