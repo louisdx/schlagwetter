@@ -99,7 +99,8 @@ public:
 
   /// Compute the chunk's light map and height map.
   void updateLightAndHeightMaps(Map & map);
-  void spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigned char block_light, Map & map);
+  void spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigned char block_light, Map & map, size_t recursion_depth = 0);
+  void spreadLight(const WorldCoords & wc, unsigned char value, Map & map, uint8_t type /* 0 = sky, 1 = block */, size_t recursion_depth = 0);
 
   /// The client expects chunks to be deflate()ed. ZLIB to the rescue.
   /// The beefed-up version uses a local cache if possible.

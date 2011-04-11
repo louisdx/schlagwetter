@@ -154,6 +154,12 @@ inline WorldCoords & operator+=(WorldCoords & wc, Direction dir)
   return wc;
 }
 
+inline const WorldCoords operator+(const WorldCoords & wc, Direction dir)
+{
+  WorldCoords wcnew(wc);
+  return wcnew += dir;
+}
+
 
 /*  A little helper function that creates a collection
  *  of chunks in a (2*radius+1)^2 square around a given chunk.

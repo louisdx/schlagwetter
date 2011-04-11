@@ -104,7 +104,7 @@ Chunk & Map::getChunkOrGenerateNew(const ChunkCoords & cc)
     {
       ins = m_chunkMap.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>(cc))).first;
       generateWithNoise(*ins->second, cc);
-      (*ins->second).updateLightAndHeightMaps(*this); // Off for now so you can marvel at the Cave :-)
+      (*ins->second).updateLightAndHeightMaps(*this);
     }
   }
 
@@ -164,66 +164,102 @@ void Chunk::updateLightAndHeightMaps(Map & map)
         if (EMIT_LIGHT[blockType(x, y, z)] > 0)
           setBlockLight(x, y, z, EMIT_LIGHT[blockType(x, y, z)]);
 
-  // Spread light
+  // Spread the light no neighbouring blocks
+
   for (int x = 0; x < 16; ++x)
     for (int z = 0; z < 16; ++z)
       for (int y = height(x, z); y >= 0; --y)
-        if (getSkyLight(x, y, z) || getBlockLight(x, y, z))
-          spreadLight(getWorldCoords(LocalCoords(x, y, z), coords()), getSkyLight(x, y, z), getBlockLight(x, y, z), map);
+        {
+          if (getSkyLight(x, y, z))
+            spreadLight(getWorldCoords(LocalCoords(x, y, z), coords()), getSkyLight(x, y, z), map, 0 /* == sky */);
+
+          if (getBlockLight(x, y, z))
+            spreadLight(getWorldCoords(LocalCoords(x, y, z), coords()), getBlockLight(x, y, z), map, 1 /* == block */);
+        }
 }
 
-
-void Chunk::spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigned char block_light, Map & map)
+void Chunk::spreadLight(const WorldCoords & wc, unsigned char value, Map & map, uint8_t type, size_t recursion_depth)
 {
-  // If no light, stop!
-  if (sky_light == 0 && block_light == 0) return;
+  if (recursion_depth > 16)
+  {
+    std::cout << "Panic, spreadLight() [Type = " << (unsigned int)(type) << "] recursed unexpectedly!" << std::endl;
+    return;
+  }
 
-  for (int direction = 0; direction < 6; ++direction)
+  // If no light, stop!
+  if (value == 0) return;
+
+  for (size_t direction = 0; direction < 6; ++direction)
   {
     // Going too high
-    if ((lY(wc) == 127) && (direction == 2))
+    if ((lY(wc) == 127) && (direction == BLOCK_YPLUS))
     {
       //Skip this direction
       ++direction;
     }
     // Going too low
-    else if ((lY(wc) == 0) && (direction == 3))
+    else if ((lY(wc) == 0) && (direction == BLOCK_YMINUS))
     {
       //Skip this direction
       ++direction;
     }
 
-    WorldCoords to_set(wc);
-
-    switch (direction)
-    {
-    case 0:
-      ++wX(to_set);
-      break;
-    case 1:
-      --wX(to_set);
-      break;
-    case 2:
-      ++wY(to_set);
-      break;
-    case 3:
-      --wY(to_set);
-      break;
-    case 4:
-      ++wZ(to_set);
-      break;
-    case 5:
-      --wZ(to_set);
-      break;
-    };
+    WorldCoords to_set = wc + Direction(direction);
 
     if (map.haveChunk(getChunkCoords(to_set)))
     {
       Chunk & chunk = map.chunk(getChunkCoords(to_set)); // Most times chunk == *this.
       const unsigned char & block = chunk.blockType(getLocalCoords(to_set));
 
-      const unsigned char sky_light_new   = std::max(0, sky_light   - STOP_LIGHT[block] - 1);
-      const unsigned char block_light_new = std::max(0, block_light - STOP_LIGHT[block] - 1);
+      const unsigned char value_new = std::max(0, int(value) - int(STOP_LIGHT[block]) - 1);
+
+      if (value_new > ( type == 0 ? chunk.getSkyLight(getLocalCoords(to_set)) : chunk.getBlockLight(getLocalCoords(to_set)) ))
+      {
+        if      (type == 0) chunk.setSkyLight  (getLocalCoords(to_set), value_new);
+        else if (type == 1) chunk.setBlockLight(getLocalCoords(to_set), value_new);
+
+        chunk.spreadLight(to_set, value_new, map, type, recursion_depth + 1);
+      }
+    }
+  }
+}
+
+void Chunk::spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigned char block_light, Map & map, size_t recursion_depth)
+{
+  // Avoid recursing too deeply. Should never happen, since at each step the light goes down by one.
+  if (recursion_depth > 256)
+  {
+    std::cout << "Panic, spreadLight() recursed too deeply!" << std::endl;
+    return;
+  }
+
+  // If no light, stop!
+  if (sky_light == 0 && block_light == 0) return;
+
+  for (size_t direction = 0; direction < 6; ++direction)
+  {
+    // Going too high
+    if ((lY(wc) == 127) && (direction == BLOCK_YPLUS))
+    {
+      //Skip this direction
+      ++direction;
+    }
+    // Going too low
+    else if ((lY(wc) == 0) && (direction == BLOCK_YMINUS))
+    {
+      //Skip this direction
+      ++direction;
+    }
+
+    WorldCoords to_set = wc + Direction(direction);
+
+    if (map.haveChunk(getChunkCoords(to_set)))
+    {
+      Chunk & chunk = map.chunk(getChunkCoords(to_set)); // Most times chunk == *this.
+      const unsigned char & block = chunk.blockType(getLocalCoords(to_set));
+
+      const unsigned char sky_light_new   = std::max(0, int(sky_light)   - int(STOP_LIGHT[block]) - 1);
+      const unsigned char block_light_new = std::max(0, int(block_light) - int(STOP_LIGHT[block]) - 1);
 
       bool spread = false;
 
@@ -240,7 +276,7 @@ void Chunk::spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigne
       }
 
       if (spread) 
-        chunk.spreadLight(to_set, chunk.getSkyLight(getLocalCoords(to_set)), chunk.getBlockLight(getLocalCoords(to_set)), map);
+        chunk.spreadLight(to_set, chunk.getSkyLight(getLocalCoords(to_set)), chunk.getBlockLight(getLocalCoords(to_set)), map, recursion_depth + 1);
     }
   }
 }

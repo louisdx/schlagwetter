@@ -34,6 +34,8 @@ void GameStateManager::update(int32_t eid)
       m_connection_manager.pendingEIDs().erase(it);
     }
 
+    m_states.erase(eid);
+
     return;
   }
 
@@ -305,7 +307,9 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
       /// Load all available chunks to memory, but only send the first 50 to the client.
 
-      std::sort(ac.begin(), ac.end(), L1DistanceFrom(ChunkCoords(0, 0))); // L1-sorted by distance from centre.
+      WorldCoords start_pos(70, 70, 70);
+
+      std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(start_pos))); // L1-sorted by distance from centre.
       size_t counter = 0;
 
       for (auto i = ac.begin(); i != ac.end(); ++i, ++counter)
@@ -316,19 +320,26 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
           auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
           m_map.insertChunk(c);
 
-          if (counter < 50)
+          if (counter < 120)
           {
-            std::string raw_chunk = c->compress();
 
+            // Not sure if the client has a problem with data coming in too fast...
+            sleepMilli(10);
+
+            std::pair<const unsigned char *, size_t> p = c->compress_beefedup();
             packetSCPreChunk(eid, *i, true);
-            packetSCMapChunk(eid, *i, raw_chunk);
+
+            if (p.second > 18)
+              packetSCMapChunk(eid, p);
+            else
+              packetSCMapChunk(eid, *i, c->compress());
           }
       }
 
       m_states[eid].state = GameState::READYTOSPAWN;
 
-      packetSCSpawn(eid, 8, 80, 8);
-      packetSCPlayerPositionAndLook(eid, 8.0, 80.0, 8.0, 81.6, 0.0, 0.0, false);
+      packetSCSpawn(eid, start_pos);
+      packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, false);
     }
     else
     {
