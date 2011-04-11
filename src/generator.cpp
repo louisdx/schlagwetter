@@ -45,10 +45,12 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
 
       for (size_t bY = 0; bY <= ymax; bY++)
       {
+        const LocalCoords lc(bX, bY, bZ);
+
         // Place bedrock
         if (bY == 0)
         {
-          c.blockType(bX, bY, bZ) = BLOCK_Bedrock;
+          c.blockType(lc) = BLOCK_Bedrock;
           continue;
         }
 
@@ -56,40 +58,40 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
         {
           if (bY < stoneHeight)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_Stone;
+            c.blockType(lc) = BLOCK_Stone;
 
             // Add caves
-            if (add_caves) NG.addCaves(c.blockType(bX, bY, bZ), bX + 16 * cX(cc), bY, bZ + 16 * cZ(cc));
+            if (add_caves) NG.addCaves(c.blockType(lc), getWorldCoords(lc, cc));
           }
           else
           {
-            c.blockType(bX, bY, bZ) = BLOCK_Dirt;
+            c.blockType(lc) = BLOCK_Dirt;
           }
         }
         else if (bY == currentHeight)
         {
           if (bY == sea_level || bY == sea_level - 1 || bY == sea_level - 2)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_Sand;  // FF
+            c.blockType(lc) = BLOCK_Sand;  // FF
           }
           else if (bY < sea_level - 1)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_Gravel;  // FF
+            c.blockType(lc) = BLOCK_Gravel;  // FF
           }
           else
           {
-            c.blockType(bX, bY, bZ) = topBlock;  // FF
+            c.blockType(lc) = topBlock;  // FF
           }
         }
         else
         {
           if (bY <= sea_level)
           {
-            c.blockType(bX, bY, bZ) = BLOCK_Water;  // FF
+            c.blockType(lc) = BLOCK_Water;  // FF
           }
           else
           {
-            c.blockType(bX, bY, bZ) = BLOCK_Air;  // FF
+            c.blockType(lc) = BLOCK_Air;  // FF
           }
         }
       }

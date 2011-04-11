@@ -11,10 +11,10 @@ class NoiseGenerator
 public:
   explicit NoiseGenerator(int seed = 137337, bool addCaveLava = true, unsigned int caveSize = 30, double caveThreshold = 0.5);
 
-  inline void addCaves(uint8_t & block, int32_t wX, int32_t wY, int32_t wZ)
+  inline void addCaves(uint8_t & block, const WorldCoords & wc)
   {
-    if (caveNoise.GetValue(wX / 4.0, wY / 1.5, wZ / 4.0) > m_caveThreshold)
-      block = (wY < 10 && m_addCaveLava) ? BLOCK_Lava : BLOCK_Air;
+    if (caveNoise.GetValue(wX(wc) / 4.0, wY(wc) / 1.5, wZ(wc) / 4.0) > m_caveThreshold)
+      block = (wY(wc) < 10 && m_addCaveLava) ? BLOCK_Lava : BLOCK_Air;
   }
 
   noise::module::RidgedMulti caveNoise;

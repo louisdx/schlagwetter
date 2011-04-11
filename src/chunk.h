@@ -34,6 +34,7 @@ public:
   inline void taint()
   {
     m_zcache.usable = false;
+    //std::cout << "Tainting chunk " << coords() << std::endl;
   }
 
   /// This is how the client expects the 3D data to be arranged.
@@ -71,22 +72,29 @@ public:
   inline       unsigned char & height(size_t x, size_t z)       { return m_heightmap[z + 16 * x]; }
   inline const unsigned char & height(size_t x, size_t z) const { return m_heightmap[z + 16 * x]; }
 
+private:
+  // Disallow access to raw coordinates. Save yourself headache!
   inline       unsigned char & blockType(size_t x, size_t y, size_t z)       { return m_data[offsetBlockType + index(x, y, z)]; }
   inline const unsigned char & blockType(size_t x, size_t y, size_t z) const { return m_data[offsetBlockType + index(x, y, z)]; }
-  inline       unsigned char & blockType(const LocalCoords& lc)              { return blockType(lX(lc), lY(lc), lZ(lc)); }
-  inline const unsigned char & blockType(const LocalCoords& lc)        const { return blockType(lX(lc), lY(lc), lZ(lc)); }
 
   inline void setBlockMetaData(size_t x, size_t y, size_t z, unsigned char val) { setHalf(y, val, m_data[offsetBlockMetaData + index(x, y, z) / 2]); }
   inline unsigned char getBlockMetaData(size_t x, size_t y, size_t z) const { return getHalf(y, m_data[offsetBlockMetaData + index(x, y, z) / 2]); }
 
   inline void setBlockLight(size_t x, size_t y, size_t z, unsigned char val) { setHalf(y, val, m_data[offsetBlockLight + index(x, y, z) / 2]); }
-  inline void setBlockLight(const LocalCoords & lc, unsigned char val) { setBlockLight(lX(lc), lY(lc), lZ(lc), val); }
   inline unsigned char getBlockLight(size_t x, size_t y, size_t z) const { return getHalf(y, m_data[offsetBlockLight + index(x, y, z) / 2]); }
-  inline unsigned char getBlockLight(const LocalCoords & lc) const { return getBlockLight(lX(lc), lY(lc), lZ(lc)); }
 
   inline void setSkyLight(size_t x, size_t y, size_t z, unsigned char val) { setHalf(y, val, m_data[offsetSkyLight + index(x, y, z) / 2]); }
-  inline void setSkyLight(const LocalCoords & lc, unsigned char val) { setSkyLight(lX(lc), lY(lc), lZ(lc), val); }
   inline unsigned char getSkyLight(size_t x, size_t y, size_t z) const { return getHalf(y, m_data[offsetSkyLight + index(x, y, z) / 2]); }
+
+public:
+  // Allow only access via explicit coordinate types.
+  inline       unsigned char & blockType(const LocalCoords& lc)              { return blockType(lX(lc), lY(lc), lZ(lc)); }
+  inline const unsigned char & blockType(const LocalCoords& lc)        const { return blockType(lX(lc), lY(lc), lZ(lc)); }
+
+  inline void setBlockLight(const LocalCoords & lc, unsigned char val) { setBlockLight(lX(lc), lY(lc), lZ(lc), val); }
+  inline unsigned char getBlockLight(const LocalCoords & lc) const { return getBlockLight(lX(lc), lY(lc), lZ(lc)); }
+
+  inline void setSkyLight(const LocalCoords & lc, unsigned char val) { setSkyLight(lX(lc), lY(lc), lZ(lc), val); }
   inline unsigned char getSkyLight(const LocalCoords & lc) const { return getSkyLight(lX(lc), lY(lc), lZ(lc)); }
 
   /// Compute the chunk's light map and height map.

@@ -10,6 +10,8 @@
 static std::array<unsigned char, 100000> zlib_buffer;
 static std::mutex zlib_buffer_mutex;
 
+
+/// This version uses global memory to hold the deflated data and returns a copy.
 std::string Chunk::compress() const
 {
   /// Our chunks are always 80KiB, so we assume that 100KB suffice for the output and skip the bound check.
@@ -51,11 +53,13 @@ std::string Chunk::compress() const
   return result;
 }
 
+
+/// This version uses a (rather small) per-chunk zip cache.
 std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
 {
   if (m_zcache.usable)
   {
-    std::cout << "cached zlib deflate cach hit! (" << std::dec << m_zcache.length << " bytes)" << std::endl;
+    std::cout << "cached zlib deflate cache hit! (" << std::dec << m_zcache.length << " bytes)" << std::endl;
     return std::make_pair(m_zcache.cache.data(), m_zcache.length + 18);
   }
 
@@ -69,11 +73,11 @@ std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
   else
   {
     std::cout << "caching zlib deflate: " << std::dec << outlength << std::endl;
+    m_zcache.usable = true;
   }
 
   m_zcache.writeLength(outlength);
   m_zcache.length = outlength;
-  m_zcache.usable = true;
 
   return std::make_pair(m_zcache.cache.data(), m_zcache.length + 18);
 }

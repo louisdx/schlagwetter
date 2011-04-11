@@ -91,7 +91,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 #define USE_ZCACHE 1
 #if USE_ZCACHE > 0
     // This is using a chunk-local zip cache.
-    auto p = c.compress_beefedup();
+    std::pair<const unsigned char *, size_t> p = c.compress_beefedup();
     packetSCPreChunk(eid, *i, true);
 
     if (p.second > 18)
@@ -188,16 +188,12 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
 
   if (status == 2)
   {
-    Chunk & chunk = m_map.chunk(getChunkCoords(WorldCoords(X, Y, Z)));
+    const WorldCoords wc(X, Y, Z);
+    Chunk & chunk = m_map.chunk(wc);
+    chunk.blockType(getLocalCoords(wc)) = BLOCK_Air;
     chunk.taint();
 
-    PacketCrafter p(PACKET_BLOCK_CHANGE);
-    p.addInt32(X);      // X
-    p.addInt8(Y);       // Y
-    p.addInt32(Z);      // Z
-    p.addInt8(chunk.blockType(X, Y, Z) = BLOCK_Air);
-    p.addInt8(0);
-    m_connection_manager.sendDataToClient(eid, p.craft(), "[dig response]");
+    sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
   }
 }
 

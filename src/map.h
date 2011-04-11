@@ -18,6 +18,8 @@ public:
 
   inline       Chunk & chunk(const ChunkCoords & cc)       { return *(m_chunkMap.find(cc)->second); }
   inline const Chunk & chunk(const ChunkCoords & cc) const { return *(m_chunkMap.find(cc)->second); }
+  inline       Chunk & chunk(const WorldCoords & wc)       { return *(m_chunkMap.find(getChunkCoords(wc))->second); }
+  inline const Chunk & chunk(const WorldCoords & wc) const { return *(m_chunkMap.find(getChunkCoords(wc))->second); }
 
   /// If no chunk exists at cc, create a random one. Always returns the chunk at cc.
   Chunk & getChunkOrGenerateNew(const ChunkCoords & cc);
