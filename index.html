@@ -1,77 +1,135 @@
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
-<head>
-  <meta charset='utf-8'>
+  <head>
+    <title>Schlagwetter: A Minecraft Server</title>
+    <link type="text/css" rel="stylesheet" href="default.css">
+    <meta http-equiv="Content-type" content="text/html; charset=iso-8859-1">
+    <style type="text/css">
+      html { margin: 0; padding: 0; font-size: medium; font-family: Calibri, "DejaVu Sans", "Trebuchet MS", Helvetica, sans-serif; }
+      body { margin: 3em auto; max-width: 66em; padding: 0; line-height: 1.5em; }
+      h2 { font-size: 1.25em; font-weight: bold; line-height: 1.25em; margin: 1em 0 .5em 0; padding: 0; }
+      h1 { font-size: 2em; font-weight: bold; line-height: 1.25em; }
+      a:link, a:visited { color: maroon; text-decoration: none; border-bottom: 1px solid #DAA; }
+      a:link:hover, a:visited:hover { color: white; border: none; background-color: maroon; }
+      code { margin: auto .5ex; background-color: #EEE; }
+      p.footnote { font-size: .8em; line-height: 1em; }
+      span.subtitle { font-size: .75em; font-weight: normal; font-style: italic; }
+      div.listing { font-family: monospace; padding: 0 2em; white-space: pre; }
+    </style>
+  </head>
+  <body>
 
-  <title>louisdx/schlagwetter @ GitHub</title>
+    <h1>Schlagwetter<br><span class="subtitle">A Minecraft Server</span></h1>
 
-  <style type="text/css">
-    body {
-      margin-top: 1.0em;
-      background-color: #abde63;
-      font-family: Helvetica, Arial, FreeSans, san-serif;
-      color: #000000;
-    }
-    #container {
-      margin: 0 auto;
-      width: 700px;
-    }
-    h1 { font-size: 3.8em; color: #54219c; margin-bottom: 3px; }
-    h1 .small { font-size: 0.4em; }
-    h1 a { text-decoration: none }
-    h2 { font-size: 1.5em; color: #54219c; }
-    h3 { text-align: center; color: #54219c; }
-    a { color: #54219c; }
-    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
-    .download { float: right; }
-    pre { background: #000; color: #fff; padding: 15px;}
-    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
-    .footer { text-align:center; padding-top:30px; font-style: italic; }
-  </style>
-</head>
+    <p>Please visit the <a href="https://github.com/louisdx/schlagwetter">source code repository</a> on GitHub.</p>
 
-<body>
-  <a href="http://github.com/louisdx/schlagwetter"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+    <p><em>Schlagwetter</em> is an open-source project to create a server for <a href="http://www.minecraft.net/">Minecraft</a>.
+    While there are several other similar projects, both free and commercial, I decided to start my own with specific
+    design goals in mind.</p>
 
-  <div id="container">
+    <p style="text-align: center;"><img src="mcshot.jpg" alt="A cave."></p>
 
-    <div class="download">
-      <a href="http://github.com/louisdx/schlagwetter/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/louisdx/schlagwetter/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
-    </div>
+    <h2>News and current status</h2>
 
-    <h1><a href="http://github.com/louisdx/schlagwetter">Schlagwetter</a>
-      <span class="small">by <a href="http://github.com/louisdx">louisdx</a></span></h1>
+    <p>April 2011: Basic networking framework is set up.
+    The <em>Minecraft</em> protocol has been implemented as stubs, but not yet written
+    out very much (digging works, placement doesn't). No persistent data storage yet,
+    though region file reading is available.</p>
 
-    <div class="description">
-      A Minecraft server written in C++0x/Boost.
-    </div>
+    <h2>Design goals</h2>
 
-    <h2>Authors</h2>
-<p>Louis Delacroix (yoursecretsaresafe@googlemail.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p>Louis Delacroix (yoursecretsaresafe@googlemail.com)<br/>      </p>
+    <ul>
+      <li>Free and open source.</li>
+      <li>Written in a modern, compiled language; specifically C++0x.</li>
+      <li>Simple and monolithic: All other projects I have seen have developed a large,
+      intricate plug-in system in which even the core game itself is a plug-in. I prefer
+      to write clean and portable code which can be extended at the source level and
+      recompiled when needed. <em>Don't abstract until you need to.</em>
+      <li>Standard-compliand and platform independent: Using the new C++0x STL and Boost
+      (<a href="http://www.boost.org/doc/libs/1_46_1/doc/html/boost_asio.html">ASIO</a>, mainly),
+      I have not yet needed to write a single line of platform-dependent code. With any
+      luck, that trend will continue.*</li>
+      <li>Correctness. Being a server application, the program must be 100% correct. No memory
+      leaks or undefined behaviour are acceptable. Every commit to the project must pass
+      a run of <a href="http://valgrind.org/">Valgrind</a> without errors&dagger; and compile
+      with GCC flags <code>-W -Wall -pedantic</code>.
+    </ul>
+
+    <p class="footnote">*) A possible exception will be memory mapping for the persistent storage.
+    I do not know any platform-independent framework for that (but we will write one if we need to).</p>
+    <p class="footnote">&dagger;) I would have said &ldquo;without un-freed memory&rdquo;, too, but
+    GNU Readline does not seem to clean up and throws this off. Assistance welcome!</p>
+
+    <h2>Libraries</h2>
+
+    <p>I follow the motto &ldquo;reuse, don't reinvent&rdquo; and try to use good libraries
+    where possible rather than rolling my own solutions. Thankfully, many useful concepts are
+    provided by the new C++ standard library (hash containers, threads, smart pointers),
+    and networking primitives are entirely taken care of by Boost.Asio. A few more libraries are
+    required and used with gratitude to their creators:
+
+    <ul>
+      <li><a href="http://zlib.net/">zlib</a> for chunk compression.</li>
+      <li><a href="http://libnoise.sourceforge.net">libnoise</a> for terrain generation.</li>
+      <li><a href="https://github.com/FliPPeh/cNBT">cNBT</a>, a C library for handling NBT data structures.</li>
+      <li>[optional] <a href="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html">GNU Readline</a> for the server user interface.</li>
+    </ul>
+
+    <h3>Obtaining</h3>
+
+    <p>GitHub manages the repository, you can either download a compressed archive, or use git
+    directly: <code>git clone git://github.com/louisdx/schlagwetter.git</code></p>
+
+    <h3>Build requirements</h3>
+
+    <ul>
+      <li>The above libraries. The libraries libnoise and zlib should be easily available or buildable for your platform.
+      <a href="http://www.boost.org/">Boost</a> is a bit of a monster, but very well supported (you need the boost_program_options
+      and boost_system dynamic libraries, and a bunch of header-only modules). As for cNBT, it's included in the repository as a
+      linked submodule, and you need to retrieve it separately (but git can do this for you).</li>
+      <li>If you have <a href="http://www.cmake.org/">cmake</a>, everything should work with very little effort (though I only tested
+      it on Linux (Ubuntu); I would be delighted to hear about other platforms). Even if you don't have cmake, you could still try and
+      build all the <code>src/*.cpp</code> files and link them together (excluding <code>tester*.cpp</code>); if you set all your
+      include paths right to pick up the requisite libraries, this ought to work.</li>
+    </ul>
+
+    <h3>Example</h3>
+
+    <p>Let's suppose you are on a Linux machine and you have git and cmake.</p>
+    <div class="listing">mkdir /tmp/workspace
+cd /tmp/workspace
+git clone git://github.com/louisdx/schlagwetter.git
+cd schlagwetter
+git submodule update --init
+mkdir ../buildplace
+cd ../buildplace
+
+cmake ../schlagwetter
+make
+
+./src/bin/schlagwetter --help
+./src/bin/schlagwetter</div>
 
 
-    <h2>Download</h2>
-    <p>
-      You can download this project in either
-      <a href="http://github.com/louisdx/schlagwetter/zipball/master">zip</a> or
-      <a href="http://github.com/louisdx/schlagwetter/tarball/master">tar</a> formats.
-    </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/louisdx/schlagwetter</pre>
-    </p>
+    <p>Any suggestions for improving the build environment are most welcome!</p>
 
-    <div class="footer">
-      get the source code on GitHub : <a href="http://github.com/louisdx/schlagwetter">louisdx/schlagwetter</a>
-    </div>
+    <h2>License</h2>
 
-  </div>
+    <p>I have not yet worked out the details; it will be something with &ldquo;attribution&rdquo; that is
+    compatible with the other libraries and source code that I use. Any advice would be much appreciated.</p>
 
-  
-</body>
+    <h2>Credits</h2>
+
+    <p>Many thanks to the developers of <a href="https://github.com/fador/mineserver">mineserver</a>
+    for the inspiration for this project, lots of practical help and source code. If possible, I would
+    like to keep the high-level constructs similar to theirs and make changes visible upstream. I am also
+    grateful to the developers of <a href="http://mc.kev009.com/Craftd:Main_Page">craftd</a> and
+    <a href="http://brutal-chaos.github.com/">Bravo</a> for two very promising projects.</p>
+
+    <p>If you like to help out, just send me a message on <a href="https://github.com/louisdx/schlagwetter">GitHub</a>,
+    <a href="mailto:yoursecretsaresafe@googlemail.com">email me patches or suggestions</a>, or send pull requests.</p>
+
+    <p style="text-align: right; font-style: italic;">louisdx</p>
+
+  </body>
 </html>
