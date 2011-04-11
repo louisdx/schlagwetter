@@ -204,7 +204,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::shared_ptr<SyncQueue> q
       if (int(queue->size()) < str_len) { rewindJournal(queue, tmp); break; }
       str = readString(queue, tmp, str_len);
 
-      std::cout << "Remaining queue size = " << queue->size() << std::endl;
+      //std::cout << "Remaining queue size = " << queue->size() << std::endl;
     }
 
     switch (type)

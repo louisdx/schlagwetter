@@ -51,6 +51,34 @@ std::string Chunk::compress() const
   return result;
 }
 
+std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
+{
+  if (m_zcache.usable)
+  {
+    std::cout << "cached zlib deflate cach hit! (" << std::dec << m_zcache.length << " bytes)" << std::endl;
+    return std::make_pair(m_zcache.cache.data(), m_zcache.length + 18);
+  }
+
+  unsigned long int outlength = m_zcache.cache.size() - 18;
+  int zres = ::compress(m_zcache.cache.data() + 18, &outlength, m_data.data(), size());
+  if (zres != Z_OK)
+  {
+    std::cerr << "Error during beefed-up zlib deflate!" << std::endl;
+    outlength = 0;
+  }
+  else
+  {
+    std::cout << "caching zlib deflate: " << std::dec << outlength << std::endl;
+  }
+
+  m_zcache.writeLength(outlength);
+  m_zcache.length = outlength;
+  m_zcache.usable = true;
+
+  return std::make_pair(m_zcache.cache.data(), m_zcache.length + 18);
+}
+
+
 Map::Map()
   :
   m_chunkMap(),
@@ -58,7 +86,7 @@ Map::Map()
 {
 }
 
-const Chunk & Map::getChunkOrGenerateNew(const ChunkCoords & cc)
+Chunk & Map::getChunkOrGenerateNew(const ChunkCoords & cc)
 {
   ChunkMap::iterator ins = m_chunkMap.find(cc);
 

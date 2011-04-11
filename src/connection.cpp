@@ -80,10 +80,6 @@ void Connection::handleWrite(const boost::system::error_code & e)
   }
 }
 
-void Connection::sendData(const std::string & data)
-{
-  boost::asio::async_write(m_socket, boost::asio::buffer(data.data(), data.length()), std::bind(&Connection::handleWrite, shared_from_this(), std::placeholders::_1));
-}
 
 
 ConnectionManager::ConnectionManager()
@@ -152,7 +148,7 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<unsigned char>
   m_input_ready_cond.notify_one();
 }
 
-void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data, const char * debug_message) const
+void ConnectionManager::sendDataToClient(int32_t eid, const unsigned char * data, size_t len, const char * debug_message) const
 {
   auto it = findConnectionByEID(eid);
   if (it == m_connections.end())
@@ -163,21 +159,24 @@ void ConnectionManager::sendDataToClient(int32_t eid, const std::string & data, 
   {
     if (PROGRAM_OPTIONS.count("verbose"))
     {
-      std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes. " << (debug_message ? debug_message : "") << std::endl;
+      std::cout << "Sending data to client #" << eid << ", " << len << " bytes. " << (debug_message ? debug_message : "") << std::endl;
     }
 #ifdef DEBUG
     else if (debug_message) // No need for "verbose", just print annotated packets.
     {
-      std::cout << "Sending data to client #" << eid << ", " << data.length() << " bytes. " << debug_message << std::endl;
+      std::cout << "Sending data to client #" << eid << ", " << len << " bytes. " << debug_message << std::endl;
     }
 #endif
 
-    /*
+#define PRINT_EGRESS_DATA 0
+#if PRINT_EGRESS_DATA > 0
     std::cout << "Sending data to client #" << eid << ":";
-    for (size_t i = 0; i < data.length(); ++i)
-      std::cout << " " << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(data[i]);
+    for (size_t i = 0; i < len; ++i)
+      std::cout << " " << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(data[i]);
     std::cout << std::endl;
-    */
-    (*it)->sendData(data);
+#endif
+#undef PRINT_EGRESS_DATA
+
+    (*it)->sendData(data, len);
   }
 }

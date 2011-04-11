@@ -23,11 +23,18 @@ public:
   typedef std::array<unsigned char, 81920> ChunkData;
   typedef std::array<unsigned char, 256>   ChunkHeightMap;
 
-  Chunk(const ChunkCoords & cc) : m_coords(cc), m_data(), m_heightmap() { }
-  Chunk(const ChunkCoords & cc, const ChunkData & data, const ChunkHeightMap & hm) : m_coords(cc), m_data(data), m_heightmap(hm) { }
-  Chunk(ChunkCoords && cc, ChunkData && data, ChunkHeightMap && hm) : m_coords(std::move(cc)), m_data(std::move(data)), m_heightmap(std::move(hm)) { }
+  Chunk(const ChunkCoords & cc) : m_coords(cc), m_data(), m_heightmap(), m_zcache(m_coords) { }
+  Chunk(const ChunkCoords & cc, const ChunkData & data, const ChunkHeightMap & hm) : m_coords(cc), m_data(data), m_heightmap(hm), m_zcache(m_coords) { }
+  Chunk(ChunkCoords && cc, ChunkData && data, ChunkHeightMap && hm) : m_coords(std::move(cc)), m_data(std::move(data)), m_heightmap(std::move(hm)), m_zcache(m_coords) { }
 
-  Chunk(Chunk && other) : m_data(std::move(other.m_data)), m_heightmap(std::move(other.m_heightmap)) { }
+  Chunk(Chunk && other) : m_data(std::move(other.m_data)), m_heightmap(std::move(other.m_heightmap)), m_zcache(std::move(other.m_zcache)) { }
+
+  /// For all sorts of purposes, we need to know if the chunk has been modified.
+  /// We won't do it automatically at every access, please remember to taint your chunk.
+  inline void taint()
+  {
+    m_zcache.usable = false;
+  }
 
   /// This is how the client expects the 3D data to be arranged.
   /// (Layers of (y,z)-slices indexed by x, consisting of y-columns indexed by z.)
@@ -87,7 +94,9 @@ public:
   void spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigned char block_light, Map & map);
 
   /// The client expects chunks to be deflate()ed. ZLIB to the rescue.
+  /// The beefed-up version uses a local cache if possible.
   std::string compress() const;
+  std::pair<const unsigned char *, size_t> compress_beefedup();
 
 private:
   // Own coordinates.
@@ -99,29 +108,49 @@ private:
   /// The height map isn't stored, but only used by us in private.
   /// The value at (x, z) is the height of the last air block reachable by going down from height 127, or 127 if there is no air.
   ChunkHeightMap m_heightmap;
+
+  struct ZCache
+  {
+    /* First 18 bytes:
+       uint8_t type = PACKET_MAP_CHUNK (0x33)
+       int32_t    X
+       int16_t    Y
+       int32_t    Z
+       uint8_t    size_X = 15, size_Y = 127, size_Z = 15.
+       int32_t    lenght of the subsequent data
+       -------
+       unsigned char data[len]
+    */
+
+    std::array<unsigned char, 10000> cache;
+    size_t length;
+    bool usable;
+
+    ZCache(const ChunkCoords & cc)
+      :
+      cache(),
+      length(0),
+      usable(false)
+    {
+      cache[0] = 0x33;
+      cache[11] = 0x0F; // 15
+      cache[12] = 0x7F; // 127
+      cache[13] = 0x0F; // 15
+
+      WorldCoords wc = getWorldCoords(LocalCoords(0, 0), cc);
+      writeInt32(wX(wc), cache.data() + 1);
+      writeInt16(wY(wc), cache.data() + 5);
+      writeInt32(wZ(wc), cache.data() + 7);
+    }
+
+    static inline void writeInt16(uint16_t x, unsigned char * p) { *p++ = (x >> 8) & 0xFF; *p = x & 0xFF; }
+    static inline void writeInt32(uint32_t x, unsigned char * p) { *p++ = (x >> 24); *p++ = (x >> 16) & 0xFF; *p++ = (x >> 8) & 0xFF; *p = x & 0xFF; }
+    inline void writeLength(size_t len) { writeInt32(len, cache.data() + 14); }
+  } m_zcache;
 };
 
 
 typedef std::unordered_map<ChunkCoords, std::shared_ptr<Chunk>, PairHash<int32_t, int32_t>> ChunkMap;
-
-
-inline std::vector<ChunkCoords> ambientChunks(const ChunkCoords & cc, size_t radius)
-{
-  std::vector<ChunkCoords> res;
-  res.reserve(4 * radius * radius);
-
-  const int32_t r(radius);
-
-  for (int32_t i = cX(cc) - r; i <= cX(cc) + r; ++i)
-  {
-    for (int32_t j = cX(cc) - r; j <= cX(cc) + r; ++j)
-    {
-      res.push_back(ChunkCoords(i, j));
-    }
-  }
-
-  return res;
-}
 
 
 #endif

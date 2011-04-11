@@ -6,7 +6,10 @@
 #include "server.h"
 #include "inputparser.h"
 #include "constants.h"
+
+// For PROGRAM_OPTIONS and ambientChunks(), respectively, if we precompute chunks.
 #include "cmdlineoptions.h"
+#include "types.h"
 
 template<class T>
 struct Identity
@@ -38,10 +41,9 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_acceptor.listen();
   m_acceptor.async_accept(m_next_connection->socket(), m_next_connection->peer(), std::bind(&Server::handleAccept, this, std::placeholders::_1));
 
-  /*
   if (PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
   {
-    std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), 5);
+    std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), PLAYER_CHUNK_HORIZON);
     std::cout << "Precomputing map... (" << std::dec << ac.size() << " chunks, one '*' each) ";
 
     for (auto i = ac.begin(); i != ac.end(); ++i)
@@ -49,9 +51,8 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
       (void)m_map.getChunkOrGenerateNew(*i);
       std::cout << "*"; std::cout.flush();
     }
-    std::cout << "done!" << std::endl;;
+    std::cout << " ...done!" << std::endl;;
   }
-  */
 }
 
 void Server::runIO()
@@ -73,7 +74,7 @@ void Server::runInputProcessing()
         m_connection_manager.m_input_ready_cond.wait(lock, Identity<const bool &>(m_connection_manager.m_input_ready));
       }
 
-      std::cout << "runInputProcessor() has work to do." << std::endl;
+      // std::cout << "runInputProcessor() has work to do." << std::endl;
 
       while (!m_connection_manager.m_pending_eids.empty())
       {
@@ -141,14 +142,15 @@ void Server::processSchedule200ms(int dt)
 
   //std::cout << "Tick-200ms: Actual time was " << std::dec << dt << "ms." << std::endl;
 
-  if (dt < 200) sleepMilli(200 - dt);
+  if (dt < int(m_sleep_next)) sleepMilli(m_sleep_next - dt);
   timer = clockTick();
 
   /* do stuff */
 
   const long long int work_time = clockTick() - timer;
-  if (work_time < 0) m_sleep_next = 0;
-  else m_sleep_next -= work_time;
+
+  // Try to get the next call back in rhythm.
+  m_sleep_next = work_time > 200 ? 0 : 200 - work_time;
 }
 
 void Server::processSchedule1s()
@@ -160,6 +162,7 @@ void Server::processSchedule1s()
   //std::cout << "Tick-1s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
 
   /* do stuff */
+  (void)now;
 
 
   // We just gather the active eids quickly and don't hang on to the mutex...
@@ -192,6 +195,8 @@ void Server::processSchedule10s()
   //std::cout << "Tick-10s. Actual time since last call is " << std::dec << now - timer << "ms." << std::endl;
 
   /* do stuff */
+  (void)now;
+
 
   timer = clockTick();
 }
@@ -258,7 +263,6 @@ void Server::stop()
 
 void Server::handleAccept(const boost::system::error_code & error)
 {
-  std::cout << "Server says Hi." << std::endl;
   if (!error)
   {
     m_connection_manager.start(m_next_connection);

@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
 #ifdef HAVE_GNUREADLINE
     // We must fix the path somehow.
-    GNUReadlineUI ui("/tmp/.minerd_history");
+    GNUReadlineUI ui("/tmp/.schlagwetter_history");
 #else
     SimpleUI      ui;
 #endif

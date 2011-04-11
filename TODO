@@ -6,6 +6,8 @@ Highest Priority
   varying errors. Getting the basic networking to function reliably
   is of the greatest importance.
 
+Update: This may be better now, I fixed some silly typo-bugs ((X,X) instead of (X,Z) etc.).
+
 
 High Priority
 -------------
@@ -16,6 +18,27 @@ High Priority
 
 * Persistent map storage. Doesn't have to be NBT, anything sensible would be good.
   Maybe Boost::serialize.
+
+* Dynamic blocks (water, lave) are missing ("physics").
+
+
+Known Issues (may be easy to fix)
+---------------------------------
+
+* Chunk zip cache and tainting doesn't seem to taint modified chunks in all cases (all non-0,0 chunks?).
+
+* Light map doesn't get regenerated when loading tainted chunks.
+
+* Light map generation doesn't seem to get under-water lighting right.
+
+* Torch block saving broken (currenly just naive, Torch isn't attached to the correct neighbour).
+
+
+Mystery Puzzle of the Day
+-------------------------
+
+The spawn location is wrong. With PLAYER_CHUNK_HORIZON = 5, you spawn inside the cave
+rather than on top. With PLAYER_CHUNK_HORIZON = 2, you do spawn correctly on top. Why?
 
 
 Further Goals

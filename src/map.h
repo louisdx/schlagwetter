@@ -20,7 +20,7 @@ public:
   inline const Chunk & chunk(const ChunkCoords & cc) const { return *(m_chunkMap.find(cc)->second); }
 
   /// If no chunk exists at cc, create a random one. Always returns the chunk at cc.
-  const Chunk & getChunkOrGenerateNew(const ChunkCoords & cc);
+  Chunk & getChunkOrGenerateNew(const ChunkCoords & cc);
 
   inline void insertChunk(std::shared_ptr<Chunk> chunk) { m_chunkMap.insert(ChunkMap::value_type(chunk->coords(), chunk)); }
 

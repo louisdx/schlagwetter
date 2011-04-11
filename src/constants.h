@@ -35,6 +35,12 @@
 #include <array>
 
 
+/// The distance for which chunks need to be available to the client.
+/// An actual (2 r + 1)^2 around the player is sent, see ambientChunks().
+
+enum { PLAYER_CHUNK_HORIZON = 5 }; // Set to 5 for production, 2 for valgrinding.
+
+
 
 #define PACKET_NEED_MORE_DATA -3
 #define PACKET_DOES_NOT_EXIST -2

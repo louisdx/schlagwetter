@@ -41,7 +41,11 @@ public:
   void stop();
 
   /// Send data to client.
-  void sendData(const std::string & data);
+  inline void sendData(const std::string & data) { sendData(reinterpret_cast<const unsigned char *>(data.data()), data.length()); }
+  inline void sendData(const unsigned char * data, size_t len)
+  {
+    boost::asio::async_write(m_socket, boost::asio::buffer(data, len), std::bind(&Connection::handleWrite, shared_from_this(), std::placeholders::_1));
+  }
 
 private:
   /// Handle completion of a read operation.
@@ -107,6 +111,8 @@ public:
   inline const std::set<ConnectionPtr> & connections() const { return m_connections; }
   inline const ClientData & clientData()               const { return m_client_data; }
   inline       ClientData & clientData()                     { return m_client_data; }
+  inline const std::deque<int32_t> & pendingEIDs()     const { return m_pending_eids; }
+  inline       std::deque<int32_t> & pendingEIDs()           { return m_pending_eids; }
 
   /// Incoming data. May or may not do anything, depending on whether it can lock access to m_client_data.
   /// (Since the only other threads that access m_client_data in Server::runInputProcessing() sleep most
@@ -114,7 +120,11 @@ public:
   void storeReceivedData(int32_t eid, std::deque<unsigned char> & local_queue);
 
   /// Outgoing data.
-  void sendDataToClient(int32_t eid, const std::string & data, const char * debug_message = NULL) const;
+  void sendDataToClient(int32_t eid, const unsigned char * data, size_t len, const char * debug_message = NULL) const;
+  inline void sendDataToClient(int32_t eid, const std::string & data, const char * debug_message = NULL) const
+  {
+    sendDataToClient(eid, reinterpret_cast<const unsigned char *>(data.data()), data.length(), debug_message);
+  }
 
   /// Look up a connection pointer by EID.
   struct EIDFinder { EIDFinder (int32_t eid) : e(eid) {} int32_t e; inline bool operator()(const ConnectionPtr & c) { return e == c->EID(); } };

@@ -87,6 +87,7 @@ public:
   void packetSCKeepAlive(int32_t eid);
   void packetSCPreChunk(int32_t eid, const ChunkCoords & cc, bool mode);
   void packetSCMapChunk(int32_t eid, int32_t X, int32_t Y, int32_t Z, const std::string & data, size_t sizeX = 15, size_t sizeY = 127, size_t sizeZ = 15);
+  inline void packetSCMapChunk(int32_t eid, std::pair<const unsigned char *, size_t> d) { m_connection_manager.sendDataToClient(eid, d.first, d.second); }
   inline void packetSCMapChunk(int32_t eid, const ChunkCoords & cc, const std::string & data) { packetSCMapChunk(eid, 16 * cX(cc), 0, 16 * cZ(cc), data); }
   void packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t Z);
   inline void packetSCSpawn(int32_t eid, const WorldCoords & wc) { packetSCSpawn(eid, wX(wc), wY(wc), wZ(wc)); }

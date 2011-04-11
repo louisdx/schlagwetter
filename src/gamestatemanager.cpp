@@ -13,9 +13,6 @@
 #include <zlib.h>
 
 
-enum { PLAYER_CHUNK_HORIZON = 5 };
-
-
 GameStateManager::GameStateManager(std::function<void(unsigned int)> sleep, ConnectionManager & connection_manager, Map & map)
   : sleepMilli(sleep), m_connection_manager(connection_manager), m_map(map), m_states()
 {
@@ -29,10 +26,12 @@ void GameStateManager::update(int32_t eid)
 
     std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
 
-    auto it = m_connection_manager.clientData().find(eid);
-    if (it != m_connection_manager.clientData().end())
+    m_connection_manager.clientData().erase(eid);
+
+    auto it = std::find(m_connection_manager.pendingEIDs().begin(), m_connection_manager.pendingEIDs().end(), eid);
+    if (it != m_connection_manager.pendingEIDs().end())
     {
-      m_connection_manager.clientData().erase(it);
+      m_connection_manager.pendingEIDs().erase(it);
     }
 
     return;
@@ -84,12 +83,27 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     if (player.known_chunks.count(*i) > 0) continue;
 
     std::cout << "Player #" << std::dec << eid << " needs chunk " << *i << "." << std::endl;
-    const Chunk & c = m_map.getChunkOrGenerateNew(*i);
+    Chunk & c = m_map.getChunkOrGenerateNew(*i);
 
-    sleepMilli(50);
+    // Not sure if the client has a problem with data coming in too fast...
+    sleepMilli(10);
 
+#define USE_ZCACHE 1
+#if USE_ZCACHE > 0
+    // This is using a chunk-local zip cache.
+    auto p = c.compress_beefedup();
+    packetSCPreChunk(eid, *i, true);
+
+    if (p.second > 18)
+      packetSCMapChunk(eid, p);
+    else
+      packetSCMapChunk(eid, *i, c.compress());
+#else
+    // This is the safe way.
     packetSCPreChunk(eid, *i, true);
     packetSCMapChunk(eid, *i, c.compress());
+#endif
+#undef USE_ZCACHE
 
     player.known_chunks.insert(*i);
   }
@@ -174,11 +188,14 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
 
   if (status == 2)
   {
+    Chunk & chunk = m_map.chunk(getChunkCoords(WorldCoords(X, Y, Z)));
+    chunk.taint();
+
     PacketCrafter p(PACKET_BLOCK_CHANGE);
     p.addInt32(X);      // X
     p.addInt8(Y);       // Y
     p.addInt32(Z);      // Z
-    p.addInt8(m_map.chunk(getChunkCoords(WorldCoords(X, Y, Z))).blockType(X, Y, Z) = BLOCK_Air);
+    p.addInt8(chunk.blockType(X, Y, Z) = BLOCK_Air);
     p.addInt8(0);
     m_connection_manager.sendDataToClient(eid, p.craft(), "[dig response]");
   }
@@ -337,6 +354,10 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       packetSCSetSlot(eid, 0, 29, ITEM_Coal, 50, 0);
       packetSCSetSlot(eid, 0, 30, BLOCK_Wood, 50, 0);
       packetSCSetSlot(eid, 0, 38, ITEM_DiamondShovel, 1, 0);
+      packetSCSetSlot(eid, 0, 39, BLOCK_BrickBlock, 64, 0);
+      packetSCSetSlot(eid, 0, 40, BLOCK_Stone, 64, 0);
+      packetSCSetSlot(eid, 0, 41, BLOCK_Glass, 64, 0);
+      packetSCSetSlot(eid, 0, 42, BLOCK_WoodenPlank, 64, 0);
     }
   }
 }
@@ -366,6 +387,7 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
     {
       Chunk & chunk = m_map.chunk(getChunkCoords(wc));
       chunk.blockType(getLocalCoords(wc)) = block_id;
+      chunk.taint();
 
       sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
 
@@ -497,7 +519,7 @@ void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int
   std::cout << "Sending BlockChange to #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", "
             << Z << ", block type " << int(block_type) << ", block md " << int(block_md) << "]" << std::endl;
 
-  PacketCrafter p(PACKET_SET_SLOT);
+  PacketCrafter p(PACKET_BLOCK_CHANGE);
   p.addInt32(X);         // X
   p.addInt8(Y);          // Y
   p.addInt32(Z);         // Z

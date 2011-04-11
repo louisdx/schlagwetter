@@ -3,6 +3,7 @@
 
 #include <tuple>
 #include <unordered_map>
+#include <vector>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -154,11 +155,32 @@ inline WorldCoords & operator+=(WorldCoords & wc, Direction dir)
 }
 
 
+/*  A little helper function that creates a collection
+ *  of chunks in a (2*radius+1)^2 square around a given chunk.
+ */
+inline std::vector<ChunkCoords> ambientChunks(const ChunkCoords & cc, size_t radius)
+{
+  std::vector<ChunkCoords> res;
+  res.reserve(4 * radius * radius);
 
-/* STL does not yet come with a hash_combine(), so I'm lifting this
-   implementation from boost. It creates a hash function for every
-   pair of hashable types. For further generalizations, see boost/functional/hash.
-*/
+  const int32_t r(radius);
+
+  for (int32_t i = cX(cc) - r; i <= cX(cc) + r; ++i)
+  {
+    for (int32_t j = cZ(cc) - r; j <= cZ(cc) + r; ++j)
+    {
+      res.push_back(ChunkCoords(i, j));
+    }
+  }
+
+  return res;
+}
+
+
+/*  STL does not yet come with a hash_combine(), so I'm lifting this
+ *  implementation from boost. It creates a hash function for every
+ *  pair of hashable types. For further generalizations, see boost/functional/hash.
+ */
 
 template <class T>
 inline void hash_combine(std::size_t & seed, T const & v)
