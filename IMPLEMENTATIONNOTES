@@ -51,6 +51,29 @@ ingress |      V  V      egress           update
           Connection
              ...
 
+Here is a plain-text summary:
+
+In networking terms, the Server is the thing that listen()s, and
+each Connection is spawned by accept()ing a connection.
+
+The Server owns the ConnectionManager, which in turn owns each of
+the connections and a global set of ingress data queues. Upon reading
+data (in the runIO() thread), each connection dumps their data into the
+global queue (if the queue isn't locked at that time). In a separate thread,
+runInputProcessing(), the global set of queues is processed and Minecraft
+packets are extracted from them and sent to the GameStateManager.
+
+The GameStateManager is another core object owned by the Server, and it contains
+the fundamental game logic. It receives packets and processes them. It can take
+as long as it likes. (This may need reworking; if one player waits for new chunks,
+other players' map updates have to wait and don't get replicated.)
+
+Finally, the Server owns the Map, which contains the entire world data. The Map
+is in charge of loading or generating chunks. (This still requires heaps of work.)
+The GameStateManager (which holds a referene to the Map) should probably tell it
+when chunks are no longer needed.
+
+
 
 3. Source code style
 
