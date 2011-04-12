@@ -123,6 +123,24 @@ make
 
     <p>Any suggestions for improving the build environment are most welcome!</p>
 
+
+    <h2>World file format</h2>
+
+    <p>I decided to keep things simple. The entire world is kept in
+    two files, <code>basename.idx</code> and <code>basename.dat</code>
+    (the basename is freely choosable). Both files are compressed and read
+    and written with Boost.iostream's zlib-filtered stream. Ignoring
+    the transparent compression, the underlying file structure is very
+    simple: The data file consists simply of consecutive blocks of 81920 bytes
+    of data, each being one chunk. The index file runs in parallel and consists
+    of flat, 12-byte entires (all values machine-endian):</p>
+    <div class="listing">int32_t chunk_X;
+int32_t chunk_Z;
+int32_t counter;</div>
+    <p>You can either read both files in parallel to obtain all chunks,
+    or jump directly to a desired chunk at offset <code>counter * 81920</code>
+    in the data file.</p>
+
     <h2>License</h2>
 
     <p>I have not yet worked out the details; it will be something with &ldquo;attribution&rdquo; that is
