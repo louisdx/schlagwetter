@@ -41,9 +41,9 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_acceptor.listen();
   m_acceptor.async_accept(m_next_connection->socket(), m_next_connection->peer(), std::bind(&Server::handleAccept, this, std::placeholders::_1));
 
-  if (PROGRAM_OPTIONS.count("load") > 0)
+  if (!PROGRAM_OPTIONS["load"].as<std::string>().empty())
   {
-    m_map.load();
+    m_map.load(PROGRAM_OPTIONS["load"].as<std::string>());
   }
   else if (PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
   {

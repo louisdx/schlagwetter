@@ -69,8 +69,8 @@ std::string RegionFile::getCompressedChunk(size_t x, size_t z)
 
   uint32_t size = READ_UINT32(b);
 
-  std::cout << "[" << x << ", " << z << "] About to read a chunk of size " << size
-            << " at offset " << chunkOffset(x, z) << ", compression type is " << (unsigned int)(c) << std::endl;
+  //std::cout << "[" << x << ", " << z << "] About to read a chunk of size " << size
+  //          << " at offset " << chunkOffset(x, z) << ", compression type is " << (unsigned int)(c) << std::endl;
 
   if (chunkOffset(x, z) + 4 + size >= m_size || size > 1000000)
   {

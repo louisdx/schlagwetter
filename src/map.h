@@ -27,7 +27,7 @@ public:
   inline void insertChunk(std::shared_ptr<Chunk> chunk) { m_chunk_map.insert(ChunkMap::value_type(chunk->coords(), chunk)); }
 
   inline void save() { m_serializer.serialize(); }
-  inline void load() { m_serializer.deserialize(); }
+  inline void load(std::string basename) { m_serializer.deserialize(basename); }
 
   unsigned long long int tick_counter;
 

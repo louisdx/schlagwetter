@@ -2,6 +2,7 @@
 #define H_SERIALIZER
 
 
+#include <string>
 #include <boost/noncopyable.hpp>
 #include "chunk.h"
 
@@ -15,7 +16,7 @@ public:
   void writeChunk(ChunkMap::mapped_type chunk);
 
   void serialize();
-  void deserialize();
+  void deserialize(const std::string & basename);
 
 private:
   ChunkMap & m_chunk_map;

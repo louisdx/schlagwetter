@@ -3,6 +3,7 @@
 #include <functional>
 #include <thread>
 #include <boost/asio.hpp>
+#include <boost/filesystem.hpp>
 
 #include "server.h"
 #include "cmdlineoptions.h"
@@ -10,6 +11,7 @@
 #include "filereader.h"
 
 po::variables_map PROGRAM_OPTIONS;
+namespace fs = boost::filesystem;
 
 int main(int argc, char* argv[])
 {
@@ -21,6 +23,13 @@ int main(int argc, char* argv[])
               << "   Bind address: " << PROGRAM_OPTIONS["bindaddr"].as<std::string>() << std::endl
               << "   Port:         " << PROGRAM_OPTIONS["port"].as<unsigned short int>() << std::endl
               << std::endl;
+  }
+
+  const std::string filename = PROGRAM_OPTIONS["load"].as<std::string>();
+  if (!filename.empty() && !(fs::exists(filename + ".idx") && fs::exists(filename + ".idx")))
+  {
+    std::cout << "The specified input files (.idx and .dat) do not exist." << std::endl;
+    return 0;
   }
 
   try

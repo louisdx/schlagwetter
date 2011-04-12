@@ -69,12 +69,12 @@ void Serializer::serialize()
   std::cout << "saving ... done!" << std::endl;
 }
 
-void Serializer::deserialize()
+void Serializer::deserialize(const std::string & basename)
 {
  std::cout << "Load map..." << std::endl;
 
-  std::ifstream idxfile("/tmp/mymap.idx", std::ios::binary);
-  std::ifstream datfile("/tmp/mymap.dat", std::ios::binary);
+  std::ifstream idxfile(basename + ".idx", std::ios::binary);
+  std::ifstream datfile(basename + ".dat", std::ios::binary);
 
   if (!idxfile || !datfile)
   {
