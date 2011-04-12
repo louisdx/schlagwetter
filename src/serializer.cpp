@@ -2,7 +2,14 @@
 #include <iostream>
 #include <iterator>
 #include <set>
+
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/write.hpp>
+#include <boost/iostreams/read.hpp>
+
 #include "serializer.h"
+
 
 Serializer::Serializer(ChunkMap & chunk_map)
   : m_chunk_map(chunk_map)
@@ -32,6 +39,15 @@ void Serializer::serialize()
     std::cerr << "Error while opening save files. Map was NOT saved." << std::endl;
   }
 
+  boost::iostreams::filtering_ostreambuf zidx;
+  boost::iostreams::filtering_ostreambuf zdat;
+
+  zidx.push(boost::iostreams::zlib_compressor());
+  zdat.push(boost::iostreams::zlib_compressor());
+
+  zidx.push(idxfile);
+  zdat.push(datfile);
+
   std::set<ChunkCoords> s;
   for (auto i = m_chunk_map.begin(); i != m_chunk_map.end(); ++i)
     s.insert(i->first);
@@ -42,10 +58,10 @@ void Serializer::serialize()
     int32_t X = cX(cc);
     int32_t Z = cZ(cc);
 
-    std::copy(m_chunk_map[cc]->data().begin(), m_chunk_map[cc]->data().end(), std::ostream_iterator<unsigned char>(datfile));
-    idxfile.write(reinterpret_cast<char*>(&X), 4);
-    idxfile.write(reinterpret_cast<char*>(&Z), 4);
-    idxfile.write(reinterpret_cast<char*>(&counter), 4);
+    boost::iostreams::write(zdat, reinterpret_cast<char*>(m_chunk_map[cc]->data().data()), m_chunk_map[cc]->data().size());
+    boost::iostreams::write(zidx, reinterpret_cast<char*>(&X), 4);
+    boost::iostreams::write(zidx, reinterpret_cast<char*>(&Z), 4);
+    boost::iostreams::write(zidx, reinterpret_cast<char*>(&counter), 4);
 
     s.erase(s.begin());
   }
@@ -65,19 +81,31 @@ void Serializer::deserialize()
     std::cerr << "Error while opening save files. Map was NOT loaded." << std::endl;
   }
 
-  std::istream_iterator<unsigned char> iit(datfile);
+  boost::iostreams::filtering_istreambuf zidx;
+  boost::iostreams::filtering_istreambuf zdat;
 
-  for (size_t counter = 0; !idxfile.eof() && !datfile.eof() ; ++counter)
+  zidx.push(boost::iostreams::zlib_decompressor());
+  zdat.push(boost::iostreams::zlib_decompressor());
+
+  zidx.push(idxfile);
+  zdat.push(datfile);
+
+  bool good = true;
+
+  for (size_t counter = 0; good ; ++counter)
   {
     int32_t X, Z, c;
-    idxfile.read(reinterpret_cast<char*>(&X), 4);
-    idxfile.read(reinterpret_cast<char*>(&Z), 4);
-    idxfile.read(reinterpret_cast<char*>(&c), 4);
+    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&X), 4) == -1) good = false;
+    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&Z), 4) == -1) good = false;
+    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&c), 4) == -1) good = false;
 
-    if (c != int(counter)) { std::cerr << "Error while reading map. Everythis is now broken." << std::endl; return; }
+    if (c != int(counter))
+    {
+      std::cerr << "Warning: Something unexpected when reading the map. (Read: " << c << ", Expected: " << counter << ")" << std::endl;
+    }
 
     auto chunk = std::make_shared<Chunk>(ChunkCoords(X, Z));
-    datfile.read(reinterpret_cast<char *>(chunk->data().data()), chunk->data().size());
+    if (boost::iostreams::read(zdat, reinterpret_cast<char *>(chunk->data().data()), chunk->data().size()) == -1) good = false;
 
     m_chunk_map.insert(std::make_pair(chunk->coords(), chunk));
   }

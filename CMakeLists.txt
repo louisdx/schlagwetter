@@ -36,7 +36,7 @@ set(EXECUTABLE_OUTPUT_PATH bin)
  #        [ - ZLIB, Boost: expected to be part of your cmake distro ]
 
 SET(Boost_ADDITIONAL_VERSIONS "1.42" "1.43" "1.44" "1.44" "1.45" "1.46")
-find_package(Boost COMPONENTS program_options system REQUIRED)
+find_package(Boost COMPONENTS program_options system iostreams REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${Boost_LIBRARIES})
 
