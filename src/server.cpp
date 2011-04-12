@@ -41,7 +41,11 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_acceptor.listen();
   m_acceptor.async_accept(m_next_connection->socket(), m_next_connection->peer(), std::bind(&Server::handleAccept, this, std::placeholders::_1));
 
-  if (PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
+  if (PROGRAM_OPTIONS.count("load") > 0)
+  {
+    m_map.load();
+  }
+  else if (PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
   {
     std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), PLAYER_CHUNK_HORIZON);
     std::cout << "Precomputing map (" << std::dec << ac.size() << " chunks):" << std::endl << "  Generating terrain: ";

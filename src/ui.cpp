@@ -1,7 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include "ui.h"
-#include "connection.h"
+#include "server.h"
 #include "packetcrafter.h"
 
 std::string SimpleUI::readline(const std::string & prompt)
@@ -45,7 +45,7 @@ std::string GNUReadlineUI::readline(const std::string & prompt)
 
 #endif
 
-bool pump(ConnectionManager & connection_manager, UI & ui)
+bool pump(Server & server, UI & ui)
 {
   std::string line = ui.readline(std::string("> "));
   std::transform(line.begin(), line.end(), line.begin(), ::tolower);
@@ -61,43 +61,43 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
   else if (line == "help" || line == "panic")
   {
     std::cout << std::endl
-              << "Welcome, friend. This is the LDX Minecraft Server." << std::endl
+              << "Welcome, friend. This is Schlagwetter, a Minecraft server." << std::endl
               << "Please help yourself to the following commands:" << std::endl
               << std::endl
               << "  list:                    Lists all connected users" << std::endl
               << "  dump:                    Dump each connection's data" << std::endl
               << "  raw <client> <data>:     Sends raw data to a client (prob. not very useful)" << std::endl
-              << "  kcik <client> <message>: Kicks a client with a given message" << std::endl
-              << "  dump:                    Dump each connection's data" << std::endl
+              << "  kick <client> <message>: Kicks a client with a given message" << std::endl
+              << "  save:                    Write out the current map to a file" << std::endl
               << "  exit:                    Shuts down the server" << std::endl
               << std::endl;
   }
   else if (line == "list")
   {
-    for (std::set<ConnectionPtr>::const_iterator i = connection_manager.connections().begin(); i != connection_manager.connections().end(); ++i)
+    for (auto i = server.m_connection_manager.connections().begin(); i != server.m_connection_manager.connections().end(); ++i)
     {
-      auto di = connection_manager.clientData().find((*i)->EID());
+      auto di = server.m_connection_manager.clientData().find((*i)->EID());
       std::cout << "Connection #" << std::dec << (*i)->EID() << ": " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port()
                 << ", #refs = " << i->use_count();
-      if (di != connection_manager.clientData().end()) std::cout << ", " << di->second->size() << " bytes of unprocessed data";
+      if (di != server.m_connection_manager.clientData().end()) std::cout << ", " << di->second->size() << " bytes of unprocessed data";
       std::cout << std::endl;
     }
   }
   else if (line == "dump")
   {
-    for (std::set<ConnectionPtr>::const_iterator i = connection_manager.connections().begin(); i != connection_manager.connections().end(); ++i)
+    for (auto  i = server.m_connection_manager.connections().begin(); i != server.m_connection_manager.connections().end(); ++i)
     {
       std::cout << "Connection: " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port() << ".";
-      auto di = connection_manager.clientData().find((*i)->EID());
-      if (di == connection_manager.clientData().end())
+      auto di = server.m_connection_manager.clientData().find((*i)->EID());
+      if (di == server.m_connection_manager.clientData().end())
       {
         std::cout << " ** no data **";
       }
       else
       {
-        // Sorry, we have no thread-safe iteration at the moment, this function has to go.
-//        for (auto it = di->second.first.begin(); it != di->second.first.end(); ++it)
-//          std::cout << " " << std::hex << std::setw(2) << (unsigned int)(*it);
+        // This is not thread-safe. Use at your own risk.
+        for (auto it = di->second->q().begin(); it != di->second->q().end(); ++it)
+          std::cout << " " << std::hex << std::setw(2) << (unsigned int)(*it);
       }
       std::cout << std::endl;
     }
@@ -119,7 +119,8 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
     else
     {
       std::cout << "Trying to send to client #" << eid << " the data \"" << t.substr(1) << "\"." << std::endl;
-      connection_manager.sendDataToClient(eid, t.substr(1));
+      server.m_connection_manager.sendDataToClient(eid, t.substr(1));
+      server.m_connection_manager.pendingEIDs().erase(std::find(server.m_connection_manager.pendingEIDs().begin(), server.m_connection_manager.pendingEIDs().end(), eid));
     }
   }
   else if (line.compare(0, 4, "kick") == 0)
@@ -142,8 +143,12 @@ bool pump(ConnectionManager & connection_manager, UI & ui)
 
       PacketCrafter p(PACKET_DISCONNECT);
       p.addJString(t.substr(1));
-      connection_manager.sendDataToClient(eid, p.craft());
+      server.m_connection_manager.sendDataToClient(eid, p.craft());
     }
+  }
+  else if (line.compare(0, 4, "save") == 0)
+  {
+    server.m_map.save();
   }
   else
   {

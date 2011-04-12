@@ -15,8 +15,12 @@
 #include "map.h"
 
 
+class UI;
+
 class Server : private boost::noncopyable
 {
+  friend bool pump(Server &, UI &);
+
 public:
   explicit Server(const std::string & address, unsigned short int port);
   ~Server() { }

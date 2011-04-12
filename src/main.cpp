@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     SimpleUI      ui;
 #endif
 
-    while (pump(server.cm(), ui)) { }
+    while (pump(server, ui)) { }
 
     server.stop();
     thread_io.join();

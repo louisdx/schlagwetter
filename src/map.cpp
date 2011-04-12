@@ -123,22 +123,22 @@ std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
 Map::Map(unsigned long long int ticks)
   :
   tick_counter(ticks),
-  m_chunkMap(),
-  m_serializer()
+  m_chunk_map(),
+  m_serializer(m_chunk_map)
 {
 }
 
 void Map::ensureChunkIsLoaded(const ChunkCoords & cc)
 {
-  if (m_chunkMap.count(cc) == 0)
+  if (m_chunk_map.count(cc) == 0)
   {
     if (m_serializer.haveChunk(cc) == true)
     {
-      m_chunkMap.insert(ChunkMap::value_type(cc, m_serializer.loadChunk(cc))).first;
+      m_chunk_map.insert(ChunkMap::value_type(cc, m_serializer.loadChunk(cc))).first;
     }
     else
     {
-      auto ins = m_chunkMap.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>(cc))).first;
+      auto ins = m_chunk_map.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>(cc))).first;
       generateWithNoise(*ins->second, cc);
       ins->second->updateLightAndHeightMaps(tick_counter % 24000);
     }
@@ -238,7 +238,7 @@ void Chunk::spreadLightRecursively(const WorldCoords & wc, unsigned char value, 
 
     const unsigned char value_new = std::max(0, int(value) - int(STOP_LIGHT[block]) - 1);
 
-    if (value_new > ( type == 0 ? chunk.getSkyLight(getLocalCoords(to_set)) : chunk.getBlockLight(getLocalCoords(to_set)) ))
+    if (value_new > ( (type == 0) ? chunk.getSkyLight(getLocalCoords(to_set)) : chunk.getBlockLight(getLocalCoords(to_set)) ))
     {
       if      (type == 0) chunk.setSkyLight  (getLocalCoords(to_set), value_new);
       else if (type == 1) chunk.setBlockLight(getLocalCoords(to_set), value_new);
