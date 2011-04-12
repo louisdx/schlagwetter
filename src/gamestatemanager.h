@@ -103,7 +103,7 @@ private:
   ConnectionManager & m_connection_manager;
   Map & m_map;
  
-  std::mutex m_gs_mutex;
+  std::recursive_mutex m_gs_mutex;
   std::unordered_map<int32_t, GameState> m_states;
 };
 

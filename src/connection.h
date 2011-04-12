@@ -120,8 +120,8 @@ public:
   void storeReceivedData(int32_t eid, std::deque<unsigned char> & local_queue);
 
   /// Outgoing data.
-  void sendDataToClient(int32_t eid, const unsigned char * data, size_t len, const char * debug_message = NULL) const;
-  inline void sendDataToClient(int32_t eid, const std::string & data, const char * debug_message = NULL) const
+  void sendDataToClient(int32_t eid, const unsigned char * data, size_t len, const char * debug_message = NULL);
+  inline void sendDataToClient(int32_t eid, const std::string & data, const char * debug_message = NULL)
   {
     sendDataToClient(eid, reinterpret_cast<const unsigned char *>(data.data()), data.length(), debug_message);
   }
@@ -133,6 +133,7 @@ public:
 
   /// Synchronisation.
   std::recursive_mutex m_cd_mutex;
+  std::recursive_mutex m_pending_mutex;
 
 private:
   /// The managed connections.

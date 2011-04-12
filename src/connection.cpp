@@ -85,6 +85,7 @@ void Connection::handleWrite(const boost::system::error_code & e)
 ConnectionManager::ConnectionManager()
   :
   m_cd_mutex(),
+  m_pending_mutex(),
   m_connections(),
   m_client_data(),
   m_input_ready(false),
@@ -148,8 +149,10 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<unsigned char>
   m_input_ready_cond.notify_one();
 }
 
-void ConnectionManager::sendDataToClient(int32_t eid, const unsigned char * data, size_t len, const char * debug_message) const
+void ConnectionManager::sendDataToClient(int32_t eid, const unsigned char * data, size_t len, const char * debug_message)
 {
+  std::lock_guard<std::recursive_mutex> lock(m_pending_mutex);
+
   auto it = findConnectionByEID(eid);
   if (it == m_connections.end())
   {

@@ -24,17 +24,30 @@ void GameStateManager::update(int32_t eid)
   {
     std::cout << "Client #" << eid << " no longer connected, cleaning up..." << std::endl;
 
-    std::unique_lock<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
-
-    m_connection_manager.clientData().erase(eid);
-
-    auto it = std::find(m_connection_manager.pendingEIDs().begin(), m_connection_manager.pendingEIDs().end(), eid);
-    if (it != m_connection_manager.pendingEIDs().end())
     {
-      m_connection_manager.pendingEIDs().erase(it);
+      std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_cd_mutex);
+      m_connection_manager.clientData().erase(eid);
     }
 
-    m_states.erase(eid);
+    {
+      std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_pending_mutex);
+      auto it = std::find(m_connection_manager.pendingEIDs().begin(), m_connection_manager.pendingEIDs().end(), eid);
+      if (it != m_connection_manager.pendingEIDs().end())
+      {
+        m_connection_manager.pendingEIDs().erase(it);
+      }
+    }
+
+    // Note: We should really rework the m_states container. It should be
+    // of type std::unordered_map<int32_t, std::shared_ptr<GameState>>.
+    // That way, access to individual states can be done via copies of
+    // shared pointers, and we don't need to hold the lock for the entirety
+    // of a length operation like sendMoreChunksToPlayer().
+
+    {
+      std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
+      m_states.erase(eid);
+    }
 
     return;
   }
@@ -64,7 +77,7 @@ void GameStateManager::sendToAll(std::function<void(int32_t)> f)
   std::list<int32_t> todo;
 
   {
-    std::lock_guard<std::mutex> lock(m_gs_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
     for (auto it = m_states.begin(); it != m_states.end(); ++it)
       todo.push_back(it->first);
   }
@@ -75,7 +88,12 @@ void GameStateManager::sendToAll(std::function<void(int32_t)> f)
 
 void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 {
-  GameState & player = m_states[eid];
+  std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
+
+  auto it = m_states.find(eid);
+  if (it == m_states.end()) return;
+
+  GameState & player = it->second;
 
   std::vector<ChunkCoords> ac = ambientChunks(getChunkCoords(player.position), PLAYER_CHUNK_HORIZON);
   std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(player.position)));
@@ -102,7 +120,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     // Not sure if the client has a problem with data coming in too fast...
     sleepMilli(5);
 
-#define USE_ZCACHE 1
+#define USE_ZCACHE 0
 #if USE_ZCACHE > 0
     // This is using a chunk-local zip cache.
     std::pair<const unsigned char *, size_t> p = chunk.compress_beefedup();
