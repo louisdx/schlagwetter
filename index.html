@@ -38,8 +38,8 @@
 
     <p>April 2011: Basic networking framework is set up.
     The <em>Minecraft</em> protocol has been implemented as stubs, but not yet written
-    out very much (digging works, placement doesn't). No persistent data storage yet,
-    though region file reading is available.</p>
+    out very much (digging and block placement work). Basic persistent storage is
+    available (currently to a fixed filename), and NBT region file reading is available.</p>
 
     <h2>Design goals</h2>
 
@@ -92,8 +92,8 @@
 
     <ul>
       <li>The above libraries. The libraries libnoise and zlib should be easily available or buildable for your platform.
-      <a href="http://www.boost.org/">Boost</a> is a bit of a monster, but very well supported (you need the boost_program_options
-      and boost_system dynamic libraries, and a bunch of header-only modules). As for cNBT, it's included in the repository as a
+      <a href="http://www.boost.org/">Boost</a> is a bit of a monster, but very well supported (you need the boost_program_options,
+      boost_iostreams and boost_system dynamic libraries, and a bunch of header-only modules). As for cNBT, it's included in the repository as a
       linked submodule, and you need to retrieve it separately (but git can do this for you).</li>
       <li>If you have <a href="http://www.cmake.org/">cmake</a>, everything should work with very little effort (though I only tested
       it on Linux (Ubuntu); I would be delighted to hear about other platforms). Even if you don't have cmake, you could still try and
