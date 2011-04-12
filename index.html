@@ -140,6 +140,10 @@ int32_t counter;</div>
     <p>You can either read both files in parallel to obtain all chunks,
     or jump directly to a desired chunk at offset <code>counter * 81920</code>
     in the data file.</p>
+    <p><strong>To do:</strong> Perhaps it would be better to replace the counter variable
+    with the true offset in the compressed file. The entire model assumes that you can hold
+    all chunks in memory; though I suppose an arbitrary number of index/data pairs could
+    be freely mixed if splitting up is desired.</p>
 
     <h2>License</h2>
 
