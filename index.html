@@ -63,7 +63,9 @@
     </ul>
 
     <p class="footnote">*) A possible exception will be memory mapping for the persistent storage.
-    I do not know any platform-independent framework for that (but we will write one if we need to).</p>
+    I do not know any platform-independent framework for that (but we will write one if we need to).
+    <em>Update:</em> Having used Boost.iostreams for the serialization code, I am optimistic that Boost
+    will even allow for a platform-independent approach to memory mapping.</p>
     <p class="footnote">&dagger;) I would have said &ldquo;without un-freed memory&rdquo;, too, but
     GNU Readline does not seem to clean up and throws this off. Assistance welcome!</p>
 
@@ -145,6 +147,12 @@ int32_t counter;</div>
     with the true offset in the compressed file. The entire model assumes that you can hold
     all chunks in memory; though I suppose an arbitrary number of index/data pairs could
     be freely mixed if splitting up is desired.</p>
+
+    <h2>Known Issues</h2>
+
+    <ul>
+      <li>Sometimes the client throws you out with a connection error of some sort. Just try connecting again.</li>
+    </ul>
 
     <h2>License</h2>
 
