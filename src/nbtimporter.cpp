@@ -112,7 +112,10 @@ int main(int argc, char * argv[])
       for (size_t z = 0; z < 32; ++z)
         if (f.chunkSize(x, z) != 0)
         {
-          const ChunkCoords cc(32 * X + x, 32 * Z + z);
+          const int32_t cx = 32 * X + int(x);
+          const int32_t cz = 32 * Z + int(z);
+
+          const ChunkCoords cc(cx, cz);
 
           if (verbose) std::cout << "Found chunk at " << cc << ", raw size " << f.chunkSize(x, z) << std::endl;
 
@@ -122,10 +125,12 @@ int main(int argc, char * argv[])
 
           auto chunk = NBTExtract(reinterpret_cast<const unsigned char*>(raw.data()), raw.length(), cc);
 
-          boost::iostreams::write(zdat, reinterpret_cast<char*>(chunk->data().data()), chunk->data().size());
-          boost::iostreams::write(zidx, reinterpret_cast<char*>(&x), 4);
-          boost::iostreams::write(zidx, reinterpret_cast<char*>(&z), 4);
-          boost::iostreams::write(zidx, reinterpret_cast<char*>(&counter), 4);
+          boost::iostreams::write(zdat, reinterpret_cast<const char*>(chunk->data().data()), chunk->data().size());
+          boost::iostreams::write(zidx, reinterpret_cast<const char*>(&cx), 4);
+          boost::iostreams::write(zidx, reinterpret_cast<const char*>(&cz), 4);
+          boost::iostreams::write(zidx, reinterpret_cast<const char*>(&counter), 4);
+
+          ++counter;
 
           if (!verbose) { std::cout << "*"; std::cout.flush(); }
         }
