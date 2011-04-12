@@ -109,6 +109,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     if (player.known_chunks.count(*i) > 0) continue;
     std::cout << "Computing light spread... ";
     m_map.chunk(*i).spreadAllLight(m_map);
+    m_map.chunk(*i).spreadToNewNeighbours(m_map);
     std::cout << " ...done." << std::endl;
   }
   for (auto i = ac.begin(); i != ac.end(); ++i)
@@ -314,7 +315,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       p.addJString("");
       p.addJString("");
       p.addInt64(12345);
-      p.addInt8(0);
+      p.addInt8(0); // 0: normal, -1: Nether
       m_connection_manager.sendDataToClient(eid, p.craft());
     }
 
@@ -379,7 +380,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     {
       GameState & player = m_states[eid];
 
-      WorldCoords start_pos(8, 80, 8);
+      const WorldCoords start_pos(8, 80, 8);
 
       player.position = start_pos;
 

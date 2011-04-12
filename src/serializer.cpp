@@ -58,7 +58,7 @@ void Serializer::serialize()
     int32_t X = cX(cc);
     int32_t Z = cZ(cc);
 
-    boost::iostreams::write(zdat, reinterpret_cast<const char*>(m_chunk_map[cc]->data().data()), m_chunk_map[cc]->data().size());
+    boost::iostreams::write(zdat, reinterpret_cast<const char*>(m_chunk_map[cc]->data().data()), Chunk::sizeBlockType + Chunk::sizeBlockMetaData);
     boost::iostreams::write(zidx, reinterpret_cast<const char*>(&X), 4);
     boost::iostreams::write(zidx, reinterpret_cast<const char*>(&Z), 4);
     boost::iostreams::write(zidx, reinterpret_cast<const char*>(&counter), 4);
@@ -105,7 +105,7 @@ void Serializer::deserialize(const std::string & basename)
     }
 
     auto chunk = std::make_shared<Chunk>(ChunkCoords(X, Z));
-    if (boost::iostreams::read(zdat, reinterpret_cast<char *>(chunk->data().data()), chunk->data().size()) == -1) good = false;
+    if (boost::iostreams::read(zdat, reinterpret_cast<char *>(chunk->data().data()), Chunk::sizeBlockType + Chunk::sizeBlockMetaData) == -1) good = false;
 
     m_chunk_map.insert(std::make_pair(chunk->coords(), chunk));
   }

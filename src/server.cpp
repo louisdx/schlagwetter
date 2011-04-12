@@ -27,7 +27,7 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_server_should_stop(false),
   m_connection_manager(),
   m_next_connection(new Connection(m_io_service, m_connection_manager)),
-  m_map(12500 /* evening */),
+  m_map(13400 /* eve */),
   m_gsm(std::bind(&Server::sleepMilli, this, std::placeholders::_1), m_connection_manager, m_map),
   m_input_parser(m_gsm),
   m_deadline_timer(m_io_service),

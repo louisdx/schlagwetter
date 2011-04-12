@@ -9,14 +9,6 @@
 #include "filereader.h"
 #include "chunk.h"
 
-Chunk::Chunk(const ChunkCoords & cc, const std::array<unsigned char, 81920> & data, const std::array<unsigned char, 256> & hm)
-  :
-  m_coords(cc),
-  m_data(data),
-  m_heightmap(hm),
-  m_zcache(m_coords)
-{
-}
 
 static inline void asciiprint(std::ostream & o, unsigned char c)
 {

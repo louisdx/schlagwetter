@@ -125,7 +125,7 @@ int main(int argc, char * argv[])
 
           auto chunk = NBTExtract(reinterpret_cast<const unsigned char*>(raw.data()), raw.length(), cc);
 
-          boost::iostreams::write(zdat, reinterpret_cast<const char*>(chunk->data().data()), chunk->data().size());
+          boost::iostreams::write(zdat, reinterpret_cast<const char*>(chunk->data().data()), Chunk::sizeBlockType + Chunk::sizeBlockMetaData);
           boost::iostreams::write(zidx, reinterpret_cast<const char*>(&cx), 4);
           boost::iostreams::write(zidx, reinterpret_cast<const char*>(&cz), 4);
           boost::iostreams::write(zidx, reinterpret_cast<const char*>(&counter), 4);

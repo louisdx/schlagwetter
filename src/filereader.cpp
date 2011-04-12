@@ -137,3 +137,16 @@ std::shared_ptr<Chunk> NBTExtract(const unsigned char * buf, size_t len, const C
 
   return result;
 }
+
+
+// This rogue constructor is only needed for NBTExtract, so to simplify
+// modularization it is implemented here rather than in chunk.cpp.
+
+Chunk::Chunk(const ChunkCoords & cc, const ChunkData & data, const ChunkHeightMap & hm)
+  :
+  m_coords(cc),
+  m_data(data),
+  m_heightmap(hm),
+  m_zcache(m_coords)
+{
+}

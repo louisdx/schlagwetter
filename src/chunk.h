@@ -24,6 +24,8 @@ public:
   typedef std::array<unsigned char, 256>   ChunkHeightMap;
 
   Chunk(const ChunkCoords & cc);
+
+  // This constructor is only needed by NBTExtract(), and it is implemented in filereader.cpp.
   Chunk(const ChunkCoords & cc, const ChunkData & data, const ChunkHeightMap & hm);
 
   /// For all sorts of purposes, we need to know if the chunk has been modified.
@@ -97,9 +99,23 @@ public:
   inline unsigned char getSkyLight(const LocalCoords & lc) const { return getSkyLight(lX(lc), lY(lc), lZ(lc)); }
 
   /// Compute the chunk's light map and height map. Depends on the time of day.
+  /// This function is local and does not need to know any other chunks.
   void updateLightAndHeightMaps(unsigned long long int ticks);
-  void spreadAllLight(Map & map);
+
+  /// The core light spreading routine. This requires ambient chunks to exist,
+  /// so make sure to call this only when all relevant chunks have been loaded.
   void spreadLightRecursively(const WorldCoords & wc, unsigned char value, Map & map, uint8_t type /* 0 = sky, 1 = block */, size_t recursion_depth = 0);
+
+  /// A convenience function to trigger light spreading on all blocks of this chunk.
+  void spreadAllLight(Map & map);
+
+  /// A further convenience function to trigger light spreading on all blocks of one fixed column.
+  void spreadColumn(size_t x, size_t z, Map & map);
+
+  /// This function triggers light spreading along one block around the boundary
+  /// of this chunk, if neighbouring chunks exist. Useful after loading new chunks
+  /// to let old chunks radiate into them.
+  void spreadToNewNeighbours(Map & map);
 
   /// The client expects chunks to be deflate()ed. ZLIB to the rescue.
   /// The beefed-up version uses a local cache if possible.

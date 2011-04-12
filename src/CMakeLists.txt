@@ -18,7 +18,7 @@ set(SOURCES
 
 add_executable(schlagwetter ${SOURCES})
 
-add_executable(nbtimporter nbtimporter.cpp filereader.cpp chunk.cpp)
+add_executable(nbtimporter nbtimporter.cpp filereader.cpp)
 
 add_executable(tester_filereader tester_filereader.cpp filereader.cpp)
 #add_executable(tester_packetcrafter tester_packetcrafter.cpp)
