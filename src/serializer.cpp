@@ -58,10 +58,10 @@ void Serializer::serialize()
     int32_t X = cX(cc);
     int32_t Z = cZ(cc);
 
-    boost::iostreams::write(zdat, reinterpret_cast<char*>(m_chunk_map[cc]->data().data()), m_chunk_map[cc]->data().size());
-    boost::iostreams::write(zidx, reinterpret_cast<char*>(&X), 4);
-    boost::iostreams::write(zidx, reinterpret_cast<char*>(&Z), 4);
-    boost::iostreams::write(zidx, reinterpret_cast<char*>(&counter), 4);
+    boost::iostreams::write(zdat, reinterpret_cast<const char*>(m_chunk_map[cc]->data().data()), m_chunk_map[cc]->data().size());
+    boost::iostreams::write(zidx, reinterpret_cast<const char*>(&X), 4);
+    boost::iostreams::write(zidx, reinterpret_cast<const char*>(&Z), 4);
+    boost::iostreams::write(zidx, reinterpret_cast<const char*>(&counter), 4);
 
     s.erase(s.begin());
   }
