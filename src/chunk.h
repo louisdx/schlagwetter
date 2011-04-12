@@ -41,7 +41,7 @@ public:
   /// Meta and light data is only 4 bits, two consecutive fields share one byte.
   inline unsigned char getHalf(size_t y, unsigned char data) const
   {
-    return (y % 2 == 0) ? data & 0x0F : data >> 4;
+    return (y % 2 == 0) ? (data & 0x0F) : ((data >> 4) & 0x0F);
   }
 
   inline void setHalf(size_t y, unsigned char value, unsigned char & data)
@@ -49,18 +49,20 @@ public:
     if (y % 2 == 0)
     {
       // Set the lower 4 bit
-      data |= 0xF0;
+      data &= 0xF0;
       data |= (value & 0x0F);
     }
     else
     {
       // Set the upper 4 bit
-      data |= 0x0F;
+      data &= 0x0F;
       data |= (value << 4);
     }
   }
 
   inline size_t size() const { return m_data.size(); }
+  inline const ChunkData & data() const { return m_data; }
+  inline       ChunkData & data()       { return m_data; }
   inline const ChunkCoords & coords() const { return m_coords; }
 
   enum { offsetBlockType = 0, offsetBlockMetaData = 32768, offsetBlockLight = 49152, offsetSkyLight = 65536,

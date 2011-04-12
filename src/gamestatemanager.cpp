@@ -89,9 +89,9 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
-    //std::cout << "Computing light spread... ";
-    //m_map.chunk(*i).spreadAllLight(m_map);
-    //std::cout << " ...done." << std::endl;
+    std::cout << "Computing light spread... ";
+    m_map.chunk(*i).spreadAllLight(m_map);
+    std::cout << " ...done." << std::endl;
   }
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
@@ -377,6 +377,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       packetSCSetSlot(eid, 0, 40, BLOCK_Stone, 64, 0);
       packetSCSetSlot(eid, 0, 41, BLOCK_Glass, 64, 0);
       packetSCSetSlot(eid, 0, 42, BLOCK_WoodenPlank, 64, 0);
+      packetSCSetSlot(eid, 0, 43, ITEM_Bucket, 1, 0);
     }
   }
 }
