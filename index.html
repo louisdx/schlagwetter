@@ -79,6 +79,7 @@
       <li><a href="http://zlib.net/">zlib</a> for chunk compression.</li>
       <li><a href="http://libnoise.sourceforge.net">libnoise</a> for terrain generation.</li>
       <li><a href="https://github.com/FliPPeh/cNBT">cNBT</a>, a C library for handling NBT data structures.</li>
+      <li>Boost components: asio, iostreams, filesystem, program_options, regex.</li>
       <li>[optional] <a href="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html">GNU Readline</a> for the server user interface.</li>
     </ul>
 
@@ -95,7 +96,7 @@
     <ul>
       <li>The above libraries. The libraries libnoise and zlib should be easily available or buildable for your platform.
       <a href="http://www.boost.org/">Boost</a> is a bit of a monster, but very well supported (you need the boost_program_options,
-      boost_iostreams and boost_system dynamic libraries, and a bunch of header-only modules). As for cNBT, it's included in the repository as a
+      boost_iostreams, boost_regex, boost_filesystem and boost_system dynamic libraries, and a bunch of header-only modules). As for cNBT, it's included in the repository as a
       linked submodule, and you need to retrieve it separately (but git can do this for you).</li>
       <li>If you have <a href="http://www.cmake.org/">cmake</a>, everything should work with very little effort (though I only tested
       it on Linux (Ubuntu); I would be delighted to hear about other platforms). Even if you don't have cmake, you could still try and
