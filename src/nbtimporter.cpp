@@ -112,7 +112,7 @@ int main(int argc, char * argv[])
       for (size_t z = 0; z < 32; ++z)
         if (f.chunkSize(x, z) != 0)
         {
-          const ChunkCoords cc(x, z);
+          const ChunkCoords cc(32 * X + x, 32 * Z + z);
 
           if (verbose) std::cout << "Found chunk at " << cc << ", raw size " << f.chunkSize(x, z) << std::endl;
 
