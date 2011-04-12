@@ -24,6 +24,13 @@ public:
   /// If no chunk exists at cc, load from disk or create a random one if none exists.
   void ensureChunkIsLoaded(const ChunkCoords & cc);
 
+  /// Call this only when about to send to a client. Don't forget to call "spreadAllLight()" on all chunks after this call.
+  inline void ensureChunkIsReadyForImmediateUse(const ChunkCoords & cc)
+  {
+    ensureChunkIsLoaded(cc);
+    chunk(cc).updateLightAndHeightMaps(tick_counter % 24000);
+  }
+
   inline void insertChunk(std::shared_ptr<Chunk> chunk) { m_chunk_map.insert(ChunkMap::value_type(chunk->coords(), chunk)); }
 
   inline void save() { m_serializer.serialize(); }

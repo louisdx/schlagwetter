@@ -102,7 +102,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
   {
     if (player.known_chunks.count(*i) > 0) continue;
     std::cout << "Player #" << std::dec << eid << " needs chunk " << *i << "." << std::endl;
-    m_map.ensureChunkIsLoaded(*i);
+    m_map.ensureChunkIsReadyForImmediateUse(*i);
   }
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
@@ -120,7 +120,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     // Not sure if the client has a problem with data coming in too fast...
     sleepMilli(5);
 
-#define USE_ZCACHE 0
+#define USE_ZCACHE 1
 #if USE_ZCACHE > 0
     // This is using a chunk-local zip cache.
     std::pair<const unsigned char *, size_t> p = chunk.compress_beefedup();
@@ -325,15 +325,11 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       RegionFile f(PROGRAM_OPTIONS["testfile"].as<std::string>());
       f.parse();
 
-      std::vector<ChunkCoords> ac;
+      std::vector<ChunkCoords> ac, bc;
 
       for (size_t x = 0; x < 32; ++x)
-      {
         for (size_t z = 0; z < 32; ++z)
-        {
           if (f.chunkSize(x, z) != 0) ac.push_back(ChunkCoords(x, z));
-        }
-      }
 
       /// Load all available chunks to memory, but only send the first 50 to the client.
 
@@ -345,25 +341,33 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       for (auto i = ac.begin(); i != ac.end(); ++i, ++counter)
       {
         std::string chuck = f.getCompressedChunk(cX(*i), cZ(*i));
-          if (chuck == "") continue;
+        if (chuck == "") continue;
 
-          auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
-          m_map.insertChunk(c);
+        auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
+        m_map.insertChunk(c);
 
-          if (counter < 120)
-          {
+        if (counter < 120)
+        {
+          bc.push_back(*i);
+        }
+      }
+      for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
+      {
+        m_map.ensureChunkIsReadyForImmediateUse(*i);
+      }
+      for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
+      {
+        m_map.chunk(*i).spreadAllLight(m_map);
+        // Not sure if the client has a problem with data coming in too fast...
+        sleepMilli(10);
 
-            // Not sure if the client has a problem with data coming in too fast...
-            sleepMilli(10);
+        std::pair<const unsigned char *, size_t> p = c->compress_beefedup();
+        packetSCPreChunk(eid, *i, true);
 
-            std::pair<const unsigned char *, size_t> p = c->compress_beefedup();
-            packetSCPreChunk(eid, *i, true);
-
-            if (p.second > 18)
-              packetSCMapChunk(eid, p);
-            else
-              packetSCMapChunk(eid, *i, c->compress());
-          }
+        if (p.second > 18)
+          packetSCMapChunk(eid, p);
+        else
+          packetSCMapChunk(eid, *i, c->compress());
       }
 
       m_states[eid].state = GameState::READYTOSPAWN;
