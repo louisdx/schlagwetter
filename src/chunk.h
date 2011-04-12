@@ -23,11 +23,8 @@ public:
   typedef std::array<unsigned char, 81920> ChunkData;
   typedef std::array<unsigned char, 256>   ChunkHeightMap;
 
-  Chunk(const ChunkCoords & cc) : m_coords(cc), m_data(), m_heightmap(), m_zcache(m_coords) { }
-  Chunk(const ChunkCoords & cc, const ChunkData & data, const ChunkHeightMap & hm) : m_coords(cc), m_data(data), m_heightmap(hm), m_zcache(m_coords) { }
-  Chunk(ChunkCoords && cc, ChunkData && data, ChunkHeightMap && hm) : m_coords(std::move(cc)), m_data(std::move(data)), m_heightmap(std::move(hm)), m_zcache(m_coords) { }
-
-  Chunk(Chunk && other) : m_data(std::move(other.m_data)), m_heightmap(std::move(other.m_heightmap)), m_zcache(std::move(other.m_zcache)) { }
+  Chunk(const ChunkCoords & cc);
+  Chunk(const ChunkCoords & cc, const ChunkData & data, const ChunkHeightMap & hm);
 
   /// For all sorts of purposes, we need to know if the chunk has been modified.
   /// We won't do it automatically at every access, please remember to taint your chunk.
@@ -97,10 +94,10 @@ public:
   inline void setSkyLight(const LocalCoords & lc, unsigned char val) { setSkyLight(lX(lc), lY(lc), lZ(lc), val); }
   inline unsigned char getSkyLight(const LocalCoords & lc) const { return getSkyLight(lX(lc), lY(lc), lZ(lc)); }
 
-  /// Compute the chunk's light map and height map.
-  void updateLightAndHeightMaps(Map & map);
-  void spreadLight(const WorldCoords & wc, unsigned char sky_light, unsigned char block_light, Map & map, size_t recursion_depth = 0);
-  void spreadLight(const WorldCoords & wc, unsigned char value, Map & map, uint8_t type /* 0 = sky, 1 = block */, size_t recursion_depth = 0);
+  /// Compute the chunk's light map and height map. Depends on the time of day.
+  void updateLightAndHeightMaps(unsigned long long int ticks);
+  void spreadAllLight(Map & map);
+  void spreadLightRecursively(const WorldCoords & wc, unsigned char value, Map & map, uint8_t type /* 0 = sky, 1 = block */, size_t recursion_depth = 0);
 
   /// The client expects chunks to be deflate()ed. ZLIB to the rescue.
   /// The beefed-up version uses a local cache if possible.
@@ -115,7 +112,7 @@ private:
   ChunkData m_data;
 
   /// The height map isn't stored, but only used by us in private.
-  /// The value at (x, z) is the height of the last air block reachable by going down from height 127, or 127 if there is no air.
+  /// The value at (x, z) is the y-coordinate of the lowest air block reachable from positive infinity; in the range 0 (all air) to 128 (top block non-air).
   ChunkHeightMap m_heightmap;
 
   struct ZCache

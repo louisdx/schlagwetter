@@ -27,7 +27,7 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_server_should_stop(false),
   m_connection_manager(),
   m_next_connection(new Connection(m_io_service, m_connection_manager)),
-  m_map(),
+  m_map(12500 /* evening */),
   m_gsm(std::bind(&Server::sleepMilli, this, std::placeholders::_1), m_connection_manager, m_map),
   m_input_parser(m_gsm),
   m_deadline_timer(m_io_service),
@@ -44,14 +44,14 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   if (PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
   {
     std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), PLAYER_CHUNK_HORIZON);
-    std::cout << "Precomputing map... (" << std::dec << ac.size() << " chunks, one '*' each) ";
+    std::cout << "Precomputing map (" << std::dec << ac.size() << " chunks):" << std::endl << "  Generating terrain: ";
 
     for (auto i = ac.begin(); i != ac.end(); ++i)
     {
-      (void)m_map.getChunkOrGenerateNew(*i);
+      m_map.ensureChunkIsLoaded(*i);
       std::cout << "*"; std::cout.flush();
     }
-    std::cout << " ...done!" << std::endl;;
+    std::cout << std::endl << "Done!" << std::endl;
   }
 }
 
@@ -139,6 +139,7 @@ void Server::runTimerProcessing()
 void Server::processSchedule200ms(int dt)
 {
   static long long int timer;
+  static unsigned long long int game_seconds = (m_map.tick_counter % 24000) / 20;
 
   //std::cout << "Tick-200ms: Actual time was " << std::dec << dt << "ms." << std::endl;
 
@@ -146,6 +147,16 @@ void Server::processSchedule200ms(int dt)
   timer = clockTick();
 
   /* do stuff */
+
+  m_map.tick_counter += dt / 50; // 20 ticks/s, i.e. one tick every 50ms
+
+  if ((m_map.tick_counter % 24000) / 20 != game_seconds)
+  {
+    game_seconds = (m_map.tick_counter % 24000) / 20;
+    std::cout << "The game time is " << std::dec << std::setw(2) << std::setfill('0')
+              << game_seconds / 60 << ":" << std::setw(2) << std::setfill('0') << game_seconds % 60
+              << "." << std::endl;
+  }
 
   const long long int work_time = clockTick() - timer;
 
@@ -175,10 +186,11 @@ void Server::processSchedule1s()
     }
   }
 
-  // Now we get to work. Update game state, send keepalives. (At the moment "update" only cleans up dead connections.)
+  // Now we get to work. Update game state, send keepalives, send map time. (At the moment "update" only cleans up dead connections.)
   for (std::list<int32_t>::const_iterator it = todo.begin(); it != todo.end(); ++it)
   {
     m_gsm.packetSCKeepAlive(*it);
+    m_gsm.packetSCTime(*it, m_map.tick_counter % 24000);
     m_gsm.update(*it);
   }
 

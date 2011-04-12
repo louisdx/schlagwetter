@@ -95,6 +95,7 @@ public:
   void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
   void packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md);
   inline void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md) { packetSCBlockChange(eid, wX(wc), wY(wc), wZ(wc), block_type, block_md); }
+  void packetSCTime(int32_t eid, int64_t ticks);
 
   std::function<void(unsigned int)> sleepMilli;
 

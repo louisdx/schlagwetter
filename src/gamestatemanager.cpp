@@ -83,27 +83,39 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
-
     std::cout << "Player #" << std::dec << eid << " needs chunk " << *i << "." << std::endl;
-    Chunk & c = m_map.getChunkOrGenerateNew(*i);
+    m_map.ensureChunkIsLoaded(*i);
+  }
+  for (auto i = ac.begin(); i != ac.end(); ++i)
+  {
+    if (player.known_chunks.count(*i) > 0) continue;
+    //std::cout << "Computing light spread... ";
+    //m_map.chunk(*i).spreadAllLight(m_map);
+    //std::cout << " ...done." << std::endl;
+  }
+  for (auto i = ac.begin(); i != ac.end(); ++i)
+  {
+    if (player.known_chunks.count(*i) > 0) continue;
+
+    Chunk & chunk = m_map.chunk(*i);
 
     // Not sure if the client has a problem with data coming in too fast...
-    sleepMilli(10);
+    sleepMilli(5);
 
 #define USE_ZCACHE 1
 #if USE_ZCACHE > 0
     // This is using a chunk-local zip cache.
-    std::pair<const unsigned char *, size_t> p = c.compress_beefedup();
+    std::pair<const unsigned char *, size_t> p = chunk.compress_beefedup();
     packetSCPreChunk(eid, *i, true);
 
     if (p.second > 18)
       packetSCMapChunk(eid, p);
     else
-      packetSCMapChunk(eid, *i, c.compress());
+      packetSCMapChunk(eid, *i, chunk.compress());
 #else
     // This is the safe way.
     packetSCPreChunk(eid, *i, true);
-    packetSCMapChunk(eid, *i, c.compress());
+    packetSCMapChunk(eid, *i, chunk.compress());
 #endif
 #undef USE_ZCACHE
 
@@ -345,7 +357,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     {
       GameState & player = m_states[eid];
 
-      WorldCoords start_pos(8, 100, 8);
+      WorldCoords start_pos(8, 80, 8);
 
       player.position = start_pos;
 
@@ -354,7 +366,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       m_states[eid].state = GameState::READYTOSPAWN;
 
       packetSCSpawn(eid, start_pos);
-      packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, false);
+      packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
 
       packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
       packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
@@ -532,5 +544,12 @@ void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int
   p.addInt32(Z);         // Z
   p.addInt8(block_type); // block type
   p.addInt8(block_md);   // block metadata
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCTime(int32_t eid, int64_t ticks)
+{
+  PacketCrafter p(PACKET_TIME_UPDATE);
+  p.addInt64(ticks);
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
