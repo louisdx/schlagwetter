@@ -120,7 +120,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     // Not sure if the client has a problem with data coming in too fast...
     sleepMilli(5);
 
-#define USE_ZCACHE 1
+#define USE_ZCACHE 0
 #if USE_ZCACHE > 0
     // This is using a chunk-local zip cache.
     std::pair<const unsigned char *, size_t> p = chunk.compress_beefedup();
@@ -333,7 +333,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
       /// Load all available chunks to memory, but only send the first 50 to the client.
 
-      WorldCoords start_pos(70, 70, 70);
+      WorldCoords start_pos(100, 66, 78);
 
       std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(start_pos))); // L1-sorted by distance from centre.
       size_t counter = 0;
@@ -361,13 +361,13 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
         // Not sure if the client has a problem with data coming in too fast...
         sleepMilli(10);
 
-        std::pair<const unsigned char *, size_t> p = c->compress_beefedup();
+        std::pair<const unsigned char *, size_t> p = m_map.chunk(*i).compress_beefedup();
         packetSCPreChunk(eid, *i, true);
 
         if (p.second > 18)
           packetSCMapChunk(eid, p);
         else
-          packetSCMapChunk(eid, *i, c->compress());
+          packetSCMapChunk(eid, *i, m_map.chunk(*i).compress());
       }
 
       m_states[eid].state = GameState::READYTOSPAWN;
