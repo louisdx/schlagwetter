@@ -43,6 +43,7 @@ void Map::ensureChunkIsLoaded(const ChunkCoords & cc)
     }
     else
     {
+      std::cout << "** generating chunk **" << std::endl;
       auto ins = m_chunk_map.insert(ChunkMap::value_type(cc, std::make_shared<Chunk>(cc))).first;
       generateWithNoise(*ins->second, cc);
       ins->second->updateLightAndHeightMaps(tick_counter % 24000);

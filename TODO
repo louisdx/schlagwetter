@@ -37,8 +37,10 @@ Known Issues (may be easy to fix)
 Mystery Puzzle of the Day
 -------------------------
 
-The spawn location is wrong. With PLAYER_CHUNK_HORIZON = 5, you spawn inside the cave
-rather than on top. With PLAYER_CHUNK_HORIZON = 2, you do spawn correctly on top. Why?
+* The spawn location is wrong. With PLAYER_CHUNK_HORIZON = 5, you spawn inside the cave
+  rather than on top. With PLAYER_CHUNK_HORIZON = 2, you do spawn correctly on top. Why?
+
+* Shoveling snow or snow blocks with a diamond shovel doesn't seem to create a digging event.
 
 
 Further Goals
