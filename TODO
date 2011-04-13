@@ -26,6 +26,9 @@ Known Issues (may be easy to fix)
 
 * Torch block saving broken (currenly just naive, Torch isn't attached to the correct neighbour).
 
+* Block placement sometimes doesn't prevent placing a block in the position of the player
+  (this seems to be because the target block is reported incorrectly).
+
 
 Mystery Puzzle of the Day
 -------------------------

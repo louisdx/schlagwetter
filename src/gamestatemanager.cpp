@@ -184,42 +184,37 @@ void GameStateManager::packetCSPlayer(int32_t eid, bool ground)
 void GameStateManager::packetCSPlayerPosition(int32_t eid, double X, double Y, double Z, double stance, bool ground)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPosition from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", " << stance << ", " << ground << "]" << std::endl;
+
+  const WorldCoords wc(X, Y, Z);
+  m_states[eid].position = wc;
+
+  if (getChunkCoords(m_states[eid].position) != getChunkCoords(wc))
+  {
+    sendMoreChunksToPlayer(eid);
+  }
 }
 
 void GameStateManager::packetCSPlayerLook(int32_t eid, float yaw, float pitch, bool ground)
 {
-  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPosition from #" << eid << ": [" << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
+  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerLook from #" << eid << ": [" << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
 }
 
 void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool ground)
 {
-  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPosition from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", "
+  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPositionAndLook from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", "
             << stance << ", " << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
+
+  const WorldCoords wc(X, Y, Z);
+  m_states[eid].position = wc;
 
   if (m_states[eid].state == GameState::READYTOSPAWN)
   {
-    PacketCrafter p(PACKET_PLAYER_POSITION_AND_LOOK);
-    p.addDouble(X);      // X
-    p.addDouble(Y);      // Y
-    p.addDouble(stance); // stance
-    p.addDouble(Z);      // Z
-    p.addFloat(yaw);     // yaw
-    p.addFloat(pitch);   // pitch
-    p.addBool(ground);   // on ground
-    m_connection_manager.sendDataToClient(eid, p.craft());
-
+    packetSCPlayerPositionAndLook(eid, X, Y, Z, stance, yaw, pitch, ground);
     m_states[eid].state = GameState::SPAWNED;
-    m_states[eid].position = WorldCoords(X, Y, Z);
   }
-
-  else
+  else if (getChunkCoords(m_states[eid].position) != getChunkCoords(wc))
   {
-    WorldCoords wc(X, Y, Z);
-    if (getChunkCoords(m_states[eid].position) != getChunkCoords(wc))
-    {
-      m_states[eid].position = wc;
-      sendMoreChunksToPlayer(eid);
-    }
+    sendMoreChunksToPlayer(eid);
   }
 
 }
@@ -424,11 +419,13 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
   //if (PROGRAM_OPTIONS.count("verbose"))
   std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", " << Z << ", "
             << Direction(direction) << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
+  std::cout << "Player position is " << m_states[eid].position << std::endl;
 
   auto it = std::find(BLOCKITEM_INFO.begin(), BLOCKITEM_INFO.end(), block_id);
 
   if (X == -1 && Y == -1 && Z == -1)
   {
+    // Here we need to handle eating and such like.
     std::cout << "   Player " << eid << " slashes thin air ";
     if (it != BLOCKITEM_INFO.end()) std::cout << "with " << it->name;
     std::cout << std::endl;
@@ -469,7 +466,13 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
       else if (it != BLOCKITEM_INFO.end() && it->type() == BlockItemInfo::BLOCK)
       {
         wc += Direction(direction);
-        if (m_map.haveChunk(getChunkCoords(wc)))
+
+        if (wc == m_states[eid].position)
+        {
+          std::cout << "Player #" << eid << " tries to bury herself in " << it->name << "." << std::endl;
+        }
+
+        else if (m_map.haveChunk(getChunkCoords(wc)))
         {
           Chunk & chunk = m_map.chunk(getChunkCoords(wc));
       
