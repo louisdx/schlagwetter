@@ -38,7 +38,7 @@
 /// The distance for which chunks need to be available to the client.
 /// An actual (2 r + 1)^2 around the player is sent, see ambientChunks().
 
-enum { PLAYER_CHUNK_HORIZON = 5 }; // Set to 5 for production, 2 for valgrinding.
+enum { PLAYER_CHUNK_HORIZON = 3 }; // Set to 5 for production, 2 for valgrinding. Bravo says "3 or you get spanked".
 
 
 
@@ -305,6 +305,14 @@ enum EBlockItem
   BLOCK_CackeBlock          = 0x5C,
   BLOCK_RedstoneRepeaterOff = 0x5D,
   BLOCK_RedstoneRepeaterOn  = 0x5E
+};
+
+enum EWindows
+{
+  WINDOW_Chest              = 0x00,
+  WINDOW_CraftingTable      = 0x01,
+  WINDOW_Furnace            = 0x02,
+  WINDOW_Dispenser          = 0x03
 };
 
 /*********** Info Types ***********/

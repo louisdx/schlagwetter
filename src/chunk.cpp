@@ -62,7 +62,7 @@ std::string Chunk::compress() const
       }
       else
       {
-        std::cout << "zlib deflate: " << std::dec << outlength << std::endl;
+        //std::cout << "zlib deflate: " << std::dec << outlength << std::endl;
         result = std::string(reinterpret_cast<char*>(zlib_buffer.data()), outlength);
       }
     }
@@ -87,7 +87,7 @@ std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
 {
   if (m_zcache.usable)
   {
-    std::cout << "cached zlib deflate cache hit! (" << std::dec << m_zcache.length << " bytes)" << std::endl;
+    //std::cout << "cached zlib deflate cache hit! (" << std::dec << m_zcache.length << " bytes)" << std::endl;
     return std::make_pair(m_zcache.cache.data(), m_zcache.length + 18);
   }
 
@@ -100,7 +100,7 @@ std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
   }
   else
   {
-    std::cout << "caching zlib deflate: " << std::dec << outlength << std::endl;
+    //std::cout << "caching zlib deflate: " << std::dec << outlength << std::endl;
     m_zcache.usable = true;
   }
 
@@ -113,16 +113,23 @@ std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
 void Chunk::updateLightAndHeightMaps(unsigned long long ticks)
 {
   // Clear lightmaps
+
   std::fill(m_data.data() + offsetBlockLight, m_data.data() + offsetBlockLight + sizeBlockLight + sizeSkyLight, 0);
+
+
+  // Store the highest point that isn't 15 bright.
+  // (Does this break at night? A candle at the highest point might get ignored.
+  // Or candles on glass towers, etc.)
+  int first_nonbright_y = 0;
+
+
+  // Sky light and height map
 
   for (int x = 0; x < 16; ++x)
   {
     for (int z = 0; z < 16; ++z)
     {
-      // Sky light and height map
-
-      int  light = skySourceLight(ticks);
-      int  first_nonbright_y = 0;
+      int light = 15; //  skySourceLight(ticks);   // It's always 15, the client does the rest
       height(x, z) = 0;
 
       for (int y = 127; y >= 0; --y)
@@ -139,8 +146,7 @@ void Chunk::updateLightAndHeightMaps(unsigned long long ticks)
           height(x, z) = y + 1;
         }
 
-        // at non-day, computations are harder because we must potentially illuminate the entire night sky :-(
-        if (first_nonbright_y == 0 && light < 15) // <---- 15 will be only in the bright sun
+        if (first_nonbright_y < y && light < 15)
         {
           first_nonbright_y = y;
         }
@@ -148,17 +154,20 @@ void Chunk::updateLightAndHeightMaps(unsigned long long ticks)
         // We can stop when we got the height map and there's no more light to go around.
         if (light == 0 && height(x, z) != 0) break;
       }
+    }
+  }
 
-      // Emissive light from certain blocks
+  // Emissive light from certain blocks
 
+  for (int x = 0; x < 16; ++x)
+    for (int z = 0; z < 16; ++z)
       for (int y = first_nonbright_y; y >= 0; --y)  // we don't need to bother if the skylight is already at max
         if (EMIT_LIGHT[blockType(x, y, z)] > 0)
         {
           setBlockLight(x, y, z, EMIT_LIGHT[blockType(x, y, z)]);
         }
 
-    }   // z
-  }     // x
+
 }
 
 void Chunk::spreadColumn(size_t x, size_t z, Map & map)
