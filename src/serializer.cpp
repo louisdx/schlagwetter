@@ -18,12 +18,15 @@ Serializer::Serializer(ChunkMap & chunk_map)
 
 bool Serializer::haveChunk(const ChunkCoords & cc)
 {
+  // this should say "true" if the chunk is available on the disk
+  // but not loaded to memory.
   (void)cc;
   return false;
 }
 
 ChunkMap::mapped_type Serializer::loadChunk(const ChunkCoords & cc)
 {
+  // in the above situation, this should retrieve an individual chunk from the disk.
   return std::make_shared<Chunk>(cc);
 }
 
@@ -90,22 +93,24 @@ void Serializer::deserialize(const std::string & basename)
   zidx.push(idxfile);
   zdat.push(datfile);
 
-  bool good = true;
-
-  for (size_t counter = 0; good ; ++counter)
+  for (size_t counter = 0; ; ++counter)
   {
     int32_t X, Z, c;
-    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&X), 4) == -1) good = false;
-    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&Z), 4) == -1) good = false;
-    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&c), 4) == -1) good = false;
+    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&X), 4) == -1) break;
+    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&Z), 4) == -1) break;
+    if (boost::iostreams::read(zidx, reinterpret_cast<char*>(&c), 4) == -1) break;
+
+    auto chunk = std::make_shared<Chunk>(ChunkCoords(X, Z));
+
+    if (boost::iostreams::read(zdat, reinterpret_cast<char *>(chunk->data().data()), Chunk::sizeBlockType + Chunk::sizeBlockMetaData) == -1)
+    {
+      break;
+    }
 
     if (c != int(counter))
     {
       std::cerr << "Warning: Something unexpected when reading the map. (Read: " << c << ", Expected: " << counter << ")" << std::endl;
     }
-
-    auto chunk = std::make_shared<Chunk>(ChunkCoords(X, Z));
-    if (boost::iostreams::read(zdat, reinterpret_cast<char *>(chunk->data().data()), Chunk::sizeBlockType + Chunk::sizeBlockMetaData) == -1) good = false;
 
     m_chunk_map.insert(std::make_pair(chunk->coords(), chunk));
   }
