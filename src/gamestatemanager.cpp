@@ -101,16 +101,14 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
-    std::cout << "Player #" << std::dec << eid << " needs chunk " << *i << "." << std::endl;
+    //std::cout << "Player #" << std::dec << eid << " needs chunk " << *i << "." << std::endl;
     m_map.ensureChunkIsReadyForImmediateUse(*i);
   }
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
-    std::cout << "Computing light spread... ";
     m_map.chunk(*i).spreadAllLight(m_map);
     m_map.chunk(*i).spreadToNewNeighbours(m_map);
-    std::cout << " ...done." << std::endl;
   }
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
@@ -359,6 +357,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
       {
         m_map.chunk(*i).spreadAllLight(m_map);
+
         // Not sure if the client has a problem with data coming in too fast...
         sleepMilli(10);
 
@@ -381,6 +380,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       GameState & player = m_states[eid];
 
       const WorldCoords start_pos(8, 80, 8);
+      //const WorldCoords start_pos(16, 66, -32);
 
       player.position = start_pos;
 
@@ -394,6 +394,8 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
       packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
       packetSCSetSlot(eid, 0, 29, ITEM_Coal, 50, 0);
+      packetSCSetSlot(eid, 0, 21, BLOCK_Cobblestone, 60, 0);
+      packetSCSetSlot(eid, 0, 22, BLOCK_IronOre, 60, 0);
       packetSCSetSlot(eid, 0, 30, BLOCK_Wood, 50, 0);
       packetSCSetSlot(eid, 0, 38, ITEM_DiamondShovel, 1, 0);
       packetSCSetSlot(eid, 0, 39, BLOCK_BrickBlock, 64, 0);
@@ -419,47 +421,52 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
     if (it != BLOCKITEM_INFO.end()) std::cout << "with " << it->name;
     std::cout << std::endl;
   }
-
-  else if (block_id < 0) return /* empty-handed */ ;
-
-  else if (it != BLOCKITEM_INFO.end() && it->type() == BlockItemInfo::BLOCK)
+  else
   {
     WorldCoords wc(X, Y, Z);
-    wc += Direction(direction);
     if (m_map.haveChunk(getChunkCoords(wc)))
     {
       Chunk & chunk = m_map.chunk(getChunkCoords(wc));
-      chunk.blockType(getLocalCoords(wc)) = block_id;
-      chunk.taint();
+      if (chunk.blockType(getLocalCoords(wc)) == BLOCK_CraftingTable ||
+          chunk.blockType(getLocalCoords(wc)) == BLOCK_FurnaceBlock  ||
+          chunk.blockType(getLocalCoords(wc)) == BLOCK_ChestBlock    ||
+          chunk.blockType(getLocalCoords(wc)) == BLOCK_DispenserBlock  )
+      {
+        uint8_t w = -1, slots = -1;
+        std::string title = "";
 
-      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
+        switch (chunk.blockType(getLocalCoords(wc)))
+        {
+        case BLOCK_CraftingTable:  w = WINDOW_CraftingTable; slots = 9;  title = "Make it so!"; break;
+        case BLOCK_FurnaceBlock:   w = WINDOW_Furnace;       slots = 9;  title = "Furnace";     break;
+        case BLOCK_ChestBlock:     w = WINDOW_Chest;         slots = 60; title = "Myspace";     break;
+        case BLOCK_DispenserBlock: w = WINDOW_Dispenser;     slots = 9;  title = "Dispenser";   break;
+        }
 
-      /*
-        I used to have this:
+        PacketCrafter p(PACKET_OPEN_WINDOW);
+        p.addInt8(123); // window ID
+        p.addInt8(w);
+        p.addJString("Make it so!");
+        p.addInt8(slots);
+        m_connection_manager.sendDataToClient(eid, p.craft());
+      }
+      else if (block_id < 0)
+      {
+        // empty-handed, not useful
+      }
+      else if (it != BLOCKITEM_INFO.end() && it->type() == BlockItemInfo::BLOCK)
+      {
+        wc += Direction(direction);
+        if (m_map.haveChunk(getChunkCoords(wc)))
+        {
+          Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+      
+          chunk.blockType(getLocalCoords(wc)) = block_id;
+          chunk.taint();
 
-  template<typename ... Args>
-  void GameStateManager::sendToAll(std::function<void(int32_t, Args ...)> f, Args && ... args)
-  {
-    // [... loop ...]
-    f(*it, std::forward<Args>(args)...);
-  }
-
-        Used like this:
-
-      using namespace std::placeholders;
-      //void (GameStateManager::*f)(int32_t, const WorldCoords &, int8_t, int8_t) = &GameStateManager::packetSCBlockChange;
-      //sendToAll(std::function<void(int32_t, const WorldCoords &, int8_t, int8_t)>(std::bind(f, this, _1, _2, _3, _4)), (const WorldCoords &)(wc), int8_t(block_id), int8_t(0));
-
-        Or even (jikes!) this:
-
-
-      /// I don't know if I should feel victorious about this construct.
-      sendToAll(std::function<void(int32_t, const WorldCoords &, int8_t, int8_t)>(
-          std::bind((void(GameStateManager::*)(int32_t, const WorldCoords &, int8_t, int8_t))(&GameStateManager::packetSCBlockChange), this, _1, _2, _3, _4)
-        ), (const WorldCoords &)(wc), int8_t(block_id), int8_t(0));
-      */
-
-
+          sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
+        }
+      }
     }
   }
 }
