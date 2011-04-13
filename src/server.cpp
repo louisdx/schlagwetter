@@ -45,6 +45,8 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   {
     m_map.load(PROGRAM_OPTIONS["load"].as<std::string>());
   }
+  /// This will go eventually. The "testfile" option was just a gimmick to load an individual .mcr region.
+  /// Use the nbtimporter instead. Ultimately, it'll only be either "load" or "generate".
   else if (PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
   {
     std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), PLAYER_CHUNK_HORIZON);

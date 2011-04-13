@@ -98,18 +98,30 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
   std::vector<ChunkCoords> ac = ambientChunks(getChunkCoords(player.position), PLAYER_CHUNK_HORIZON);
   std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(player.position)));
 
+  /// Here follows the typical chunk update acrobatics in three rounds.
+
+  // Round 1: Load all relevant chunks to memory
+
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
+
     //std::cout << "Player #" << std::dec << eid << " needs chunk " << *i << "." << std::endl;
     m_map.ensureChunkIsReadyForImmediateUse(*i);
   }
+
+  // Round 2: Spread light to all chunks in memory. Light only spreads to loaded chunks.
+
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
+
     m_map.chunk(*i).spreadAllLight(m_map);
     m_map.chunk(*i).spreadToNewNeighbours(m_map);
   }
+
+  // Round 3: Send the fully updated chunks to the client.
+
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
@@ -119,7 +131,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     // Not sure if the client has a problem with data coming in too fast...
     sleepMilli(5);
 
-#define USE_ZCACHE 0
+#define USE_ZCACHE 0   // The local chache doesn't seem to work reliably.
 #if USE_ZCACHE > 0
     // This is using a chunk-local zip cache.
     std::pair<const unsigned char *, size_t> p = chunk.compress_beefedup();
