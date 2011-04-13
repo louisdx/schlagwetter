@@ -5,12 +5,18 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 
 
 
-/* Good old C standard, never fixed the behaviour of signed division... */
+/// A millisecond clock tick.
+
+long long int clockTick();
+
+
+/// Good old C standard, never fixed the behaviour of signed division...
 
 inline unsigned int MyMod(int a, unsigned int b) { int c = a % b; while (c < 0) c += b; return (unsigned int)(c); }
 inline unsigned int MyMod16(int a) { return MyMod(a, 16); }

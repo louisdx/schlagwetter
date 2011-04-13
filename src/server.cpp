@@ -11,6 +11,13 @@
 #include "cmdlineoptions.h"
 #include "types.h"
 
+
+typedef std::chrono::high_resolution_clock::period clock_period;
+long long int clockTick()
+{
+  return (long long int)((std::chrono::high_resolution_clock::now().time_since_epoch().count() * clock_period::num * 1000) / clock_period::den);
+}
+
 template<class T>
 struct Identity
 {
@@ -241,11 +248,11 @@ bool Server::processIngress(int32_t eid, std::shared_ptr<SyncQueue> d)
   while (!d->empty())
   {
     const unsigned char first_byte(d->front());
-    const auto pit = std::find(PACKET_INFO.begin(), PACKET_INFO.end(), first_byte);
+    const auto pit = PACKET_INFO.find(EPacketNames(first_byte));
 
     if (pit != PACKET_INFO.end())
     {
-      const size_t psize = pit->size; // excludes initial type byte!
+      const size_t psize = pit->second.size; // excludes initial type byte!
 
       if (psize != size_t(PACKET_VARIABLE_LEN) && d->size() >= psize + 1)
       {

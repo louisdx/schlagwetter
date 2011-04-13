@@ -31,14 +31,13 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <array>
 
 
 /// The distance for which chunks need to be available to the client.
 /// An actual (2 r + 1)^2 around the player is sent, see ambientChunks().
 
-enum { PLAYER_CHUNK_HORIZON = 3 }; // Set to 5 for production, 2 for valgrinding. Bravo says "3 or you get spanked".
+enum { PLAYER_CHUNK_HORIZON = 4 }; // Set to 5 for production, 2 for valgrinding. Bravo says "3 or you get spanked". I say "3 is too little".
 
 
 
@@ -317,12 +316,9 @@ enum EWindows
 
 /*********** Info Types ***********/
 
+
 struct PacketInfo
 {
-  inline operator size_t() const { return size_t(code); }
-  inline bool operator==(const PacketInfo & other) const { return code == other.code; }
-
-  EPacketNames code;
   size_t size;
   std::string name;
 };
@@ -330,18 +326,15 @@ struct PacketInfo
 struct BlockItemInfo
 {
   enum Type { BLOCK = 0, ITEM = 1 };
+  static inline Type type(const EBlockItem & code)  { return code < 256 ? BLOCK : ITEM ; }
 
-  inline Type type() const { return code < 256 ? BLOCK : ITEM ; }
-  inline operator size_t() const { return size_t(code); }
-  inline bool operator==(const BlockItemInfo & other) const { return code == other.code; }
+  BlockItemInfo(const std::string & n) : name(n) { }
 
-  EBlockItem code;
   std::string name;
 };
 
-extern std::unordered_set<PacketInfo, std::hash<size_t>> PACKET_INFO;
-
-extern std::unordered_set<BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO;
+extern std::unordered_map<EPacketNames, PacketInfo, std::hash<size_t>> PACKET_INFO;
+extern std::unordered_map<EBlockItem, BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO;
 
 
 
@@ -412,6 +405,16 @@ private:
 
 extern LightMap EMIT_LIGHT;
 extern LightMap STOP_LIGHT;
+
+// Block properties for digging (left-click) and placement (right-click)
+
+#define LEFTCLICK_DIGGABLE    0x1
+#define LEFTCLICK_REMOVABLE   0x2
+#define LEFTCLICK_TRIGGER     0x4
+
+extern LightMap BLOCK_DIG_PROPERTIES;
+extern LightMap BLOCK_PLACEMENT_PROPERTIES;
+
 
 //Player digging status
 enum

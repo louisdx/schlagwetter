@@ -159,6 +159,208 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
  ******************                  ****************/
 
 
+void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, int32_t Z, uint8_t status, uint8_t face)
+{
+  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerDigging from #" << std::dec << eid << ": [" << X << ", " << (unsigned int)(Y)
+            << ", " << Z << ", " << (unsigned int)(status) << ", " << (unsigned int)(face) << "]" << std::endl;
+
+  /*** Digging, aka "the left mouse button" ***
+
+   We check have two states (apart from the third one): Start (0) and Stop (2).
+
+   To determine the course of action, we look up the block type at the target (X,Y,Z)
+   in the property table BLOCK_DIG_PROPERTIES. We recognise three properties:
+
+   * LEFTCLICK_DIGGABLE:  Ordinary blocks that can be removed by finishing digging.
+   * LEFTCLICK_REMOVABLE: Blocks that are immediately removed, like torches and wire.
+   * LEFTCLICK_TRIGGER:   Blocks that change their status when clicked, like doors and buttons.
+
+   A block can have several properties.
+
+   A Start event needs to treat all three properties. A Stop event only needs to treat DIGGABLE blocks.
+
+   The third status is Drop (4), which is something entirely different.
+
+  ***/
+
+  if (status == 0)
+  {
+    const WorldCoords wc(X, Y, Z);
+    Chunk & chunk = m_map.chunk(wc);
+    unsigned char & block =  chunk.blockType(getLocalCoords(wc));
+
+    const unsigned char block_properties = BLOCK_DIG_PROPERTIES[block];
+
+    if (block_properties & LEFTCLICK_DIGGABLE)
+    {
+      m_states[eid].recent_dig = { wc, clockTick() };
+    }
+
+    if (block_properties & LEFTCLICK_REMOVABLE)
+    {
+      block = BLOCK_Air;
+      chunk.taint();
+      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t), wc, BLOCK_Air));
+    }
+
+    if (block_properties & LEFTCLICK_TRIGGER)
+    {
+      // Trigger changes require meta data fiddling.
+    }
+  }
+
+  else if (status == 2)
+  {
+    const WorldCoords wc(X, Y, Z);
+    Chunk & chunk = m_map.chunk(wc);
+    unsigned char & block =  chunk.blockType(getLocalCoords(wc));
+    const unsigned char block_properties = BLOCK_DIG_PROPERTIES[block];
+
+    if (block_properties & LEFTCLICK_DIGGABLE)
+    {
+      if (m_states[eid].recent_dig.wc == wc) // further validation needed
+      {
+        std::cout << "#" << eid << " spent " << (clockTick() - m_states[eid].recent_dig.start_time) << "ms digging for "
+                  << BLOCKITEM_INFO.find(EBlockItem(block))->second.name << "." << std::endl;
+        block = BLOCK_Air;
+        chunk.taint();
+        sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t), wc, BLOCK_Air));
+      }
+      else
+      {
+        std::cout << "Bogus \"Digging Stop\" event received from #" << eid << " (consider kicking)." << std::endl;
+      }
+    }
+  }
+
+  else if (status == 4 && (X == 0 && Y == 0 && Z == 0 && face == 0))
+  {
+    std::cout << "Item drop stub. Please implement me." << std::endl;
+  }
+
+  else
+  {
+    std::cout << "Bogus PlayerDigging event received from #" << eid
+              << ", status = " << (unsigned int)(status) << "." << std::endl;
+  }
+}
+
+void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t direction, int16_t block_id, int8_t amount, int16_t damage)
+{
+  //if (PROGRAM_OPTIONS.count("verbose"))
+  std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", " << Z << ", "
+            << Direction(direction) << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
+  std::cout << "Player position is " << m_states[eid].position << std::endl;
+
+
+  /*** Placement, aka "the right mouse button" ***
+
+   We have to tackle this event in stages.
+
+   First, if the target is (-1, -1, -1), we have to handle our inventory action (e.g. eating).
+   This may also be triggered when the right click faces no valid block in range ("thin air").
+
+   Second, otherwise, if the target is an interactive item (Crafting Table, etc.),
+   we open that and ignore all else.
+
+   Third, otherwise, the target is a genuine placement target. If we hold no item,
+   i.e. block_id < 0, there's nothing to do; otherwise we place the block. This is
+   the most tricky operation, as we have to determine all sorts of special-needs blocks
+   that require meta data to be set up.
+
+   ***/
+
+  auto it = BLOCKITEM_INFO.find(EBlockItem(block_id));
+
+  /// Stage 1: Special inventory event. Eating and such like.
+  if (X == -1 && Y == -1 && Z == -1)
+  {
+    std::cout << "   Player " << eid << " slashes thin air ";
+    if (it != BLOCKITEM_INFO.end()) std::cout << "with " << it->second.name;
+    std::cout << std::endl;
+  }
+
+  else
+  {
+    WorldCoords wc(X, Y, Z);
+
+    if (!m_map.haveChunk(getChunkCoords(wc)))
+    {
+      std::cout << "Panic, right-click went into a non-existing chunk!" << std::endl;
+      return;
+    }
+
+    Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+
+    /// Stage 2: Interactive block, open window.
+
+    if (chunk.blockType(getLocalCoords(wc)) == BLOCK_CraftingTable ||
+        chunk.blockType(getLocalCoords(wc)) == BLOCK_FurnaceBlock  ||
+        chunk.blockType(getLocalCoords(wc)) == BLOCK_ChestBlock    ||
+        chunk.blockType(getLocalCoords(wc)) == BLOCK_DispenserBlock  )
+     {
+       uint8_t w = -1, slots = -1;
+       std::string title = "";
+
+       switch (chunk.blockType(getLocalCoords(wc)))
+         {
+         case BLOCK_CraftingTable:  w = WINDOW_CraftingTable; slots = 9;  title = "Make it so!"; break;
+         case BLOCK_FurnaceBlock:   w = WINDOW_Furnace;       slots = 9;  title = "Furnace";     break;
+         case BLOCK_ChestBlock:     w = WINDOW_Chest;         slots = 60; title = "Myspace";     break;
+         case BLOCK_DispenserBlock: w = WINDOW_Dispenser;     slots = 9;  title = "Dispenser";   break;
+         }
+
+       packetSCOpenWindow(eid, 123 /* window ID? */, w, title, slots);
+     }
+
+    /// Stage 3a: Genuine target, but empty hands.
+
+    else if (block_id < 0)
+    {
+      // empty-handed, not useful
+    }
+
+    /// Stage 3b: Genuine target, holding a placeable block.
+
+    else if (it != BLOCKITEM_INFO.end())
+    {
+      wc += Direction(direction);
+
+      // Holding a building block
+      if (BlockItemInfo::type(it->first) == BlockItemInfo::BLOCK)
+      {
+        if (wc == m_states[eid].position)
+        {
+          std::cout << "Player #" << eid << " tries to bury herself in " << it->second.name << "." << std::endl;
+        }
+
+        else if (m_map.haveChunk(getChunkCoords(wc)))
+        {
+          Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+
+          chunk.blockType(getLocalCoords(wc)) = block_id;
+          chunk.taint();
+
+          int8_t meta_header = 0;
+          std::string meta_data = "";
+
+          sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChangeWithMeta, (int32_t, const WorldCoords &, int8_t, int8_t, std::string), wc, block_id, meta_header, meta_data));
+        }
+      }
+      // Holding an item
+      else if (BlockItemInfo::type(it->first) == BlockItemInfo::BLOCK)
+      {
+        // check for seeds, sign, buckets, doors, saddles, minecarts, bed
+      }
+    }
+
+    else
+    {
+      std::cout << "Bogus BlockPlacement event received from #" << eid << "." << std::endl;
+    }
+  }
+}
+
 void GameStateManager::packetCSKeepAlive(int32_t eid)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received KeepAlive from #" << eid << std::endl;
@@ -217,22 +419,6 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
     sendMoreChunksToPlayer(eid);
   }
 
-}
-
-void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, int32_t Z, uint8_t status, uint8_t face)
-{
-  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerDigging from #" << std::dec << eid << ": [" << X << ", " << (unsigned int)(Y)
-            << ", " << Z << ", " << (unsigned int)(status) << ", " << (unsigned int)(face) << "]" << std::endl;
-
-  if (status == 2)
-  {
-    const WorldCoords wc(X, Y, Z);
-    Chunk & chunk = m_map.chunk(wc);
-    chunk.blockType(getLocalCoords(wc)) = BLOCK_Air;
-    chunk.taint();
-
-    sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
-  }
 }
 
 void GameStateManager::packetCSHoldingChange(int32_t eid, int16_t slot)
@@ -414,78 +600,6 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
   }
 }
 
-void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t direction, int16_t block_id, int8_t amount, int16_t damage)
-{
-  //if (PROGRAM_OPTIONS.count("verbose"))
-  std::cout << "GSM: Received BlockPlacement from #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", " << Z << ", "
-            << Direction(direction) << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
-  std::cout << "Player position is " << m_states[eid].position << std::endl;
-
-  auto it = std::find(BLOCKITEM_INFO.begin(), BLOCKITEM_INFO.end(), block_id);
-
-  if (X == -1 && Y == -1 && Z == -1)
-  {
-    // Here we need to handle eating and such like.
-    std::cout << "   Player " << eid << " slashes thin air ";
-    if (it != BLOCKITEM_INFO.end()) std::cout << "with " << it->name;
-    std::cout << std::endl;
-  }
-  else
-  {
-    WorldCoords wc(X, Y, Z);
-    if (m_map.haveChunk(getChunkCoords(wc)))
-    {
-      Chunk & chunk = m_map.chunk(getChunkCoords(wc));
-      if (chunk.blockType(getLocalCoords(wc)) == BLOCK_CraftingTable ||
-          chunk.blockType(getLocalCoords(wc)) == BLOCK_FurnaceBlock  ||
-          chunk.blockType(getLocalCoords(wc)) == BLOCK_ChestBlock    ||
-          chunk.blockType(getLocalCoords(wc)) == BLOCK_DispenserBlock  )
-      {
-        uint8_t w = -1, slots = -1;
-        std::string title = "";
-
-        switch (chunk.blockType(getLocalCoords(wc)))
-        {
-        case BLOCK_CraftingTable:  w = WINDOW_CraftingTable; slots = 9;  title = "Make it so!"; break;
-        case BLOCK_FurnaceBlock:   w = WINDOW_Furnace;       slots = 9;  title = "Furnace";     break;
-        case BLOCK_ChestBlock:     w = WINDOW_Chest;         slots = 60; title = "Myspace";     break;
-        case BLOCK_DispenserBlock: w = WINDOW_Dispenser;     slots = 9;  title = "Dispenser";   break;
-        }
-
-        PacketCrafter p(PACKET_OPEN_WINDOW);
-        p.addInt8(123); // window ID
-        p.addInt8(w);
-        p.addJString("Make it so!");
-        p.addInt8(slots);
-        m_connection_manager.sendDataToClient(eid, p.craft());
-      }
-      else if (block_id < 0)
-      {
-        // empty-handed, not useful
-      }
-      else if (it != BLOCKITEM_INFO.end() && it->type() == BlockItemInfo::BLOCK)
-      {
-        wc += Direction(direction);
-
-        if (wc == m_states[eid].position)
-        {
-          std::cout << "Player #" << eid << " tries to bury herself in " << it->name << "." << std::endl;
-        }
-
-        else if (m_map.haveChunk(getChunkCoords(wc)))
-        {
-          Chunk & chunk = m_map.chunk(getChunkCoords(wc));
-      
-          chunk.blockType(getLocalCoords(wc)) = block_id;
-          chunk.taint();
-
-          sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
-        }
-      }
-    }
-  }
-}
-
 void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received ChatMessage from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
@@ -579,23 +693,48 @@ void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot,
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
-void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md)
+void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type)
 {
   std::cout << "Sending BlockChange to #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", "
-            << Z << ", block type " << int(block_type) << ", block md " << int(block_md) << "]" << std::endl;
+            << Z << ", block type " << int(block_type) << "]" << std::endl;
 
   PacketCrafter p(PACKET_BLOCK_CHANGE);
   p.addInt32(X);         // X
   p.addInt8(Y);          // Y
   p.addInt32(Z);         // Z
   p.addInt8(block_type); // block type
+  p.addInt8(0);          // block metadata; if you need this, use the next function
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCBlockChangeWithMeta(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md, std::string meta_data)
+{
+  std::cout << "Sending BlockChange to #" << std::dec << eid << ": [" << wc << ", block type " << int(block_type)
+            << ", block md " << int(block_md) << ", + meta data]" << std::endl;
+
+  PacketCrafter p(PACKET_BLOCK_CHANGE);
+  p.addInt32(wX(wc));    // X
+  p.addInt8 (wY(wc));    // Y
+  p.addInt32(wZ(wc));    // Z
+  p.addInt8(block_type); // block type
   p.addInt8(block_md);   // block metadata
   m_connection_manager.sendDataToClient(eid, p.craft());
+  m_connection_manager.sendDataToClient(eid, meta_data);
 }
 
 void GameStateManager::packetSCTime(int32_t eid, int64_t ticks)
 {
   PacketCrafter p(PACKET_TIME_UPDATE);
   p.addInt64(ticks);
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCOpenWindow(int32_t eid, int8_t window_id, int8_t window_type, std::string title, int8_t slots)
+{
+  PacketCrafter p(PACKET_OPEN_WINDOW);
+  p.addInt8(window_id);
+  p.addInt8(window_type);
+  p.addJString(title);
+  p.addInt8(slots);
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
