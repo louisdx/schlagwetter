@@ -81,7 +81,11 @@
       <li><a href="http://zlib.net/">zlib</a> for chunk compression.</li>
       <li><a href="http://libnoise.sourceforge.net">libnoise</a> for terrain generation.</li>
       <li><a href="https://github.com/FliPPeh/cNBT">cNBT</a>, a C library for handling NBT data structures.</li>
-      <li>Boost components: asio, iostreams, filesystem, program_options, regex.</li>
+      <li>Boost components: <a href="www.boost.org/doc/libs/release/libs/asio/">asio</a>,
+          <a href="www.boost.org/doc/libs/release/libs/iostreams/index.html">iostreams</a>,
+          <a href="www.boost.org/doc/libs/release/libs/filesystem/index.html">filesystem</a>,
+          <a href="www.boost.org/doc/html/program_options.html">program_options</a>,
+          <a href="www.boost.org/doc/libs/release/libs/regex/">regex</a> (until STL support is ready).</li>
       <li>[optional] <a href="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html">GNU Readline</a> for the server user interface.</li>
     </ul>
 
@@ -98,12 +102,13 @@
     <ul>
       <li>The above libraries. The libraries libnoise and zlib should be easily available or buildable for your platform.
       <a href="http://www.boost.org/">Boost</a> is a bit of a monster, but very well supported (you need the boost_program_options,
-      boost_iostreams, boost_regex, boost_filesystem and boost_system dynamic libraries, and a bunch of header-only modules). As for cNBT, it's included in the repository as a
-      linked submodule, and you need to retrieve it separately (but git can do this for you).</li>
+      boost_iostreams, boost_regex, boost_filesystem and boost_system dynamic libraries, and a bunch of header-only modules).
+      As for cNBT, it's included in the repository as a linked submodule, and you need to retrieve it separately (but git can do this
+      for you, see above and below).</li>
       <li>If you have <a href="http://www.cmake.org/">cmake</a>, everything should work with very little effort (though I only tested
       it on Linux (Ubuntu); I would be delighted to hear about other platforms). Even if you don't have cmake, you could still try and
-      build all the <code>src/*.cpp</code> files and link them together (excluding <code>tester*.cpp</code>); if you set all your
-      include paths right to pick up the requisite libraries, this ought to work.</li>
+      build all the <code>src/*.cpp</code> files and link them together (excluding <code>tester*.cpp</code> and <code>nbtimporter.cpp</code>);
+      if you set all your include paths right to pick up the requisite libraries, this ought to work.</li>
     </ul>
 
     <h3>Example</h3>
@@ -134,14 +139,15 @@ make
     (the basename is freely choosable). Both files are compressed and read
     and written with Boost.iostream's zlib-filtered stream. Ignoring
     the transparent compression, the underlying file structure is very
-    simple: The data file consists simply of consecutive blocks of 81920 bytes
-    of data, each being one chunk. The index file runs in parallel and consists
+    simple: The data file consists simply of consecutive blocks of 48KiB
+    bytes of data, each being the block type (32KiB) and block metadata
+    (16KiB) of one chunk. The index file runs in parallel and consists
     of flat, 12-byte entires (all values machine-endian):</p>
     <div class="listing">int32_t chunk_X;
 int32_t chunk_Z;
 int32_t counter;</div>
     <p>You can either read both files in parallel to obtain all chunks,
-    or jump directly to a desired chunk at offset <code>counter * 81920</code>
+    or jump directly to a desired chunk at offset <code>counter * 49152</code>
     in the data file.</p>
     <p><strong>To do:</strong> Perhaps it would be better to replace the counter variable
     with the true offset in the compressed file. The entire model assumes that you can hold
