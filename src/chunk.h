@@ -101,9 +101,9 @@ public:
   inline void setSkyLight(const LocalCoords & lc, unsigned char val) { setSkyLight(lX(lc), lY(lc), lZ(lc), val); }
   inline unsigned char getSkyLight(const LocalCoords & lc) const { return getSkyLight(lX(lc), lY(lc), lZ(lc)); }
 
-  /// Compute the chunk's light map and height map. Depends on the time of day.
+  /// Compute the chunk's light map and height map.
   /// This function is local and does not need to know any other chunks.
-  void updateLightAndHeightMaps(unsigned long long int ticks);
+  void updateLightAndHeightMaps();
 
   /// The core light spreading routine. This requires ambient chunks to exist,
   /// so make sure to call this only when all relevant chunks have been loaded.

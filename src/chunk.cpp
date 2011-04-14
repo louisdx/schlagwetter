@@ -110,7 +110,7 @@ std::pair<const unsigned char *, size_t> Chunk::compress_beefedup()
   return std::make_pair(m_zcache.cache.data(), m_zcache.length + 18);
 }
 
-void Chunk::updateLightAndHeightMaps(unsigned long long ticks)
+void Chunk::updateLightAndHeightMaps()
 {
   // Clear lightmaps
 

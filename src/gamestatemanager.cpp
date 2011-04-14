@@ -222,7 +222,8 @@ void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem b
 {
   // this is just temporary
   std::cout << "Successfully dug at " << wc << " for " << BLOCKITEM_INFO.find(block_type)->second.name << std::endl;
-  sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, GenerateEID(), uint16_t(block_type), 1, 0, wc));
+  if (block_type != 0)
+    sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, GenerateEID(), uint16_t(block_type), 1, 0, wc));
 }
 
 /// This is the workhorse for block placement (right-click) decisions.
