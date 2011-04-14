@@ -10,14 +10,14 @@
 #include "filereader.h"
 
 
-uint8_t GameState::getRelativeDirection(const WorldCoords & wc)
+uint8_t GameState::getRelativeDirection(const RealCoords & rc)
 {
   // We probably need fractional coordinates here for precision.
 
   enum { BLOCK_BOTTOM = 0, BLOCK_NORTH = 1, BLOCK_SOUTH = 2, BLOCK_EAST = 3, BLOCK_WEST = 4, BLOCK_TOP = 5 };
 
-  const int diffX = wX(wc) - wX(position);
-  const int diffZ = wZ(wc) - wZ(position);
+  const double diffX = rX(rc) - rX(position);
+  const double diffZ = rZ(rc) - rZ(position);
 
   std::cout << "Relative: " << diffX << ", " << diffZ << std::endl;
 
@@ -119,8 +119,11 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
   GameState & player = it->second;
 
-  std::vector<ChunkCoords> ac = ambientChunks(getChunkCoords(player.position), PLAYER_CHUNK_HORIZON);
-  std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(player.position)));
+  // Someone can go and implement more overloads if this looks too icky.
+  const ChunkCoords pc = getChunkCoords(getWorldCoords(getFractionalCoords(player.position)));
+
+  std::vector<ChunkCoords> ac = ambientChunks(pc, PLAYER_CHUNK_HORIZON);
+  std::sort(ac.begin(), ac.end(), L1DistanceFrom(pc));
 
   /// Here follows the typical chunk update acrobatics in three rounds.
 
@@ -180,6 +183,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
 bool isStackable(EBlockItem e)
 {
+  std::cout << "stackable called with " << int(e) << std::endl;
   switch (e)
     {
     case BLOCK_CraftingTable:
@@ -212,6 +216,19 @@ bool isStackable(EBlockItem e)
 GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
     const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta)
 {
+  // I believe we are never allowed to place anything on an already occupied block.
+  // If that's false, we have to refactor this check.
+
+  if (!m_map.haveChunk(getChunkCoords(wc + dir)) ||
+      EBlockItem(m_map.chunk(getChunkCoords(wc + dir)).blockType(getLocalCoords(wc + dir))) != BLOCK_Air)
+  {
+    std::cout << "Sorry, cannot place object on occupied block at " << wc + dir << "." << std::endl;
+    return CANNOT_PLACE;
+  }
+
+
+  // Target block is clear, let's get to work.
+
   switch(it->first) // block ID
   {
   case BLOCK_WoodenStairs:
@@ -222,9 +239,7 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
       if (wY(wc) == 0 || dir == BLOCK_YMINUS) return CANNOT_PLACE;
 
       if (!m_map.haveChunk(getChunkCoords(wc))                                                          ||
-          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc))))       ||
-          !m_map.haveChunk(getChunkCoords(wc + BLOCK_YMINUS))                                           ||
-          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc + BLOCK_YMINUS)).blockType(getLocalCoords(wc + BLOCK_YMINUS))))  )
+          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc))))          )
       {
         std::cout << "Sorry, cannot place stairs on block " << wc << "." << std::endl;
         return CANNOT_PLACE;
@@ -246,13 +261,6 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
           !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc)))))
       {
         std::cout << "Sorry, cannot place torch on block " << wc << "." << std::endl;
-        return CANNOT_PLACE;
-      }
-
-      if (!m_map.haveChunk(getChunkCoords(wc + dir)) ||
-          EBlockItem(m_map.chunk(getChunkCoords(wc + dir)).blockType(getLocalCoords(wc + dir))) != BLOCK_Air)
-      {
-        std::cout << "Sorry, cannot place torch on occupied block " << wc << "." << std::endl;
         return CANNOT_PLACE;
       }
 
@@ -452,7 +460,8 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
       // Holding a building block
       if (BlockItemInfo::type(it->first) == BlockItemInfo::BLOCK)
       {
-        if (wc == m_states[eid].position || (wY(wc) != 0 && wc + BLOCK_YMINUS == m_states[eid].position))
+        if (wc == getWorldCoords(m_states[eid].position)                                  ||
+            (wY(wc) != 0 && wc + BLOCK_YMINUS == getWorldCoords(m_states[eid].position))   )
         {
           std::cout << "Player #" << eid << " tries to bury herself in " << it->second.name << "." << std::endl;
         }
@@ -523,13 +532,14 @@ void GameStateManager::packetCSPlayerPosition(int32_t eid, double X, double Y, d
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPosition from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", " << stance << ", " << ground << "]" << std::endl;
 
-  const WorldCoords wc(X, Y, Z);
-  m_states[eid].position = wc;
+  const RealCoords rc(X, Y, Z);
 
-  if (getChunkCoords(m_states[eid].position) != getChunkCoords(wc))
+  if (getChunkCoords(m_states[eid].position) != getChunkCoords(rc))
   {
     sendMoreChunksToPlayer(eid);
   }
+
+  m_states[eid].position = rc;
 }
 
 void GameStateManager::packetCSPlayerLook(int32_t eid, float yaw, float pitch, bool ground)
@@ -711,7 +721,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       const WorldCoords start_pos(8, 80, 8);
       //const WorldCoords start_pos(16, 66, -32);
 
-      player.position = start_pos;
+      player.position = RealCoords(wX(start_pos) + 0.5, wZ(start_pos) + 0.5, wZ(start_pos) + 0.5);
 
       sendMoreChunksToPlayer(eid);
 

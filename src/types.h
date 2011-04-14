@@ -57,8 +57,9 @@ inline   signed int MyDiv32(int num) { return MyDiv(num, 32); }
 
 typedef std::tuple<int32_t, int32_t, int32_t> WorldCoords;
 typedef std::tuple<size_t, size_t, size_t>    LocalCoords;
-typedef std::pair<int32_t, int32_t>           ChunkCoords; // Coordinates _of_ the chunk, not "within" the chunk.
+typedef std::pair<int32_t, int32_t>           ChunkCoords;      // Coordinates _of_ the chunk, not "within" the chunk.
 typedef std::tuple<int64_t, int64_t, int64_t> FractionalCoords; // 32 units per block, fixed-point with 5 fractional bits.
+typedef std::tuple<double, double, double>    RealCoords;       // real * 32 = fractional; real(.5) = frac(-16) = world(-1)
 
 inline int32_t wX(const WorldCoords & wc) { return std::get<0>(wc); }
 inline int32_t & wX(WorldCoords & wc) { return std::get<0>(wc); }
@@ -86,6 +87,13 @@ inline int64_t & fY(FractionalCoords & fc) { return std::get<1>(fc); }
 inline int64_t fZ(const FractionalCoords & fc) { return std::get<2>(fc); }
 inline int64_t & fZ(FractionalCoords & fc) { return std::get<2>(fc); }
 
+inline double rX(const RealCoords & rc) { return std::get<0>(rc); }
+inline double & rX(RealCoords & rc) { return std::get<0>(rc); }
+inline double rY(const RealCoords & rc) { return std::get<1>(rc); }
+inline double & rY(RealCoords & rc) { return std::get<1>(rc); }
+inline double rZ(const RealCoords & rc) { return std::get<2>(rc); }
+inline double & rZ(RealCoords & rc) { return std::get<2>(rc); }
+
 inline std::ostream & operator<<(std::ostream & o, const WorldCoords & wc)
 {
   return o << std::dec << "w[" << wX(wc) << ", " << wY(wc) << ", " << wZ(wc) << "]";
@@ -103,6 +111,10 @@ inline std::ostream & operator<<(std::ostream & o, const FractionalCoords & fc)
   return o << std::dec << "c[" << MyDiv32(fX(fc)) << " " << MyMod32(fX(fc)) << "/32, "
            << MyDiv32(fY(fc)) << " " << MyMod32(fY(fc)) << "/32, "
            << MyDiv32(fZ(fc)) << " " << MyMod32(fZ(fc)) << "/32]";
+}
+inline std::ostream & operator<<(std::ostream & o, const RealCoords & rc)
+{
+  return o << std::dec << "r[" << rX(rc) << ", " << rY(rc) << ", " << rZ(rc) << "]";
 }
 
 /* Transform between the various coordinate types. We COULD actually
@@ -128,10 +140,19 @@ inline LocalCoords getLocalCoords(const FractionalCoords & fc)
 {
   return getLocalCoords(getWorldCoords(fc));
 }
+inline FractionalCoords getFractionalCoords(const RealCoords & rc)
+{
+  return FractionalCoords(32 * rX(rc), 32 * rY(rc), 32 * rZ(rc));
+}
 inline ChunkCoords getChunkCoords(const FractionalCoords & fc)
 {
   return getChunkCoords(getWorldCoords(fc));
 }
+inline ChunkCoords getChunkCoords(const RealCoords & rc)
+{
+  return getChunkCoords(getFractionalCoords(rc));
+}
+
 
 /* Direction. We allow adding those to WorldCoords. */
 

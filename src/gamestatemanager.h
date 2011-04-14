@@ -20,7 +20,7 @@ public:
   EState state;
 
   /// The current position of the player
-  WorldCoords position;
+  RealCoords position;
 
   /// The chunks that we've sent to the player
   std::unordered_set<ChunkCoords, PairHash<int32_t, int32_t>> known_chunks;
@@ -29,7 +29,7 @@ public:
   struct DigStatus { WorldCoords wc; long long int start_time; } recent_dig;
 
   /// Meta-data information on the direction from the user to wc.
-  uint8_t getRelativeDirection(const WorldCoords & wc);
+  uint8_t getRelativeDirection(const RealCoords & rc);
 
 };
 
