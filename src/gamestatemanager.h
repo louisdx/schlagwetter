@@ -105,18 +105,17 @@ public:
 
   void packetSCKick(int32_t eid, const std::string & message);
   void packetSCKeepAlive(int32_t eid);
+  void packetSCSpawn(int32_t eid, const WorldCoords & wc);
+  void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
+  void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
+  void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md = 0);
+  void packetSCTime(int32_t eid, int64_t ticks);
+  void packetSCOpenWindow(int32_t eid, int8_t window_id, int8_t window_type, std::string title, int8_t slots);
+  void packetSCPickupSpawn(int32_t eid, int32_t e, uint16_t type, uint8_t count, uint16_t da, const WorldCoords & wc);
   void packetSCPreChunk(int32_t eid, const ChunkCoords & cc, bool mode);
   void packetSCMapChunk(int32_t eid, int32_t X, int32_t Y, int32_t Z, const std::string & data, size_t sizeX = 15, size_t sizeY = 127, size_t sizeZ = 15);
   inline void packetSCMapChunk(int32_t eid, std::pair<const unsigned char *, size_t> d) { m_connection_manager.sendDataToClient(eid, d.first, d.second); }
   inline void packetSCMapChunk(int32_t eid, const ChunkCoords & cc, const std::string & data) { packetSCMapChunk(eid, 16 * cX(cc), 0, 16 * cZ(cc), data); }
-  void packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t Z);
-  inline void packetSCSpawn(int32_t eid, const WorldCoords & wc) { packetSCSpawn(eid, wX(wc), wY(wc), wZ(wc)); }
-  void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
-  void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
-  void packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md = 0);
-  inline void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md = 0) { packetSCBlockChange(eid, wX(wc), wY(wc), wZ(wc), block_type, block_md); }
-  void packetSCTime(int32_t eid, int64_t ticks);
-  void packetSCOpenWindow(int32_t eid, int8_t window_id, int8_t window_type, std::string title, int8_t slots);
 
   std::function<void(unsigned int)> sleepMilli;
 

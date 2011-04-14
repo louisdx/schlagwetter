@@ -183,9 +183,11 @@ void Server::processSchedule200ms(int dt)
   if ((m_map.tick_counter % 24000) / 20 != game_seconds)
   {
     game_seconds = (m_map.tick_counter % 24000) / 20;
-    std::cout << "The game time is " << std::dec << std::setw(2) << std::setfill('0')
-              << game_seconds / 60 << ":" << std::setw(2) << std::setfill('0') << game_seconds % 60
-              << "." << std::endl;
+
+    if (PROGRAM_OPTIONS.count("verbose")) 
+      std::cout << "The game time is " << std::dec << std::setw(2) << std::setfill('0')
+                << game_seconds / 60 << ":" << std::setw(2) << std::setfill('0') << game_seconds % 60
+                << "." << std::endl;
   }
 
   const long long int work_time = clockTick() - timer;

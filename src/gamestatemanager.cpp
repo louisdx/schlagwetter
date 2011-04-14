@@ -10,6 +10,9 @@
 #include "filereader.h"
 
 
+int32_t EID_POOL = 0;
+int32_t GenerateEID() { return ++EID_POOL; }
+
 uint8_t PlayerState::getRelativeDirection(const RealCoords & rc)
 {
   // We probably need fractional coordinates here for precision.
@@ -217,7 +220,9 @@ bool isStackable(EBlockItem e)
 
 void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type)
 {
+  // this is just temporary
   std::cout << "Successfully dug at " << wc << " for " << BLOCKITEM_INFO.find(block_type)->second.name << std::endl;
+  sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, GenerateEID(), uint16_t(block_type), 1, 0, wc));
 }
 
 /// This is the workhorse for block placement (right-click) decisions.
@@ -333,7 +338,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
 
     if (block_properties & LEFTCLICK_REMOVABLE)
     {
-      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
+      sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, BLOCK_Air, 0));
       reactToSuccessfulDig(wc, EBlockItem(block));
       block = BLOCK_Air;
       chunk.taint();
@@ -358,7 +363,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
       {
         std::cout << "#" << eid << " spent " << (clockTick() - m_states[eid].recent_dig.start_time) << "ms digging for "
                   << BLOCKITEM_INFO.find(EBlockItem(block))->second.name << "." << std::endl;
-        sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
+        sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, BLOCK_Air, 0));
         reactToSuccessfulDig(wc, EBlockItem(block));
         block = BLOCK_Air;
         chunk.taint();
@@ -488,11 +493,11 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
             if (bp_res == OK_WITH_META)
             {
               chunk.setBlockMetaData(getLocalCoords(wc), meta);
-              sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, meta));
+              sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, meta));
             }
             else // OK_NO_META
             {
-              sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
+              sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, 0));
             }
           }
           else // CANNOT_PLACE
@@ -817,12 +822,12 @@ void GameStateManager::packetSCMapChunk(int32_t eid, int32_t X, int32_t Y, int32
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
-void GameStateManager::packetSCSpawn(int32_t eid, int32_t X, int32_t Y, int32_t Z)
+void GameStateManager::packetSCSpawn(int32_t eid, const WorldCoords & wc)
 {
   PacketCrafter p(PACKET_SPAWN_POSITION);
-  p.addInt32(X);    // X
-  p.addInt32(Y);    // Y
-  p.addInt32(Z);    // Z
+  p.addInt32(wX(wc));  // X
+  p.addInt32(wY(wc));  // Y
+  p.addInt32(wZ(wc));  // Z
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
@@ -850,15 +855,14 @@ void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot,
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
-void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md)
+void GameStateManager::packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md)
 {
-  std::cout << "Sending BlockChange to #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", "
-            << Z << ", block type " << int(block_type) << "]" << std::endl;
+  std::cout << "Sending BlockChange to #" << std::dec << eid << ": " << wc << ", block type " << int(block_type) << std::endl;
 
   PacketCrafter p(PACKET_BLOCK_CHANGE);
-  p.addInt32(X);         // X
-  p.addInt8(Y);          // Y
-  p.addInt32(Z);         // Z
+  p.addInt32(wX(wc));    // X
+  p.addInt8 (wY(wc));    // Y
+  p.addInt32(wZ(wc));    // Z
   p.addInt8(block_type); // block type
   p.addInt8(block_md);   // block metadata
   m_connection_manager.sendDataToClient(eid, p.craft());
@@ -879,4 +883,25 @@ void GameStateManager::packetSCOpenWindow(int32_t eid, int8_t window_id, int8_t 
   p.addJString(title);
   p.addInt8(slots);
   m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCPickupSpawn(int32_t eid, int32_t e, uint16_t type, uint8_t count, uint16_t da, const WorldCoords & wc)
+{
+  // We ougth to randomise this a little
+
+  PacketCrafter p(PACKET_PICKUP_SPAWN);
+  p.addInt32(e);    // item EID
+  p.addInt16(type);
+  p.addInt8(count);
+  p.addInt16(da);   // damage or metadata
+  p.addInt32(wX(wc) * 32 + 16);
+  p.addInt32(wY(wc) * 32 + 16);
+  p.addInt32(wZ(wc) * 32 + 16);
+
+  p.addAngleAsByte(0);
+  p.addAngleAsByte(0);
+  p.addAngleAsByte(0);
+
+  m_connection_manager.sendDataToClient(eid, p.craft());
+
 }

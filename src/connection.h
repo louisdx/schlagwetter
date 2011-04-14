@@ -93,9 +93,6 @@ class ConnectionManager : private boost::noncopyable
 public:
   ConnectionManager();
 
-  static int32_t GenerateEID() { return ++EID_POOL; }
-  static int32_t EID_POOL;
-
   /// Add the specified connection to the manager and start it.
   void start(ConnectionPtr c);
 

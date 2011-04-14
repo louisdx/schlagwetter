@@ -10,10 +10,19 @@
 #include <iostream>
 
 
+/// A unique ID generator
+
+extern int32_t EID_POOL;
+int32_t GenerateEID();
+
 
 /// A millisecond clock tick.
 
 long long int clockTick();
+
+
+/// Next up: A random number generator.
+
 
 
 /// Good old C standard, never fixed the behaviour of signed division...
