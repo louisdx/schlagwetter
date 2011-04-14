@@ -20,6 +20,7 @@ GNUReadlineUI::GNUReadlineUI(const std::string & histfile)
   UI(),
   m_histfile(histfile)
 {
+  rl_set_signals();
   rl_cleanup_after_signal();
   using_history();
   read_history(m_histfile.c_str());
@@ -28,6 +29,7 @@ GNUReadlineUI::GNUReadlineUI(const std::string & histfile)
 GNUReadlineUI::~GNUReadlineUI()
 {
   write_history(m_histfile.c_str());
+  rl_clear_signals();
 }
 
 std::string GNUReadlineUI::readline(const std::string & prompt)
