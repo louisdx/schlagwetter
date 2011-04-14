@@ -34,7 +34,7 @@ inline   signed int MyDiv(int num, int den)
 {
   if ((num < 0 && den < 0) || (num >= 0 && den >= 0)) return num / den;
 
-  if (num < 0) return -((-num) / den + 1);
+  if (num < 0) return -((-num) / den + (num % den == 0 ? 0 : 1));
 
   return MyDiv(-num, -den);
 }
