@@ -13,6 +13,24 @@
 po::variables_map PROGRAM_OPTIONS;
 namespace fs = boost::filesystem;
 
+
+#define USE_SIGNALS 0
+#if USE_SIGNALS > 0
+#include <signal.h>
+bool sig_flag = true;
+void sigINTHandler(int)
+{
+  std::cout << "You pressed Ctrl-C. Please press Return to flush the input loop. "
+    "We will try to shut down the server peacefully, please be patient." << std::endl;
+  sig_flag = false;
+}
+void sigTERMHandler(int)
+{
+  std::cout << "SIGTERM received; we will try to shut down the server peacefully, please be patient." << std::endl;
+  sig_flag = false;
+}
+#endif
+
 int main(int argc, char* argv[])
 {
   if (!parseOptions(argc, argv, PROGRAM_OPTIONS)) return 0;
@@ -32,6 +50,11 @@ int main(int argc, char* argv[])
     return 0;
   }
 
+#if USE_SIGNALS > 0
+  signal(SIGINT, sigINTHandler);
+  signal(SIGTERM, sigTERMHandler);
+#endif
+
   try
   {
     // Run server in background thread.
@@ -47,7 +70,11 @@ int main(int argc, char* argv[])
     SimpleUI      ui;
 #endif
 
-    while (pump(server, ui)) { }
+    while (pump(server, ui)
+#if USE_SIGNALS > 0
+     && sig_flag
+#endif
+          ) { }
 
     server.stop();
     thread_io.join();
