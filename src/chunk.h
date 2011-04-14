@@ -92,6 +92,9 @@ public:
   inline       unsigned char & blockType(const LocalCoords& lc)              { return blockType(lX(lc), lY(lc), lZ(lc)); }
   inline const unsigned char & blockType(const LocalCoords& lc)        const { return blockType(lX(lc), lY(lc), lZ(lc)); }
 
+  inline void setBlockMetaData(const LocalCoords & lc, unsigned char val) { setBlockMetaData(lX(lc), lY(lc), lZ(lc), val); }
+  inline unsigned char getBlockMetaData(const LocalCoords & lc) const { return getBlockMetaData(lX(lc), lY(lc), lZ(lc)); }
+
   inline void setBlockLight(const LocalCoords & lc, unsigned char val) { setBlockLight(lX(lc), lY(lc), lZ(lc), val); }
   inline unsigned char getBlockLight(const LocalCoords & lc) const { return getBlockLight(lX(lc), lY(lc), lZ(lc)); }
 

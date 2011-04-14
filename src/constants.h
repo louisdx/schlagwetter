@@ -280,7 +280,7 @@ enum EBlockItem
   BLOCK_WallSign            = 0x44,
   BLOCK_Lever               = 0x45,
   BLOCK_StonePressurePlate  = 0x46,
-  BLOCK_IronDoorBlock       = 0x47,
+  BLOCK_IronDoor            = 0x47,
   BLOCK_WoodenPressurePlate = 0x48,
   BLOCK_RedstoneOre         = 0x49,
   BLOCK_GlowingRedstoneOre  = 0x4A,
@@ -301,7 +301,7 @@ enum EBlockItem
   BLOCK_GlowstoneBlock      = 0x59,
   BLOCK_Portal              = 0x5A,
   BLOCK_JackOLantern        = 0x5B,
-  BLOCK_CackeBlock          = 0x5C,
+  BLOCK_Cake                = 0x5C,
   BLOCK_RedstoneRepeaterOff = 0x5D,
   BLOCK_RedstoneRepeaterOn  = 0x5E
 };
@@ -333,8 +333,11 @@ struct BlockItemInfo
   std::string name;
 };
 
-extern std::unordered_map<EPacketNames, PacketInfo, std::hash<size_t>> PACKET_INFO;
-extern std::unordered_map<EBlockItem, BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO;
+typedef std::unordered_map<EPacketNames, PacketInfo, std::hash<size_t>> PacketInfoMap;
+typedef std::unordered_map<EBlockItem, BlockItemInfo, std::hash<size_t>> BlockItemInfoMap;
+
+extern PacketInfoMap PACKET_INFO;
+extern BlockItemInfoMap BLOCKITEM_INFO;
 
 
 

@@ -29,7 +29,7 @@
 
 // ATTENTION: Packet size EXCLUDES the initial type byte!
 
-std::unordered_map<EPacketNames, PacketInfo, std::hash<size_t>> PACKET_INFO = {
+PacketInfoMap PACKET_INFO = {
   { PACKET_KEEP_ALIVE,               { 0,                   "keep-alive"} },
   { PACKET_LOGIN_REQUEST,            { PACKET_VARIABLE_LEN, "login request"} },
   { PACKET_HANDSHAKE,                { PACKET_VARIABLE_LEN, "handshake"} },
@@ -54,7 +54,7 @@ std::unordered_map<EPacketNames, PacketInfo, std::hash<size_t>> PACKET_INFO = {
   { PACKET_ENTITY_CROUCH,            { 5,                   "entity crouch"} }
 };
 
-std::unordered_map<EBlockItem, BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO = {
+BlockItemInfoMap BLOCKITEM_INFO = {
   { ITEM_WoodenShovel,     "Wooden Shovel" },
   { ITEM_WoodenPickaxe,    "Wooden Pickaxe" },
   { ITEM_WoodenHoe,        "Wooden Hoe" },
@@ -213,15 +213,15 @@ std::unordered_map<EBlockItem, BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO 
   { BLOCK_Farmland,     "" },
   { BLOCK_FurnaceBlock,     "" },
   { BLOCK_SignPost,     "" },
-  { BLOCK_WoodenDoor,     "" },
+  { BLOCK_WoodenDoor,     "Wooden Door" },
   { BLOCK_Ladder,     "" },
   { BLOCK_Rails,     "" },
   { BLOCK_CobblestoneStairs,     "" },
   { BLOCK_WallSign,     "" },
   { BLOCK_Lever,     "" },
-  { BLOCK_StonePressurePlate,     "" },
-  { BLOCK_IronDoorBlock,     "" },
-  { BLOCK_WoodenPressurePlate,     "" },
+  { BLOCK_WoodenPressurePlate,    "Wooden Pressure Plate" },
+  { BLOCK_StonePressurePlate,     "Stone Pressure Plate" },
+  { BLOCK_IronDoor,               "Iron Door" },
   { BLOCK_RedstoneOre,     "" },
   { BLOCK_GlowingRedstoneOre,     "" },
   { BLOCK_RedstoneTorchOff,     "" },
@@ -241,9 +241,9 @@ std::unordered_map<EBlockItem, BlockItemInfo, std::hash<size_t>> BLOCKITEM_INFO 
   { BLOCK_GlowstoneBlock,     "" },
   { BLOCK_Portal,     "" },
   { BLOCK_JackOLantern,     "" },
-  { BLOCK_CackeBlock,     "" },
-  { BLOCK_RedstoneRepeaterOff,     "Redstone Repeater (off)" },
-  { BLOCK_RedstoneRepeaterOn,     "Redstone Repeater (on)" }
+  { BLOCK_Cake,                  "Cake (block)" },
+  { BLOCK_RedstoneRepeaterOff,   "Redstone Repeater (off)" },
+  { BLOCK_RedstoneRepeaterOn,    "Redstone Repeater (on)" }
 };
 
 LightMap EMIT_LIGHT(0, {

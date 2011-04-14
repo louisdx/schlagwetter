@@ -8,9 +8,33 @@
 #include "packetcrafter.h"
 #include "map.h"
 #include "filereader.h"
-#include "constants.h"
 
-#include <zlib.h>
+
+uint8_t GameState::getRelativeDirection(const WorldCoords & wc)
+{
+  // We probably need fractional coordinates here for precision.
+
+  enum { BLOCK_BOTTOM = 0, BLOCK_NORTH = 1, BLOCK_SOUTH = 2, BLOCK_EAST = 3, BLOCK_WEST = 4, BLOCK_TOP = 5 };
+
+  const int diffX = wX(wc) - wX(position);
+  const int diffZ = wZ(wc) - wZ(position);
+
+  std::cout << "Relative: " << diffX << ", " << diffZ << std::endl;
+
+  if (diffX > diffZ)
+  {
+    // We compare on the x axis
+    if (diffX > 0)  return BLOCK_BOTTOM;
+    else            return BLOCK_EAST;
+  }
+  else
+  {
+    // We compare on the z axis
+    if (diffZ > 0) return BLOCK_SOUTH;
+    else           return BLOCK_NORTH;
+  }
+}
+
 
 
 GameStateManager::GameStateManager(std::function<void(unsigned int)> sleep, ConnectionManager & connection_manager, Map & map)
@@ -154,6 +178,105 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
 
 
+bool isStackable(EBlockItem e)
+{
+  switch (e)
+    {
+    case BLOCK_CraftingTable:
+    case BLOCK_ChestBlock:
+    case BLOCK_Jukebox:
+    case BLOCK_Torch:
+    case BLOCK_RedstoneTorchOff:
+    case BLOCK_RedstoneTorchOn:
+    case BLOCK_RedstoneWire:
+    case BLOCK_Water:
+    case BLOCK_StationaryWater:
+    case BLOCK_Lava:
+    case BLOCK_StationaryLava:
+    case BLOCK_Air:
+    case BLOCK_Rails:
+    case BLOCK_WoodenDoor:
+    case BLOCK_IronDoor:
+    case BLOCK_Ice:
+    case BLOCK_Cake:
+    case BLOCK_Bed:
+      return false;
+
+    default:
+      return true;
+    }
+}
+
+/// This is the workhorse for block placement decisions.
+
+GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
+    const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta)
+{
+  switch(it->first) // block ID
+  {
+  case BLOCK_WoodenStairs:
+  case BLOCK_CobblestoneStairs:
+    {
+      std::cout << "Special block: #" << eid << " is trying to place stairs." << std::endl;
+
+      if (wY(wc) == 0 || dir == BLOCK_YMINUS) return CANNOT_PLACE;
+
+      if (!m_map.haveChunk(getChunkCoords(wc))                                                          ||
+          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc))))       ||
+          !m_map.haveChunk(getChunkCoords(wc + BLOCK_YMINUS))                                           ||
+          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc + BLOCK_YMINUS)).blockType(getLocalCoords(wc + BLOCK_YMINUS))))  )
+      {
+        std::cout << "Sorry, cannot place stairs on block " << wc << "." << std::endl;
+        return CANNOT_PLACE;
+      }
+
+      meta = m_states[eid].getRelativeDirection(wc + dir);
+      return OK_WITH_META;
+    }
+
+  case BLOCK_Torch:
+  case BLOCK_RedstoneTorchOff:
+  case BLOCK_RedstoneTorchOn:
+    {
+      std::cout << "Special block: #" << eid << " is trying to place a torch." << std::endl;
+
+      if (wY(wc) == 0 || dir == BLOCK_YMINUS) return CANNOT_PLACE;
+
+      if (!m_map.haveChunk(getChunkCoords(wc)) ||
+          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc)))))
+      {
+        std::cout << "Sorry, cannot place torch on block " << wc << "." << std::endl;
+        return CANNOT_PLACE;
+      }
+
+      if (!m_map.haveChunk(getChunkCoords(wc + dir)) ||
+          EBlockItem(m_map.chunk(getChunkCoords(wc + dir)).blockType(getLocalCoords(wc + dir))) != BLOCK_Air)
+      {
+        std::cout << "Sorry, cannot place torch on occupied block " << wc << "." << std::endl;
+        return CANNOT_PLACE;
+      }
+
+      switch (int(dir))
+      {
+      case 2: meta = 4; break;
+      case 3: meta = 3; break;
+      case 4: meta = 2; break;
+      case 5: meta = 1; break;
+      default: meta = 5; break;
+      }
+                          
+      return OK_WITH_META;
+    }
+
+  default:
+    return OK_NO_META;
+  }
+
+  return OK_NO_META;
+}
+
+
+
 /******************                  ****************
  ******************  Packet Handlers ****************
  ******************                  ****************/
@@ -200,7 +323,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
     {
       block = BLOCK_Air;
       chunk.taint();
-      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t), wc, BLOCK_Air));
+      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
     }
 
     if (block_properties & LEFTCLICK_TRIGGER)
@@ -224,7 +347,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
                   << BLOCKITEM_INFO.find(EBlockItem(block))->second.name << "." << std::endl;
         block = BLOCK_Air;
         chunk.taint();
-        sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t), wc, BLOCK_Air));
+        sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
       }
       else
       {
@@ -329,7 +452,7 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
       // Holding a building block
       if (BlockItemInfo::type(it->first) == BlockItemInfo::BLOCK)
       {
-        if (wc == m_states[eid].position)
+        if (wc == m_states[eid].position || (wY(wc) != 0 && wc + BLOCK_YMINUS == m_states[eid].position))
         {
           std::cout << "Player #" << eid << " tries to bury herself in " << it->second.name << "." << std::endl;
         }
@@ -338,15 +461,28 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
         {
           Chunk & chunk = m_map.chunk(getChunkCoords(wc));
 
-          chunk.blockType(getLocalCoords(wc)) = block_id;
-          chunk.taint();
+          // Before placing the block, we have to see if we need to set magic metadata (stair directions etc.)
+          uint8_t meta;
+          const auto bp_res = blockPlacement(eid, WorldCoords(X, Y, Z), Direction(direction), it, meta);
 
-          int8_t meta_header = 0;
-          std::string meta_data = "";
+          if (bp_res != CANNOT_PLACE)
+          {
+            chunk.blockType(getLocalCoords(wc)) = block_id;
+            chunk.taint();
 
-          sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChangeWithMeta, (int32_t, const WorldCoords &, int8_t, int8_t, std::string), wc, block_id, meta_header, meta_data));
+            if (bp_res == OK_WITH_META)
+            {
+              chunk.setBlockMetaData(getLocalCoords(wc), meta);
+              sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, meta));
+            }
+            else // OK_NO_META
+            {
+              sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
+            }
+          }
         }
       }
+
       // Holding an item
       else if (BlockItemInfo::type(it->first) == BlockItemInfo::BLOCK)
       {
@@ -693,7 +829,7 @@ void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot,
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
-void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type)
+void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md)
 {
   std::cout << "Sending BlockChange to #" << std::dec << eid << ": [" << X << ", " << int(Y) << ", "
             << Z << ", block type " << int(block_type) << "]" << std::endl;
@@ -703,23 +839,8 @@ void GameStateManager::packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int
   p.addInt8(Y);          // Y
   p.addInt32(Z);         // Z
   p.addInt8(block_type); // block type
-  p.addInt8(0);          // block metadata; if you need this, use the next function
-  m_connection_manager.sendDataToClient(eid, p.craft());
-}
-
-void GameStateManager::packetSCBlockChangeWithMeta(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md, std::string meta_data)
-{
-  std::cout << "Sending BlockChange to #" << std::dec << eid << ": [" << wc << ", block type " << int(block_type)
-            << ", block md " << int(block_md) << ", + meta data]" << std::endl;
-
-  PacketCrafter p(PACKET_BLOCK_CHANGE);
-  p.addInt32(wX(wc));    // X
-  p.addInt8 (wY(wc));    // Y
-  p.addInt32(wZ(wc));    // Z
-  p.addInt8(block_type); // block type
   p.addInt8(block_md);   // block metadata
   m_connection_manager.sendDataToClient(eid, p.craft());
-  m_connection_manager.sendDataToClient(eid, meta_data);
 }
 
 void GameStateManager::packetSCTime(int32_t eid, int64_t ticks)

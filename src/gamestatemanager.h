@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include "connection.h"
 #include "types.h"
+#include "constants.h"
 
 class Map;
 
@@ -26,6 +27,9 @@ public:
 
   /// The last dig operation, which we must validate.
   struct DigStatus { WorldCoords wc; long long int start_time; } recent_dig;
+
+  /// Meta-data information on the direction from the user to wc.
+  uint8_t getRelativeDirection(const WorldCoords & wc);
 
 };
 
@@ -63,6 +67,9 @@ public:
 
   /// Determine chunks the player might need and send.
   void sendMoreChunksToPlayer(int32_t eid);
+
+  enum EBlockPlacement { OK_NO_META, OK_WITH_META, CANNOT_PLACE };
+  EBlockPlacement blockPlacement(int32_t eid, const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta);
 
 
   /* Incoming packet handlers */
@@ -104,9 +111,8 @@ public:
   inline void packetSCSpawn(int32_t eid, const WorldCoords & wc) { packetSCSpawn(eid, wX(wc), wY(wc), wZ(wc)); }
   void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
   void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
-  void packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type);
-  inline void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type) { packetSCBlockChange(eid, wX(wc), wY(wc), wZ(wc), block_type); }
-  void packetSCBlockChangeWithMeta(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t meta_header, std::string meta_data);
+  void packetSCBlockChange(int32_t eid, int32_t X, int8_t Y, int32_t Z, int8_t block_type, int8_t block_md = 0);
+  inline void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md = 0) { packetSCBlockChange(eid, wX(wc), wY(wc), wZ(wc), block_type, block_md); }
   void packetSCTime(int32_t eid, int64_t ticks);
   void packetSCOpenWindow(int32_t eid, int8_t window_id, int8_t window_type, std::string title, int8_t slots);
 
