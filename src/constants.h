@@ -384,13 +384,13 @@ struct packet_player_position_and_look
 
 // Light emission/absorption
 
-typedef std::unordered_map<unsigned char, unsigned char> LightMapMap;
-
-struct LightMap
+struct PropertyMap
 {
+  typedef std::unordered_map<unsigned char, unsigned char> Map;
+
 public:
 
-  LightMap(unsigned char defval, std::initializer_list<LightMapMap::value_type> lm)
+  PropertyMap(unsigned char defval, std::initializer_list<Map::value_type> lm)
   :  m_defval(defval), m_light_map(lm), m_it(), m_end(m_light_map.end())
   {  }
 
@@ -400,14 +400,14 @@ public:
     return m_it == m_end ? m_defval : m_it->second;
   }
 private:
-  const unsigned char            m_defval;
-  const LightMapMap           m_light_map;
-        LightMapMap::const_iterator  m_it;
-  const LightMapMap::const_iterator m_end;
+  const unsigned char    m_defval;
+  const Map           m_light_map;
+        Map::const_iterator  m_it;
+  const Map::const_iterator m_end;
 };
 
-extern LightMap EMIT_LIGHT;
-extern LightMap STOP_LIGHT;
+extern PropertyMap EMIT_LIGHT;
+extern PropertyMap STOP_LIGHT;
 
 // Block properties for digging (left-click) and placement (right-click)
 
@@ -415,8 +415,8 @@ extern LightMap STOP_LIGHT;
 #define LEFTCLICK_REMOVABLE   0x2
 #define LEFTCLICK_TRIGGER     0x4
 
-extern LightMap BLOCK_DIG_PROPERTIES;
-extern LightMap BLOCK_PLACEMENT_PROPERTIES;
+extern PropertyMap BLOCK_DIG_PROPERTIES;
+extern PropertyMap BLOCK_PLACEMENT_PROPERTIES;
 
 
 //Player digging status

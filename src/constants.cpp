@@ -246,7 +246,7 @@ BlockItemInfoMap BLOCKITEM_INFO = {
   { BLOCK_RedstoneRepeaterOn,    "Redstone Repeater (on)" }
 };
 
-LightMap EMIT_LIGHT(0, {
+PropertyMap EMIT_LIGHT(0, {
   { BLOCK_Lava, 15 },           // Lava
   { BLOCK_StationaryLava, 15 }, // Stationary Lava
   { BLOCK_BrownMushroom,  1 },  // Brown mushroom
@@ -260,7 +260,7 @@ LightMap EMIT_LIGHT(0, {
   { 0x5B, 15 }, // Jack-O-Lantern
 } );
 
-LightMap STOP_LIGHT(16, {
+PropertyMap STOP_LIGHT(16, {
   { BLOCK_Air, 0 },
   { BLOCK_Sapling, 0 }, // Sapling
   { BLOCK_Water, 3 }, // Water
@@ -293,9 +293,9 @@ LightMap STOP_LIGHT(16, {
 } );
 
 
-LightMap BLOCK_DIG_PROPERTIES(LEFTCLICK_DIGGABLE, {
+PropertyMap BLOCK_DIG_PROPERTIES(LEFTCLICK_DIGGABLE, {
   { BLOCK_Torch, LEFTCLICK_REMOVABLE },
 } );
 
-LightMap BLOCK_PLACEMENT_PROPERTIES(0, { } );
+PropertyMap BLOCK_PLACEMENT_PROPERTIES(0, { } );
 

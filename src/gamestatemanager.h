@@ -9,12 +9,12 @@
 
 class Map;
 
-class GameState
+class PlayerState
 {
 public:
   enum EState { INVALID = 0, PRELOGIN, POSTLOGIN, READYTOSPAWN, SPAWNED, DEAD, TERMINATED };
 
-  explicit GameState(EState s = INVALID) : state(s), position(), known_chunks() { }
+  explicit PlayerState(EState s = INVALID) : state(s), position(), known_chunks() { }
 
   /// A simple global state flag
   EState state;
@@ -71,6 +71,8 @@ public:
   enum EBlockPlacement { OK_NO_META, OK_WITH_META, CANNOT_PLACE };
   EBlockPlacement blockPlacement(int32_t eid, const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta);
 
+  void reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type);
+
 
   /* Incoming packet handlers */
 
@@ -123,7 +125,7 @@ private:
   Map & m_map;
  
   std::recursive_mutex m_gs_mutex;
-  std::unordered_map<int32_t, GameState> m_states;
+  std::unordered_map<int32_t, PlayerState> m_states;
 };
 
 

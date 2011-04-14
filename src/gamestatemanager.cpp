@@ -10,7 +10,7 @@
 #include "filereader.h"
 
 
-uint8_t GameState::getRelativeDirection(const RealCoords & rc)
+uint8_t PlayerState::getRelativeDirection(const RealCoords & rc)
 {
   // We probably need fractional coordinates here for precision.
 
@@ -63,7 +63,7 @@ void GameStateManager::update(int32_t eid)
     }
 
     // Note: We should really rework the m_states container. It should be
-    // of type std::unordered_map<int32_t, std::shared_ptr<GameState>>.
+    // of type std::unordered_map<int32_t, std::shared_ptr<PlayerState>>.
     // That way, access to individual states can be done via copies of
     // shared pointers, and we don't need to hold the lock for the entirety
     // of a length operation like sendMoreChunksToPlayer().
@@ -77,7 +77,7 @@ void GameStateManager::update(int32_t eid)
   }
 
   auto it = m_states.find(eid);
-  if (it != m_states.end() && it->second.state == GameState::TERMINATED)
+  if (it != m_states.end() && it->second.state == PlayerState::TERMINATED)
   {
     std::cout << "Client #" << eid << " should leave, closing connection." << std::endl;
     m_connection_manager.stop(eid);
@@ -117,7 +117,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
   auto it = m_states.find(eid);
   if (it == m_states.end()) return;
 
-  GameState & player = it->second;
+  PlayerState & player = it->second;
 
   // Someone can go and implement more overloads if this looks too icky.
   const ChunkCoords pc = getChunkCoords(getWorldCoords(getFractionalCoords(player.position)));
@@ -213,7 +213,14 @@ bool isStackable(EBlockItem e)
 }
 
 
-/// This is the workhorse for block placement decisions.
+/// This is the workhorse for digging (left-click) decisions.
+
+void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type)
+{
+  std::cout << "Successfully dug at " << wc << " for " << BLOCKITEM_INFO.find(block_type)->second.name << std::endl;
+}
+
+/// This is the workhorse for block placement (right-click) decisions.
 
 GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
     const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta)
@@ -326,9 +333,10 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
 
     if (block_properties & LEFTCLICK_REMOVABLE)
     {
+      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
+      reactToSuccessfulDig(wc, EBlockItem(block));
       block = BLOCK_Air;
       chunk.taint();
-      sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
     }
 
     if (block_properties & LEFTCLICK_TRIGGER)
@@ -350,9 +358,10 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
       {
         std::cout << "#" << eid << " spent " << (clockTick() - m_states[eid].recent_dig.start_time) << "ms digging for "
                   << BLOCKITEM_INFO.find(EBlockItem(block))->second.name << "." << std::endl;
+        sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
+        reactToSuccessfulDig(wc, EBlockItem(block));
         block = BLOCK_Air;
         chunk.taint();
-        sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, BLOCK_Air, 0));
       }
       else
       {
@@ -557,10 +566,10 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
   const WorldCoords wc(X, Y, Z);
   m_states[eid].position = wc;
 
-  if (m_states[eid].state == GameState::READYTOSPAWN)
+  if (m_states[eid].state == PlayerState::READYTOSPAWN)
   {
     packetSCPlayerPositionAndLook(eid, X, Y, Z, stance, yaw, pitch, ground);
-    m_states[eid].state = GameState::SPAWNED;
+    m_states[eid].state = PlayerState::SPAWNED;
   }
   else if (getChunkCoords(m_states[eid].position) != getChunkCoords(wc))
   {
@@ -615,11 +624,11 @@ void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
     std::cout << "GSM: Error, received handshake from a client that is already connected." << std::endl;
     packetSCKick(eid, "Extraneous handshake received!");
     m_connection_manager.stop(eid);
-    it->second.state = GameState::TERMINATED;
+    it->second.state = PlayerState::TERMINATED;
     return;
   }
 
-  m_states.insert(std::pair<int32_t, GameState>(eid, GameState(GameState::PRELOGIN)));
+  m_states.insert(std::pair<int32_t, PlayerState>(eid, PlayerState(PlayerState::PRELOGIN)));
 
   PacketCrafter p(PACKET_HANDSHAKE);
   p.addJString("-");
@@ -658,7 +667,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       m_connection_manager.sendDataToClient(eid, p.craft());
     }
 
-    m_states[eid].state = GameState::POSTLOGIN;
+    m_states[eid].state = PlayerState::POSTLOGIN;
 
     if (!PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
     {
@@ -711,14 +720,14 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
           packetSCMapChunk(eid, *i, m_map.chunk(*i).compress());
       }
 
-      m_states[eid].state = GameState::READYTOSPAWN;
+      m_states[eid].state = PlayerState::READYTOSPAWN;
 
       packetSCSpawn(eid, start_pos);
       packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, false);
     }
     else
     {
-      GameState & player = m_states[eid];
+      PlayerState & player = m_states[eid];
 
       const WorldCoords start_pos(8, 80, 8);
       //const WorldCoords start_pos(16, 66, -32);
@@ -727,7 +736,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
       sendMoreChunksToPlayer(eid);
 
-      m_states[eid].state = GameState::READYTOSPAWN;
+      m_states[eid].state = PlayerState::READYTOSPAWN;
 
       packetSCSpawn(eid, start_pos);
       packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
@@ -757,7 +766,7 @@ void GameStateManager::packetCSDisconnect(int32_t eid, std::string message)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Disconnect from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
   m_connection_manager.stop(eid);
-  m_states[eid].state = GameState::TERMINATED;
+  m_states[eid].state = PlayerState::TERMINATED;
 }
 
 void GameStateManager::packetCSWindowClick(int32_t eid, int8_t window_id, int16_t slot, int8_t right_click, int16_t action, int16_t item_id, int8_t item_count, int16_t item_uses)
