@@ -2,8 +2,8 @@ High Priority
 -------------
 
 * Lots of the protocol has not been implemented yet and is only a stub.
-  Block removal and placement works, sort of (not candles, though). Getting basic
-  creative mode play style going is the first step. [Nearly there, though.]
+  Block removal and placement works, sort of. Getting basic
+  creative mode play style going is the first step. [Pretty much there.]
 
 * Dynamic blocks (water, lave) are missing ("physics").
 
@@ -24,8 +24,6 @@ Known Issues (may be easy to fix)
 
 * Lighting seems to miss a one-block wide strip along chunk boundaries, sometimes.
 
-* Torch block saving broken (currenly just naive, Torch isn't attached to the correct neighbour).
-
 * Block placement sometimes doesn't prevent placing a block in the position of the player
   (this seems to be because the target block is reported incorrectly).
 
@@ -45,6 +43,8 @@ Further Goals
 * Completely server-side judication. Inventory and placement could be
   determined and validated entirely by the server.
 
+* Consider making the unique objects (Server, ConnectionManager, Map, GameStateManager)
+  into global objects to save function call overhead.
 
 
 
@@ -83,4 +83,6 @@ Known Issues (may be easy to fix)
 * Light map doesn't get regenerated when loading tainted chunks.
 
 * Light map generation doesn't seem to get under-water lighting right.
+
+* Torch block saving broken (currenly just naive, Torch isn't attached to the correct neighbour).
 

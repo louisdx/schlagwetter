@@ -22,4 +22,8 @@ Design goals:
   *  Efficient: Memory footprint should be as low as possible, CPU usage likewise.
 
 
+Main references: http://mc.kev009.com/Protocol
+                 http://www.minecraftwiki.net/wiki/Data_values
+
+
 Contact: Louis Delacroix <yoursecretsaresafe@googlemail.com>
