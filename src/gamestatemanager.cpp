@@ -183,7 +183,8 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
 bool isStackable(EBlockItem e)
 {
-  std::cout << "stackable called with " << int(e) << std::endl;
+  // See below; I don't think this is an official feature.
+
   switch (e)
     {
     case BLOCK_CraftingTable:
@@ -211,6 +212,7 @@ bool isStackable(EBlockItem e)
     }
 }
 
+
 /// This is the workhorse for block placement decisions.
 
 GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
@@ -226,8 +228,19 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
     return CANNOT_PLACE;
   }
 
+  // Likewise, we exclude globally right-clicks on banned block types, aka non-stackables.
+  // Actually, I don't think the official server has such a rule. In fact, I think when the
+  // client sends a PLACEMENT packet, it already expects the placement to be legal.
+  // We're not expected to tell the client off. Oh well.
 
-  // Target block is clear, let's get to work.
+  if (!m_map.haveChunk(getChunkCoords(wc)) ||
+      !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc)))) )
+  {
+    std::cout << "Sorry, cannot place object on non-stackable block at " << wc << "." << std::endl;
+    return CANNOT_PLACE;
+  }
+
+  // Target block is clear and source block is stackable, let's get to work.
 
   switch(it->first) // block ID
   {
@@ -238,13 +251,6 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
 
       if (wY(wc) == 0 || dir == BLOCK_YMINUS) return CANNOT_PLACE;
 
-      if (!m_map.haveChunk(getChunkCoords(wc))                                                          ||
-          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc))))          )
-      {
-        std::cout << "Sorry, cannot place stairs on block " << wc << "." << std::endl;
-        return CANNOT_PLACE;
-      }
-
       meta = m_states[eid].getRelativeDirection(wc + dir);
       return OK_WITH_META;
     }
@@ -254,15 +260,6 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
   case BLOCK_RedstoneTorchOn:
     {
       std::cout << "Special block: #" << eid << " is trying to place a torch." << std::endl;
-
-      if (wY(wc) == 0 || dir == BLOCK_YMINUS) return CANNOT_PLACE;
-
-      if (!m_map.haveChunk(getChunkCoords(wc)) ||
-          !isStackable(EBlockItem(m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc)))))
-      {
-        std::cout << "Sorry, cannot place torch on block " << wc << "." << std::endl;
-        return CANNOT_PLACE;
-      }
 
       switch (int(dir))
       {
@@ -488,6 +485,11 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
             {
               sendToAll(MAKE_SIGNED_CALLBACK(packetSCBlockChange, (int32_t, const WorldCoords &, int8_t, int8_t), wc, block_id, 0));
             }
+          }
+          else // CANNOT_PLACE
+          {
+            // Naughty client gets slapped on the fingers.
+            packetSCBlockChange(eid, wc, BLOCK_Air, 0);
           }
         }
       }
