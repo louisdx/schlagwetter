@@ -11,10 +11,21 @@ When fetching this repository, make sure to get the cNBT submodule, too. Try thi
   cd schlagwetter
   git submodule update --init cNBT/
 
+To build:
+
+  mkdir /tmp/workspace/build
+  cd /tmp/workspace/build
+  cmake /tmp/workspace/schlagwetter
+  make
+
+To run:
+
+  /tmp/workspace/build/src/bin/schlagwetter
+
 
 Design goals:
 
-  *  Portability. Idiomatic C++0x and boost::ASIO, boost::program_options. (Other libraries: cNBT, ZLib, Noise, GNU Readline [optional]).
+  *  Portability. Idiomatic C++0x and boost::{ASIO, program_options, iostreams}. (Other libraries: ZLib, Noise, GNU Readline [optional]; cNBT and boost::regex for NBT file import).
 
   *  Robustness: Server code must be 100% correct.
      Commits are only accepted if they pass memory debugging (valgrind) without errors.
