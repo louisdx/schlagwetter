@@ -59,7 +59,10 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
   }
   else if (e != boost::asio::error::operation_aborted)
   {
+    std::cout << "ASIO: Terminating connection." << std::endl;
     m_connection_manager.stop(shared_from_this());
+    m_input_ready = true;
+    m_input_ready_cond.notify_one();
   }
 }
 

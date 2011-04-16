@@ -78,7 +78,7 @@ void Server::runInputProcessing()
   while (!m_server_should_stop)
   {
     // Be extra nice.
-    sleepMilli(100);
+    sleepMilli(25);
 
     {
       std::unique_lock<std::mutex> lock(m_connection_manager.m_input_ready_mutex);
