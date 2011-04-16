@@ -57,12 +57,18 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
     // Set up the next read operation.
     m_socket.async_read_some(boost::asio::buffer(m_data.data(), m_data.size()), std::bind(&Connection::handleRead, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
   }
-  else if (e != boost::asio::error::operation_aborted)
+  else
   {
-    std::cout << "ASIO: Terminating connection." << std::endl;
+    if (e != boost::asio::error::operation_aborted)
+    {
+      std::cout << "ASIO: Terminating connection, error code " << std::dec << e << "." << std::endl;
+    }
+    else if (e == boost::asio::error::operation_aborted)
+    {
+      std::cout << "Ending connection #" << std::dec << EID() << "." << std::endl;
+    }
+
     m_connection_manager.stop(shared_from_this());
-    m_input_ready = true;
-    m_input_ready_cond.notify_one();
   }
 }
 
@@ -74,17 +80,24 @@ void Connection::handleWrite(const boost::system::error_code & e)
     //boost::system::error_code ignored_ec;
     //m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
   }
-
-  if (e && (e != boost::asio::error::operation_aborted))
+  else
   {
-    std::cout << "Received error: " << e << std::endl;
+    if (e != boost::asio::error::operation_aborted)
+    {
+      std::cout << "Write error, error code " << e << std::endl;
+    }
+    else if (e == boost::asio::error::operation_aborted)
+    {
+      std::cout << "Ending connection #" << std::dec << EID() << "." << std::endl;
+    }
+
     m_connection_manager.stop(shared_from_this());
   }
 }
 
 
 
-ConnectionManager::ConnectionManager()
+ConnectionManager::ConnectionManager(boost::asio::io_service & io_service)
   :
   m_cd_mutex(),
   m_pending_mutex(),
@@ -93,7 +106,8 @@ ConnectionManager::ConnectionManager()
   m_input_ready(false),
   m_input_ready_cond(),
   m_input_ready_mutex(),
-  m_pending_eids()
+  m_pending_eids(),
+  m_io_service(io_service)
 {
 }
 
@@ -107,6 +121,10 @@ void ConnectionManager::stop(ConnectionPtr c)
 {
   m_connections.erase(c);
   c->stop();
+
+  // We have to alert the input processing thread that this connection needs to be taked off the "pending" queue.
+  m_input_ready = true;
+  m_input_ready_cond.notify_one();
 }
 
 void ConnectionManager::stopAll()

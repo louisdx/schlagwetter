@@ -47,7 +47,7 @@ GameStateManager::GameStateManager(std::function<void(unsigned int)> sleep, Conn
 
 void GameStateManager::update(int32_t eid)
 {
-  if (m_connection_manager.findConnectionByEID(eid) == m_connection_manager.connections().end())
+  if (!m_connection_manager.hasConnection(eid))
   {
     std::cout << "Client #" << eid << " no longer connected, cleaning up..." << std::endl;
 
@@ -83,7 +83,7 @@ void GameStateManager::update(int32_t eid)
   if (it != m_states.end() && it->second.state == PlayerState::TERMINATED)
   {
     std::cout << "Client #" << eid << " should leave, closing connection." << std::endl;
-    m_connection_manager.stop(eid);
+    m_connection_manager.safeStop(eid);
     m_states.erase(it);
   }
 
@@ -620,8 +620,7 @@ void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Handshake from #" << std::dec << eid << ": " << name << std::endl;
 
-  Connection * c = m_connection_manager.findConnectionByEIDwp(eid);
-  if (c) c->nick() = name;
+  m_connection_manager.setNickname(eid, name);
 
   auto it = m_states.find(eid);
 
@@ -629,7 +628,7 @@ void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
   {
     std::cout << "GSM: Error, received handshake from a client that is already connected." << std::endl;
     packetSCKick(eid, "Extraneous handshake received!");
-    m_connection_manager.stop(eid);
+    m_connection_manager.safeStop(eid);
     it->second.state = PlayerState::TERMINATED;
     return;
   }
@@ -652,114 +651,114 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
             << int(dimension)
             << "]" << std::endl;
 
-  Connection * c = m_connection_manager.findConnectionByEIDwp(eid);
-  if (c)
+  std::string name = m_connection_manager.getNickname(eid);
+
+  if (name != username)
   {
-    if (c->nick() != username)
+    std::cout << "Username differs from the nickname we received earlier! Aborting." << std::endl;
+    packetSCKick(eid, "Username mismatch!");
+    m_connection_manager.safeStop(eid);
+    return;
+  }
+
+  {
+    PacketCrafter p(PACKET_LOGIN_REQUEST);
+    p.addInt32(eid);
+    p.addJString("");
+    p.addJString("");
+    p.addInt64(12345);
+    p.addInt8(0); // 0: normal, -1: Nether
+    m_connection_manager.sendDataToClient(eid, p.craft());
+  }
+
+  m_states[eid].state = PlayerState::POSTLOGIN;
+
+  if (!PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
+  {
+    RegionFile f(PROGRAM_OPTIONS["testfile"].as<std::string>());
+    f.parse();
+
+    std::vector<ChunkCoords> ac, bc;
+
+    for (size_t x = 0; x < 32; ++x)
+      for (size_t z = 0; z < 32; ++z)
+        if (f.chunkSize(x, z) != 0) ac.push_back(ChunkCoords(x, z));
+
+    /// Load all available chunks to memory, but only send the first 50 to the client.
+
+    WorldCoords start_pos(100, 66, 78);
+
+    std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(start_pos))); // L1-sorted by distance from centre.
+    size_t counter = 0;
+
+    for (auto i = ac.begin(); i != ac.end(); ++i, ++counter)
     {
-      std::cout << "Username differs from the nickname we received earlier! Aborting." << std::endl;
-      packetSCKick(eid, "Username mismatch!");
-      m_connection_manager.stop(eid);
-      return;
-    }
+      std::string chuck = f.getCompressedChunk(cX(*i), cZ(*i));
+      if (chuck == "") continue;
 
-    {
-      PacketCrafter p(PACKET_LOGIN_REQUEST);
-      p.addInt32(eid);
-      p.addJString("");
-      p.addJString("");
-      p.addInt64(12345);
-      p.addInt8(0); // 0: normal, -1: Nether
-      m_connection_manager.sendDataToClient(eid, p.craft());
-    }
-
-    m_states[eid].state = PlayerState::POSTLOGIN;
-
-    if (!PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
-    {
-      RegionFile f(PROGRAM_OPTIONS["testfile"].as<std::string>());
-      f.parse();
-
-      std::vector<ChunkCoords> ac, bc;
-
-      for (size_t x = 0; x < 32; ++x)
-        for (size_t z = 0; z < 32; ++z)
-          if (f.chunkSize(x, z) != 0) ac.push_back(ChunkCoords(x, z));
-
-      /// Load all available chunks to memory, but only send the first 50 to the client.
-
-      WorldCoords start_pos(100, 66, 78);
-
-      std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(start_pos))); // L1-sorted by distance from centre.
-      size_t counter = 0;
-
-      for (auto i = ac.begin(); i != ac.end(); ++i, ++counter)
+      auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
+      m_map.insertChunk(c);
+        
+      if (counter < 120)
       {
-        std::string chuck = f.getCompressedChunk(cX(*i), cZ(*i));
-        if (chuck == "") continue;
-
-        auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
-        m_map.insertChunk(c);
-
-        if (counter < 120)
-        {
-          bc.push_back(*i);
-        }
+        bc.push_back(*i);
       }
-      for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
-      {
-        m_map.ensureChunkIsReadyForImmediateUse(*i);
-      }
-      for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
-      {
-        m_map.chunk(*i).spreadAllLight(m_map);
-
-        // Not sure if the client has a problem with data coming in too fast...
-        sleepMilli(10);
-
-        std::pair<const unsigned char *, size_t> p = m_map.chunk(*i).compress_beefedup();
-        packetSCPreChunk(eid, *i, true);
-
-        if (p.second > 18)
-          packetSCMapChunk(eid, p);
-        else
-          packetSCMapChunk(eid, *i, m_map.chunk(*i).compress());
-      }
-
-      m_states[eid].state = PlayerState::READYTOSPAWN;
-
-      packetSCSpawn(eid, start_pos);
-      packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, false);
     }
-    else
+
+    for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
     {
-      PlayerState & player = m_states[eid];
-
-      const WorldCoords start_pos(8, 80, 8);
-      //const WorldCoords start_pos(16, 66, -32);
-
-      player.position = RealCoords(wX(start_pos) + 0.5, wZ(start_pos) + 0.5, wZ(start_pos) + 0.5);
-
-      sendMoreChunksToPlayer(eid);
-
-      m_states[eid].state = PlayerState::READYTOSPAWN;
-
-      packetSCSpawn(eid, start_pos);
-      packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
-
-      packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
-      packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
-      packetSCSetSlot(eid, 0, 29, ITEM_Coal, 50, 0);
-      packetSCSetSlot(eid, 0, 21, BLOCK_Cobblestone, 60, 0);
-      packetSCSetSlot(eid, 0, 22, BLOCK_IronOre, 60, 0);
-      packetSCSetSlot(eid, 0, 30, BLOCK_Wood, 50, 0);
-      packetSCSetSlot(eid, 0, 38, ITEM_DiamondShovel, 1, 0);
-      packetSCSetSlot(eid, 0, 39, BLOCK_BrickBlock, 64, 0);
-      packetSCSetSlot(eid, 0, 40, BLOCK_Stone, 64, 0);
-      packetSCSetSlot(eid, 0, 41, BLOCK_Glass, 64, 0);
-      packetSCSetSlot(eid, 0, 42, BLOCK_WoodenPlank, 64, 0);
-      packetSCSetSlot(eid, 0, 43, ITEM_Bucket, 1, 0);
+      m_map.ensureChunkIsReadyForImmediateUse(*i);
     }
+
+    for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
+    {
+      m_map.chunk(*i).spreadAllLight(m_map);
+
+      // Not sure if the client has a problem with data coming in too fast...
+      sleepMilli(10);
+
+      std::pair<const unsigned char *, size_t> p = m_map.chunk(*i).compress_beefedup();
+      packetSCPreChunk(eid, *i, true);
+
+      if (p.second > 18)
+        packetSCMapChunk(eid, p);
+      else
+        packetSCMapChunk(eid, *i, m_map.chunk(*i).compress());
+    }
+
+    m_states[eid].state = PlayerState::READYTOSPAWN;
+
+    packetSCSpawn(eid, start_pos);
+    packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, false);
+  }
+  else
+  {
+    PlayerState & player = m_states[eid];
+
+    const WorldCoords start_pos(8, 80, 8);
+    //const WorldCoords start_pos(16, 66, -32);
+
+    player.position = RealCoords(wX(start_pos) + 0.5, wZ(start_pos) + 0.5, wZ(start_pos) + 0.5);
+
+    sendMoreChunksToPlayer(eid);
+
+    m_states[eid].state = PlayerState::READYTOSPAWN;
+
+    packetSCSpawn(eid, start_pos);
+    packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
+
+    packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
+    packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
+    packetSCSetSlot(eid, 0, 29, ITEM_Coal, 50, 0);
+    packetSCSetSlot(eid, 0, 21, BLOCK_Cobblestone, 60, 0);
+    packetSCSetSlot(eid, 0, 22, BLOCK_IronOre, 60, 0);
+    packetSCSetSlot(eid, 0, 30, BLOCK_Wood, 50, 0);
+    packetSCSetSlot(eid, 0, 38, ITEM_DiamondShovel, 1, 0);
+    packetSCSetSlot(eid, 0, 39, BLOCK_BrickBlock, 64, 0);
+    packetSCSetSlot(eid, 0, 40, BLOCK_Stone, 64, 0);
+    packetSCSetSlot(eid, 0, 41, BLOCK_Glass, 64, 0);
+    packetSCSetSlot(eid, 0, 42, BLOCK_WoodenPlank, 64, 0);
+    packetSCSetSlot(eid, 0, 43, ITEM_Bucket, 1, 0);
   }
 }
 
@@ -771,7 +770,7 @@ void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)
 void GameStateManager::packetCSDisconnect(int32_t eid, std::string message)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Disconnect from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
-  m_connection_manager.stop(eid);
+  m_connection_manager.safeStop(eid);
   m_states[eid].state = PlayerState::TERMINATED;
 }
 
