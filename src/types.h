@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <cmath>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -145,6 +146,10 @@ inline WorldCoords getWorldCoords(const FractionalCoords & fc)
 {
   return WorldCoords(MyDiv32(fX(fc)), MyDiv32(fY(fc)), MyDiv32(fZ(fc)));
 }
+inline WorldCoords getWorldCoords(const RealCoords & rc)
+{
+  return WorldCoords(std::floor(rX(rc)), std::floor(rY(rc)), std::floor(rZ(rc)));
+}
 inline LocalCoords getLocalCoords(const FractionalCoords & fc)
 {
   return getLocalCoords(getWorldCoords(fc));
@@ -239,6 +244,19 @@ struct PairHash : public std::unary_function<std::pair<S, T>, size_t>
     std::size_t seed = 0;
     hash_combine(seed, v.first);
     hash_combine(seed, v.second);
+    return seed;
+  }
+};
+
+template<typename T1, typename T2, typename T3>
+struct TripleHash : public std::unary_function<std::tuple<T1, T2, T3>, size_t>
+{
+  inline size_t operator()(const std::tuple<T1, T2, T3> & v) const
+  {
+    std::size_t seed = 0;
+    hash_combine(seed, std::get<0>(v));
+    hash_combine(seed, std::get<1>(v));
+    hash_combine(seed, std::get<2>(v));
     return seed;
   }
 };

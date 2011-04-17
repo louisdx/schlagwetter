@@ -73,6 +73,14 @@ public:
 
   void reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type);
 
+  void reactToBlockDestruction(const WorldCoords & wc);
+
+  void spawnSomething(uint16_t type, uint8_t number, uint8_t damage, const WorldCoords & wc);
+
+  void handlePlayerMove(int32_t eid);
+
+  std::function<void(unsigned int)> sleepMilli;
+
 
   /* Incoming packet handlers */
 
@@ -116,8 +124,8 @@ public:
   void packetSCMapChunk(int32_t eid, int32_t X, int32_t Y, int32_t Z, const std::string & data, size_t sizeX = 15, size_t sizeY = 127, size_t sizeZ = 15);
   inline void packetSCMapChunk(int32_t eid, std::pair<const unsigned char *, size_t> d) { m_connection_manager.sendDataToClient(eid, d.first, d.second); }
   inline void packetSCMapChunk(int32_t eid, const ChunkCoords & cc, const std::string & data) { packetSCMapChunk(eid, 16 * cX(cc), 0, 16 * cZ(cc), data); }
-
-  std::function<void(unsigned int)> sleepMilli;
+  void packetSCCollectItem(int32_t eid, int32_t collectee_eid, int32_t collector_eid);
+  void packetSCDestroyEntity(int32_t eid, int32_t e);
 
 private:
   ConnectionManager & m_connection_manager;

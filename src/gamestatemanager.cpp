@@ -216,14 +216,135 @@ bool isStackable(EBlockItem e)
 }
 
 
+/// Things we have to do when a block gets destroyed: Remove attached torches.
+
+void GameStateManager::reactToBlockDestruction(const WorldCoords & wc)
+{
+  // Clear the block alerts. The only alerts that can possibly be
+  // stored with a solid block are of the type that we process here,
+  // so we clear the entire range.
+
+  auto interesting_blocks = m_map.blockAlerts().equal_range(wc);
+  m_map.blockAlerts().erase(interesting_blocks.first, interesting_blocks.second);
+
+
+  // Remove attached torches.
+
+  WorldCoords wn;
+
+  for (size_t k = 1; k < 6; ++k)
+  {
+    const WorldCoords wn = wc + Direction(k);
+
+    if (!m_map.haveChunk(getChunkCoords(wn))) continue;
+
+    unsigned char & block =  m_map.chunk(getChunkCoords(wn)).blockType(getLocalCoords(wn));
+
+    if (block == BLOCK_Torch)
+    {
+      sendToAll(MAKE_CALLBACK(packetSCBlockChange, wn, BLOCK_Air, 0));
+      block = BLOCK_Air;
+      m_map.chunk(getChunkCoords(wn)).taint();
+      reactToSuccessfulDig(wn, EBlockItem(block));
+    }
+  }
+
+}
+
+void GameStateManager::handlePlayerMove(int32_t eid)
+{
+  //std::cout << "Player #" << eid << " moves to " << m_states[eid].position << "/" << getWorldCoords(m_states[eid].position) << std::endl;
+
+  auto interesting_blocks = m_map.blockAlerts().equal_range(getWorldCoords(m_states[eid].position));
+
+  for (auto it = interesting_blocks.first; it != interesting_blocks.second; ++it)
+  {
+    if (it->second.type == Map::BlockAlert::CONTAINS_SPAWN_ITEM)
+    {
+      std::cout << "Player #" << eid << " interacts with object " << it->second.data << " at " << it->first << "." << std::endl;
+
+      const auto jt = m_map.items().find(it->second.data);
+      if (jt != m_map.items().end())
+      {
+        sendToAll(MAKE_CALLBACK(packetSCCollectItem, jt->first, eid));
+        sendToAll(MAKE_CALLBACK(packetSCDestroyEntity, jt->first));
+        m_map.items().erase(jt);
+      }
+    }
+  }
+}
+
+void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t damage, const WorldCoords & wc)
+{
+  // This really shouldn't ever be able to happen...
+  if (! m_map.haveChunk(getChunkCoords(wc))) return;
+
+  const Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+
+  WorldCoords wbelow(wc);
+
+  for ( ; ; wbelow += BLOCK_YMINUS)
+  {
+    // An item that drops on something hot or out of the world dies.
+    if (chunk.blockType(getLocalCoords(wbelow)) == BLOCK_Lava           ||
+        chunk.blockType(getLocalCoords(wbelow)) == BLOCK_StationaryLava ||
+        chunk.blockType(getLocalCoords(wbelow)) == BLOCK_Fire           ||
+        wY(wbelow) < 0 )
+    {
+      return; // won't even spawn an item that's died.
+    }
+
+    if (chunk.blockType(getLocalCoords(wbelow)) != BLOCK_Air) break;
+  }
+
+  wbelow += BLOCK_YPLUS; // wbelow is now the last air block 
+
+  int32_t eid = GenerateEID();
+
+  m_map.blockAlerts().insert(std::make_pair(wbelow, Map::BlockAlert(Map::BlockAlert::CONTAINS_SPAWN_ITEM, eid)));
+
+  m_map.items().insert(std::make_pair(eid, 0)); // stub
+
+  sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, eid, type, number, damage, wc));
+}
+
+
 /// This is the workhorse for digging (left-click) decisions.
 
 void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type)
 {
   // this is just temporary
   std::cout << "Successfully dug at " << wc << " for " << BLOCKITEM_INFO.find(block_type)->second.name << std::endl;
+
   if (block_type != 0)
-    sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, GenerateEID(), uint16_t(block_type), 1, 0, wc));
+  {
+    spawnSomething(uint16_t(block_type), 1, 0, wc);
+
+    auto interesting_blocks = m_map.blockAlerts().equal_range(wc);
+
+    for (auto it = interesting_blocks.first; it != interesting_blocks.second; ++it)
+    {
+      if (it->second.type == Map::BlockAlert::SUPPORTS_CANDLE)
+      {
+        reactToBlockDestruction(wc);
+        break;
+      }
+    }
+
+    if (wY(wc) < 127)
+    {
+      interesting_blocks = m_map.blockAlerts().equal_range(wc + BLOCK_YPLUS);
+
+      for (auto it = interesting_blocks.first; it != interesting_blocks.second; ++it)
+      {
+        if (it->second.type == Map::BlockAlert::CONTAINS_SPAWN_ITEM)
+        {
+          std::cout << "Item " << it->second.data << " must fall." << std::endl;
+        }
+      }
+    }
+
+  }
 }
 
 /// This is the workhorse for block placement (right-click) decisions.
@@ -282,7 +403,9 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
       case 5: meta = 1; break;
       default: meta = 5; break;
       }
-                          
+
+      m_map.blockAlerts().insert(std::make_pair(wc, Map::BlockAlert(Map::BlockAlert::SUPPORTS_CANDLE)));
+
       return OK_WITH_META;
     }
 
@@ -557,6 +680,8 @@ void GameStateManager::packetCSPlayerPosition(int32_t eid, double X, double Y, d
   }
 
   m_states[eid].position = rc;
+
+  handlePlayerMove(eid);
 }
 
 void GameStateManager::packetCSPlayerLook(int32_t eid, float yaw, float pitch, bool ground)
@@ -569,15 +694,17 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPositionAndLook from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", "
             << stance << ", " << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
 
-  const WorldCoords wc(X, Y, Z);
-  m_states[eid].position = wc;
+  const RealCoords rc(X, Y, Z);
+  m_states[eid].position = rc;
+
+  handlePlayerMove(eid);
 
   if (m_states[eid].state == PlayerState::READYTOSPAWN)
   {
     packetSCPlayerPositionAndLook(eid, X, Y, Z, stance, yaw, pitch, ground);
     m_states[eid].state = PlayerState::SPAWNED;
   }
-  else if (getChunkCoords(m_states[eid].position) != getChunkCoords(wc))
+  else if (getChunkCoords(m_states[eid].position) != getChunkCoords(rc))
   {
     sendMoreChunksToPlayer(eid);
   }
@@ -903,5 +1030,19 @@ void GameStateManager::packetSCPickupSpawn(int32_t eid, int32_t e, uint16_t type
   p.addAngleAsByte(0);
 
   m_connection_manager.sendDataToClient(eid, p.craft());
+}
 
+void GameStateManager::packetSCCollectItem(int32_t eid, int32_t collectee_eid, int32_t collector_eid)
+{
+  PacketCrafter p(PACKET_COLLECT_ITEM);
+  p.addInt32(collectee_eid);    // item EID
+  p.addInt32(collector_eid);    // collector EID
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+void GameStateManager::packetSCDestroyEntity(int32_t eid, int32_t e)
+{
+  PacketCrafter p(PACKET_DESTROY_ENTITY);
+  p.addInt32(e);                // item EID
+  m_connection_manager.sendDataToClient(eid, p.craft());
 }
