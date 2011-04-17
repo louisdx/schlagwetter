@@ -89,16 +89,21 @@ void Server::runInputProcessing()
 
       // std::cout << "runInputProcessor() has work to do." << std::endl;
 
+      int32_t eid;
+      std::shared_ptr<SyncQueue> cd;
+
       while (true)
       {
-        int32_t eid;
-        std::shared_ptr<SyncQueue> cd;
-
         { // guard
           std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_pending_mutex);
+
           if (!m_connection_manager.m_pending_eids.empty())
           {
+            // Retrieve the first pending EID...
             eid = m_connection_manager.m_pending_eids.front();
+
+            // ...and pop if off the queue.
+            m_connection_manager.m_pending_eids.pop_front();
           }
           else
           {
@@ -111,30 +116,31 @@ void Server::runInputProcessing()
 
           ConnectionManager::ClientData::iterator it = m_connection_manager.clientData().find(eid);
 
-          if (it == m_connection_manager.clientData().end()) // connection already dead
+          // If the connection is already dead or has no data, we move on.
+          if (it == m_connection_manager.clientData().end() || it->second->empty())
           {
-            std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_pending_mutex);
-
-            if (eid == m_connection_manager.m_pending_eids.front())
-              m_connection_manager.m_pending_eids.pop_front();
-
             continue;
           }
 
-          cd = it->second; // just by having the shared_ptr, we can stop worrying about whether the queue gets destroyed
+          // Retrieve the data queue by copy-of-shared_ptr. Just by having the shared_ptr,
+          // we can stop worrying about whether the queue gets destroyed. Note that copying
+          // a shared_ptr may not be thread-safe (if the refcount update isn't atomic), so
+          // this happens under the safety of the mutex lock.
+          cd = it->second;
         }
 
         // processIngress() only returns true if all data has been processed.
-        // While it runs, we are not holding any mutexes locked.
-        if (processIngress(eid, cd))
+        // While it runs, we are not holding any mutexes locked. If we can't
+        // process all data, we put the EID back onto the pending queue.
+        if (!processIngress(eid, cd))
         {
-          // We only remove an EID from the list if its queue is empty.
           std::lock_guard<std::recursive_mutex> lock(m_connection_manager.m_pending_mutex);
-          m_connection_manager.m_pending_eids.pop_front();
+          m_connection_manager.m_pending_eids.push_back(eid);
         }
       }
 
     } // scope of the "input ready" lock
+
     m_connection_manager.m_input_ready = false;
 
   } // while (server is running)

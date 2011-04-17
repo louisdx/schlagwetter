@@ -166,3 +166,7 @@ Idiomatic, modern C++0x.
 
 - Maybe the classes Server and ConnectionManager could be merged. (Maybe not, though,
   as lots of modules only need ConnectionManager, not Server.)
+
+- Perhaps we could replace the central data ingress m_client_data, which is a
+  std::map<int32_t /* eid */, std::shared_ptr<SyncQueue> /* pointer to data queue */>,
+  with a lock-free map, cf. http://libcds.sourceforge.net/doc/cds-api/main.html.

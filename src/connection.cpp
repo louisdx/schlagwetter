@@ -135,9 +135,15 @@ void ConnectionManager::stopAll()
 
 void ConnectionManager::storeReceivedData(int32_t eid, std::deque<unsigned char> & local_queue)
 {
-  // We have to lock access to m_client_data while using the iterator.
-  // An upgradable r/w lock would be apt here, but STL doesn't have one.
-  std::unique_lock<std::recursive_mutex> lock(m_cd_mutex);
+  // We have to lock access to m_client_data while using the iterator,
+  // and m_pending_eids to update the pending queue.
+
+  // std::lock<(m_cd_mutex, m_pending_mutex); // This doesn't appear to be implemented yet. Use it if you can
+  // This workaround should be fine, though, since the m_pending_mutex is never locked for very long and its
+  // locks don't try to lock m_cd_mutex.
+  m_pending_mutex.lock();
+  m_cd_mutex.lock();
+
 
   ClientData::iterator clit = m_client_data.find(eid);
 
@@ -160,11 +166,25 @@ void ConnectionManager::storeReceivedData(int32_t eid, std::deque<unsigned char>
 
     ret = m_client_data.insert(ClientData::value_type(eid, std::make_shared<SyncQueue>()));
 
-    if (ret.second) ret.first->second->pushMaybeAndClear(local_queue);
-    else { std::cerr << "Panic: Could not create comm queue!" << std::endl; return; }
+    if (ret.second)
+    {
+      ret.first->second->pushMaybeAndClear(local_queue);
+    }
+    else
+    {
+      std::cerr << "Panic: Could not create comm queue!" << std::endl;
+      m_cd_mutex.unlock();
+      m_pending_mutex.unlock();
+      return;
+    }
   }
 
+  m_cd_mutex.unlock();
+
   m_pending_eids.push_back(eid);
+
+  m_pending_mutex.unlock();
+
   m_input_ready = true;
   m_input_ready_cond.notify_one();
 }

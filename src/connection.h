@@ -260,6 +260,12 @@ private:
   bool m_input_ready;
   std::condition_variable m_input_ready_cond;
   std::mutex m_input_ready_mutex;
+
+
+  /// The pending queue allows us to process ingress data FIFO,
+  /// rather than just naively iterating over m_client_date front-to-back
+  /// looking for some queue with data.
+
   std::deque<int32_t> m_pending_eids;
 
 
