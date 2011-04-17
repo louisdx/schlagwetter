@@ -8,10 +8,13 @@
 #include "packetcrafter.h"
 #include "map.h"
 #include "filereader.h"
+#include "lua.h"
 
 
 int32_t EID_POOL = 0;
+
 int32_t GenerateEID() { return ++EID_POOL; }
+
 
 uint8_t PlayerState::getRelativeDirection(const RealCoords & rc)
 {
@@ -216,14 +219,23 @@ bool isStackable(EBlockItem e)
 }
 
 
+/// The following two work functions could possibly be relegated to an embedded scripting engine.
+
 /// This is the workhorse for digging (left-click) decisions.
 
 void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type)
 {
   // this is just temporary
   std::cout << "Successfully dug at " << wc << " for " << BLOCKITEM_INFO.find(block_type)->second.name << std::endl;
+
   if (block_type != 0)
+  {
     sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, GenerateEID(), uint16_t(block_type), 1, 0, wc));
+
+#if USE_LUA > 0
+    luabind::call_function<void>(LUA, "digHandler", wX(wc), wY(wc), wZ(wc), int(block_type));
+#endif
+  }
 }
 
 /// This is the workhorse for block placement (right-click) decisions.

@@ -9,9 +9,17 @@
 #include "cmdlineoptions.h"
 #include "ui.h"
 #include "filereader.h"
+#include "lua.h"
 
 po::variables_map PROGRAM_OPTIONS;
 namespace fs = boost::filesystem;
+
+
+/*** Experimental Lua scripting support. ***/
+#if USE_LUA > 0
+lua_State * LUA;
+#endif
+/***                                     ***/
 
 
 #define USE_SIGNALS 0
@@ -57,6 +65,11 @@ int main(int argc, char* argv[])
 
   try
   {
+#if USE_LUA > 0
+    LUA = lua_open();
+    luabind::open(LUA);
+#endif
+
     // Run server in background thread.
     Server server(PROGRAM_OPTIONS["bindaddr"].as<std::string>(), PROGRAM_OPTIONS["port"].as<unsigned short int>());
     std::thread thread_io(std::bind(&Server::runIO, &server));
