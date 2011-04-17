@@ -233,7 +233,19 @@ void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem b
     sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, GenerateEID(), uint16_t(block_type), 1, 0, wc));
 
 #if USE_LUA > 0
-    luabind::call_function<void>(LUA, "digHandler", wX(wc), wY(wc), wZ(wc), int(block_type));
+    try
+    {
+      luabind::call_function<void>(LUA, "digHandler", wX(wc), wY(wc), wZ(wc), int(block_type));
+    }
+    catch (const luabind::error & e)
+    {
+      luabind::object error_msg(luabind::from_stack(e.state(), -1));
+      std::cout << "Lua: luabind error: " << error_msg << std::endl;
+    }
+    catch (...)
+    {
+      std::cout << "Lua: generic error during invocation of digHandler()." << std::endl;
+    }
 #endif
   }
 }

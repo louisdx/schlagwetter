@@ -18,6 +18,7 @@ namespace fs = boost::filesystem;
 /*** Experimental Lua scripting support. ***/
 #if USE_LUA > 0
 lua_State * LUA;
+bool LUA_READY = false;
 #endif
 /***                                     ***/
 
@@ -66,8 +67,8 @@ int main(int argc, char* argv[])
   try
   {
 #if USE_LUA > 0
-    LUA = lua_open();
-    luabind::open(LUA);
+    luaOpen();
+    luaLoadScripts(PROGRAM_OPTIONS["scriptdir"].as<std::string>());
 #endif
 
     // Run server in background thread.

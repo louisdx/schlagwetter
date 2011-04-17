@@ -11,6 +11,7 @@ bool parseOptions(int argc, char * argv[], po::variables_map & options)
     ("port,p", po::value<unsigned short int>()->default_value(25565), "Set port to listen on (default: 25565)")
     ("testfile,f", po::value<std::string>()->default_value(""), "Test a region file")
     ("load,r", po::value<std::string>()->default_value(""), "Load map from this file")
+    ("scriptdir,s", po::value<std::string>()->default_value("."), "Directory for Lua scripts")
     ;
 
   try

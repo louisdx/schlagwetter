@@ -3,6 +3,8 @@
 #include "ui.h"
 #include "server.h"
 #include "packetcrafter.h"
+#include "cmdlineoptions.h"
+#include "lua.h"
 
 std::string SimpleUI::readline(const std::string & prompt)
 {
@@ -70,6 +72,7 @@ bool pump(Server & server, UI & ui)
               << "  dump:                    Dump each connection's data" << std::endl
               << "  raw <client> <data>:     Sends raw data to a client (prob. not very useful)" << std::endl
               << "  kick <client> <message>: Kicks a client with a given message" << std::endl
+              << "  rs:                      Reload the Lua scripts" << std::endl
               << "  save:                    Write out the current map to a file" << std::endl
               << "  exit:                    Shuts down the server" << std::endl
               << std::endl;
@@ -151,6 +154,13 @@ bool pump(Server & server, UI & ui)
   else if (line.compare(0, 4, "save") == 0)
   {
     server.m_map.save();
+  }
+  else if (line == "rs")
+  {
+    std::cout << "Reloading the Lua scripts..." << std::endl;
+    luaClose();
+    luaOpen();
+    luaLoadScripts(PROGRAM_OPTIONS["scriptdir"].as<std::string>());
   }
   else
   {
