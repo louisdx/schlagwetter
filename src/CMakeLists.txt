@@ -11,6 +11,7 @@ set(SOURCES
   inputparser.cpp
   main.cpp
   map.cpp
+  packethandlers.cpp
   serializer.cpp
   server.cpp
   ui.cpp

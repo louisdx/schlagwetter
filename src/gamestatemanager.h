@@ -14,7 +14,7 @@ class PlayerState
 public:
   enum EState { INVALID = 0, PRELOGIN, POSTLOGIN, READYTOSPAWN, SPAWNED, DEAD, TERMINATED };
 
-  explicit PlayerState(EState s = INVALID) : state(s), position(), known_chunks() { }
+  explicit PlayerState(EState s = INVALID);
 
   /// A simple global state flag
   EState state;
@@ -30,6 +30,19 @@ public:
 
   /// Meta-data information on the direction from the user to wc.
   uint8_t getRelativeDirection(const RealCoords & rc);
+
+
+  /// The inventory.
+  std::array<uint16_t, 45> inventory_ids;
+  std::array<uint16_t, 45> inventory_damage;
+  std::array<uint16_t, 45> inventory_count;
+
+  inline void setInv(size_t slot, uint16_t type, uint16_t count, uint16_t damage)
+  {
+    inventory_ids[slot]    = type;
+    inventory_count[slot]  = count;
+    inventory_damage[slot] = damage;
+  }
 
 };
 
@@ -67,6 +80,14 @@ public:
 
   /// Determine chunks the player might need and send.
   void sendMoreChunksToPlayer(int32_t eid);
+
+  /// Retransmit the entire inventory to the player (45 packets).
+  void sendInventoryToPlayer(int32_t eid);
+
+  /// Add a single item to the player's inventory, optionally
+  /// send the update to the player immediately. Returns the number
+  /// of items that couldn't be allocated (if the inventory is full).
+  uint16_t updatePlayerInventory(int32_t eid, uint16_t type, uint16_t count, uint16_t damage, bool send_packets = true);
 
   enum EBlockPlacement { OK_NO_META, OK_WITH_META, CANNOT_PLACE };
   EBlockPlacement blockPlacement(int32_t eid, const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta);
@@ -132,7 +153,18 @@ private:
   Map & m_map;
  
   std::recursive_mutex m_gs_mutex;
-  std::unordered_map<int32_t, PlayerState> m_states;
+  std::unordered_map<int32_t, std::shared_ptr<PlayerState>> m_states;
+};
+
+
+struct L1DistanceFrom
+{
+  L1DistanceFrom(const ChunkCoords & cc) : cc(cc) { }
+  inline bool operator()(const ChunkCoords & a, const ChunkCoords & b) const
+  {
+    return std::abs(cX(a) - cX(cc)) + std::abs(cZ(a) - cZ(cc)) < std::abs(cX(b) - cX(cc)) + std::abs(cZ(b) - cZ(cc));
+  }
+  ChunkCoords cc;
 };
 
 
