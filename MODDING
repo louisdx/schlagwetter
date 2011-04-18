@@ -1,0 +1,101 @@
+Thoughts about making the server moddable
+=========================================
+
+The game logic of the server should be as modular as possible
+to allow easy maintenance, extension and modification. Concerning
+which aspects of the logic should be modifiable, two distinct
+classes come to mind:
+
+
+1. Actions which the client performs but does not always tell the server.
+
+Those actions must be mirrored by the server as accurately as possible,
+or otherwise the player will not experience the expected behaviour.
+These actions include:
+
+  * Directional placement (torches, stairs, crates...):
+
+    The client picks the direction, we better pick the same one!
+
+  * Digging, removing and toggling of blocks (doors, torches, ordinary blocks)
+
+    The client performs all those, but there is limited feedback, say, on the
+    new status of a door or a lever. The server has to track those.
+
+  * Block placement, inventory count and crafting.
+
+    The client will only send a BLOCK_PLACEMENT message if it considers the
+    placement legal, so there is no way to allow new legal placements. On the
+    other hand, the client will immediately render a placed item; it is possible
+    to delete the placed block server-side, but there will be a short time where
+    the placed block is visible.
+
+    Likewise, the inventory counter is immediately updated by the client when
+    a block is placed (or some other number-modifying activity takes place), but
+    this can be overridden server-side by resending the slot data.
+
+    Likewise yet again, crafting recipes are preempted by the client, but they
+    can possibly be overridden by server-side commands in the same way.
+
+  * Spawn item displacement physics.
+
+    Once spawned, an item may be moved around on the client, either by
+    simply falling down when the supporting block is removed, or by moving
+    up or sidewards or both when the item's location is filled in, or by
+    getting destroyed by fire or cactus, or by falling out of the world.
+
+    The client does not report item positions back to the server but expects
+    items to be picked up correctly at whichever position they end up in,
+    so this needs to be tracked as accurately asl possible by the server.
+
+    This is possibly the most serious case in the sense that the item location
+    cannot even be overridden by resending the location; item physics are always
+    happening on the client.
+
+For all of the above actions, the player would experience a disconnect between
+what the client shows and how the server reacts, and so there is limited scope
+for making those server actions flexible.
+
+
+2. Actions which are handled entirely by the server.
+
+These actions are part of the core gameplay but must be computed
+entirely by the server and sent to the client. Clearly these actions
+could be entirely arbitrary and would benefit most directly from being
+implemented in a separate, modifiable run-time unit.
+
+  * Digging results.
+
+    The result of destroying a block by digging is entirely
+    determined by the server. The client usually expects some
+    sort of pickup spawn, depending on the tool used for digging
+    and some probabilities.
+
+  * Inventory windows.
+
+    Windows other than the player inventory (0) are controlled
+    by the server, to some extent. For instance, the content of
+    chests is determined by the server, and even deciding whether
+    right-clicking an item will open a window in the first place
+    is a server-side decision. Inside an open window the usual
+    placement mathematics are done by the client.
+
+  * Block physics.
+
+    The flow of water and lava and the growth of trees is handled
+    by the server.
+
+
+
+Server Design
+-------------
+
+Level 0. Actions which must be consistent with the client
+         should be hard-coded into the server.
+
+Level 1. Actions which are entirely handled server-side
+         would be a good first step to move into a separate
+         run-time unit like a script processor (Lua?).
+
+Level 2. For advanced modding, overridable actions like inventory
+         movement could also be made accessible to scripts.
