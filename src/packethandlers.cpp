@@ -39,7 +39,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
   {
     const WorldCoords wc(X, Y, Z);
     Chunk & chunk = m_map.chunk(wc);
-    unsigned char & block =  chunk.blockType(getLocalCoords(wc));
+    unsigned char block = chunk.blockType(getLocalCoords(wc));
 
     const unsigned char block_properties = BLOCK_DIG_PROPERTIES[block];
 
@@ -51,9 +51,9 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
     if (block_properties & LEFTCLICK_REMOVABLE)
     {
       sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, BLOCK_Air, 0));
-      reactToSuccessfulDig(wc, EBlockItem(block));
-      block = BLOCK_Air;
+      chunk.blockType(getLocalCoords(wc)) = BLOCK_Air;
       chunk.taint();
+      reactToSuccessfulDig(wc, EBlockItem(block));
     }
 
     if (block_properties & LEFTCLICK_TRIGGER)
@@ -66,7 +66,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
   {
     const WorldCoords wc(X, Y, Z);
     Chunk & chunk = m_map.chunk(wc);
-    unsigned char & block =  chunk.blockType(getLocalCoords(wc));
+    unsigned char block = chunk.blockType(getLocalCoords(wc));
     const unsigned char block_properties = BLOCK_DIG_PROPERTIES[block];
 
     if (block_properties & LEFTCLICK_DIGGABLE)
@@ -75,10 +75,11 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
       {
         std::cout << "#" << eid << " spent " << (clockTick() - m_states[eid]->recent_dig.start_time) << "ms digging for "
                   << BLOCKITEM_INFO.find(EBlockItem(block))->second.name << "." << std::endl;
+
         sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, BLOCK_Air, 0));
-        reactToSuccessfulDig(wc, EBlockItem(block));
-        block = BLOCK_Air;
+        chunk.blockType(getLocalCoords(wc)) = BLOCK_Air;
         chunk.taint();
+        reactToSuccessfulDig(wc, EBlockItem(block));
       }
       else
       {
@@ -462,18 +463,19 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     packetSCSpawn(eid, start_pos);
     packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
 
-    packetSCSetSlot(eid, 0, 37, ITEM_DiamondPickaxe, 1, 0);
-    packetSCSetSlot(eid, 0, 36, BLOCK_Torch, 50, 0);
-    packetSCSetSlot(eid, 0, 29, ITEM_Coal, 50, 0);
-    packetSCSetSlot(eid, 0, 21, BLOCK_Cobblestone, 60, 0);
-    packetSCSetSlot(eid, 0, 22, BLOCK_IronOre, 60, 0);
-    packetSCSetSlot(eid, 0, 30, BLOCK_Wood, 50, 0);
-    packetSCSetSlot(eid, 0, 38, ITEM_DiamondShovel, 1, 0);
-    packetSCSetSlot(eid, 0, 39, BLOCK_BrickBlock, 64, 0);
-    packetSCSetSlot(eid, 0, 40, BLOCK_Stone, 64, 0);
-    packetSCSetSlot(eid, 0, 41, BLOCK_Glass, 64, 0);
-    packetSCSetSlot(eid, 0, 42, BLOCK_WoodenPlank, 64, 0);
-    packetSCSetSlot(eid, 0, 43, ITEM_Bucket, 1, 0);
+    m_states[eid]->setInv(37, ITEM_DiamondPickaxe, 1, 0);
+    m_states[eid]->setInv(36, BLOCK_Torch, 50, 0);
+    m_states[eid]->setInv(29, ITEM_Coal, 50, 0);
+    m_states[eid]->setInv(21, BLOCK_Cobblestone, 60, 0);
+    m_states[eid]->setInv(22, BLOCK_IronOre, 60, 0);
+    m_states[eid]->setInv(30, BLOCK_Wood, 50, 0);
+    m_states[eid]->setInv(38, ITEM_DiamondShovel, 1, 0);
+    m_states[eid]->setInv(39, BLOCK_BrickBlock, 64, 0);
+    m_states[eid]->setInv(40, BLOCK_Stone, 64, 0);
+    m_states[eid]->setInv(41, BLOCK_Glass, 64, 0);
+    m_states[eid]->setInv(42, BLOCK_WoodenPlank, 64, 0);
+    m_states[eid]->setInv(43, ITEM_Bucket, 1, 0);
+    sendInventoryToPlayer(eid);
   }
 }
 

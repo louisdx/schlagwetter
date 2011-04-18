@@ -33,11 +33,11 @@ public:
 
 
   /// The inventory.
-  std::array<uint16_t, 45> inventory_ids;
+  std::array< int16_t, 45> inventory_ids;
   std::array<uint16_t, 45> inventory_damage;
   std::array<uint16_t, 45> inventory_count;
 
-  inline void setInv(size_t slot, uint16_t type, uint16_t count, uint16_t damage)
+  inline void setInv(size_t slot, int16_t type, uint16_t count, uint16_t damage)
   {
     inventory_ids[slot]    = type;
     inventory_count[slot]  = count;
@@ -87,7 +87,7 @@ public:
   /// Add a single item to the player's inventory, optionally
   /// send the update to the player immediately. Returns the number
   /// of items that couldn't be allocated (if the inventory is full).
-  uint16_t updatePlayerInventory(int32_t eid, uint16_t type, uint16_t count, uint16_t damage, bool send_packets = true);
+  uint16_t updatePlayerInventory(int32_t eid, int16_t type, uint16_t count, uint16_t damage, bool send_packets = true);
 
   enum EBlockPlacement { OK_NO_META, OK_WITH_META, CANNOT_PLACE };
   EBlockPlacement blockPlacement(int32_t eid, const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta);

@@ -17,7 +17,7 @@ PlayerState::PlayerState(EState s)
   inventory_damage(),
   inventory_count()
 {
-  std::fill(inventory_ids.begin(), inventory_ids.end(), 0);
+  std::fill(inventory_ids.begin(), inventory_ids.end(), -1);
   std::fill(inventory_damage.begin(), inventory_damage.end(), 0);
   std::fill(inventory_count.begin(), inventory_count.end(), 0);
 }
@@ -187,12 +187,13 @@ void GameStateManager::sendInventoryToPlayer(int32_t eid)
   const PlayerState & ps = *m_states[eid];
   for (size_t i = 0; i < ps.inventory_ids.size(); ++i)
   {
+    // "no item" means type -1
     packetSCSetSlot(eid, 0, i, ps.inventory_ids[i], ps.inventory_count[i], ps.inventory_damage[i]);    
   }
 }
 
 
-uint16_t GameStateManager::updatePlayerInventory(int32_t eid, uint16_t type, uint16_t count, uint16_t damage, bool send_packets)
+uint16_t GameStateManager::updatePlayerInventory(int32_t eid, int16_t type, uint16_t count, uint16_t damage, bool send_packets)
 {
   PlayerState & ps = *m_states[eid];
 
@@ -218,7 +219,7 @@ uint16_t GameStateManager::updatePlayerInventory(int32_t eid, uint16_t type, uin
   // 2. Try adding to an empty slot
   for (size_t i = 9; count > 0 && i < ps.inventory_ids.size(); ++i)
   {
-    if (ps.inventory_ids[i] == 0)
+    if (ps.inventory_ids[i] == -1)
     {
       const uint16_t inc = std::min(int(count), 10);
       ps.inventory_count[i] += inc;
@@ -330,14 +331,14 @@ void GameStateManager::handlePlayerMove(int32_t eid)
   }
 }
 
-void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t damage, const WorldCoords & wc)
+
+// Returns false if the item dies.
+bool fall(WorldCoords & wbelow, const Map & map)
 {
   // This really shouldn't ever be able to happen...
-  if (! m_map.haveChunk(getChunkCoords(wc))) return;
+  if (! map.haveChunk(getChunkCoords(wbelow))) return false;
 
-  const Chunk & chunk = m_map.chunk(getChunkCoords(wc));
-
-  WorldCoords wbelow(wc);
+  const Chunk & chunk = map.chunk(getChunkCoords(wbelow));
 
   for ( ; ; wbelow += BLOCK_YMINUS)
   {
@@ -347,13 +348,22 @@ void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t dam
         chunk.blockType(getLocalCoords(wbelow)) == BLOCK_Fire           ||
         wY(wbelow) < 0 )
     {
-      return; // won't even spawn an item that's died.
+      return false; // won't even spawn an item that's died.
     }
 
     if (chunk.blockType(getLocalCoords(wbelow)) != BLOCK_Air) break;
   }
 
-  wbelow += BLOCK_YPLUS; // wbelow is now the last air block 
+  wbelow += BLOCK_YPLUS; // wbelow is now the last air block
+
+  return true;
+}
+
+void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t damage, const WorldCoords & wc)
+{
+  WorldCoords wbelow(wc);
+
+  if (!fall(wbelow, m_map)) return;
 
   int32_t eid = GenerateEID();
 
@@ -366,6 +376,9 @@ void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t dam
 
 
 /// This is the workhorse for digging (left-click) decisions.
+/// It is called AFTER the dug block has been changed to Air,
+/// but block_type is the value of the old, removed block
+/// (maybe this can be structured better).
 
 void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type)
 {
@@ -389,15 +402,31 @@ void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem b
 
     if (wY(wc) < 127)
     {
+      Map::AlertMap new_alerts;
       interesting_blocks = m_map.blockAlerts().equal_range(wc + BLOCK_YPLUS);
 
-      for (auto it = interesting_blocks.first; it != interesting_blocks.second; ++it)
+      for (auto it = interesting_blocks.first; it != interesting_blocks.second; )
       {
         if (it->second.type == Map::BlockAlert::CONTAINS_SPAWN_ITEM)
         {
-          std::cout << "Item " << it->second.data << " must fall." << std::endl;
+          WorldCoords wbelow(wc);
+
+          if (fall(wbelow, m_map))
+          {
+            new_alerts.insert(std::make_pair(wbelow, it->second));
+          }
+
+          std::cout << "Item " << it->second.data << " must fall from " << wc << " to " << wbelow << "." << std::endl;
+
+          m_map.blockAlerts().erase(it++);
+        }
+        else
+        {
+          ++it;
         }
       }
+
+      m_map.blockAlerts().insert(new_alerts.begin(), new_alerts.end());
     }
 
   }
