@@ -59,6 +59,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
     if (block_properties & LEFTCLICK_TRIGGER)
     {
       // Trigger changes require meta data fiddling.
+      reactToToggle(wc, EBlockItem(block));
     }
   }
 
@@ -79,6 +80,7 @@ void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, 
         sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, BLOCK_Air, 0));
         chunk.blockType(getLocalCoords(wc)) = BLOCK_Air;
         chunk.taint();
+        makeItemsDrop(wc);
         reactToSuccessfulDig(wc, EBlockItem(block));
       }
       else
@@ -175,56 +177,59 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
       // empty-handed, not useful
     }
 
-    /// Stage 3b: Genuine target, holding a placeable block.
+    /// Stage 3b: Genuine target, holding a placeable block or item.
 
     else if (it != BLOCKITEM_INFO.end())
     {
       wc += Direction(direction);
 
+      if (!m_map.haveChunk(getChunkCoords(wc))) return;
+
+      if (wc == getWorldCoords(m_states[eid]->position)                                  ||
+          (wY(wc) != 0 && wc + BLOCK_YMINUS == getWorldCoords(m_states[eid]->position))   )
+      {
+        std::cout << "Player #" << eid << " tries to bury herself in " << it->second.name << "." << std::endl;
+      }
+
       // Holding a building block
       if (BlockItemInfo::type(it->first) == BlockItemInfo::BLOCK)
       {
-        if (wc == getWorldCoords(m_states[eid]->position)                                  ||
-            (wY(wc) != 0 && wc + BLOCK_YMINUS == getWorldCoords(m_states[eid]->position))   )
+        Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+
+        // Before placing the block, we have to see if we need to set magic metadata (stair directions etc.)
+        uint8_t meta;
+        const auto bp_res = blockPlacement(eid, WorldCoords(X, Y, Z), Direction(direction), it, meta);
+
+        if (bp_res != CANNOT_PLACE)
         {
-          std::cout << "Player #" << eid << " tries to bury herself in " << it->second.name << "." << std::endl;
+          chunk.blockType(getLocalCoords(wc)) = block_id;
+          chunk.taint();
+
+          if (bp_res == OK_WITH_META)
+          {
+            chunk.setBlockMetaData(getLocalCoords(wc), meta);
+            sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, meta));
+          }
+          else // OK_NO_META
+          {
+            sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, 0));
+          }
         }
-
-        else if (m_map.haveChunk(getChunkCoords(wc)))
+        else // CANNOT_PLACE
         {
-          Chunk & chunk = m_map.chunk(getChunkCoords(wc));
-
-          // Before placing the block, we have to see if we need to set magic metadata (stair directions etc.)
-          uint8_t meta;
-          const auto bp_res = blockPlacement(eid, WorldCoords(X, Y, Z), Direction(direction), it, meta);
-
-          if (bp_res != CANNOT_PLACE)
-          {
-            chunk.blockType(getLocalCoords(wc)) = block_id;
-            chunk.taint();
-
-            if (bp_res == OK_WITH_META)
-            {
-              chunk.setBlockMetaData(getLocalCoords(wc), meta);
-              sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, meta));
-            }
-            else // OK_NO_META
-            {
-              sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, 0));
-            }
-          }
-          else // CANNOT_PLACE
-          {
-            // Naughty client gets slapped on the fingers.
-            packetSCBlockChange(eid, wc, BLOCK_Air, 0);
-          }
+          // Naughty client gets slapped on the fingers.
+          packetSCBlockChange(eid, wc, BLOCK_Air, 0);
         }
       }
 
       // Holding an item
-      else if (BlockItemInfo::type(it->first) == BlockItemInfo::BLOCK)
+      else if (BlockItemInfo::type(it->first) == BlockItemInfo::ITEM)
       {
         // check for seeds, sign, buckets, doors, saddles, minecarts, bed
+
+        // For item placement we expect blockPlacement() to do the packet sending work.
+        uint8_t meta;
+        blockPlacement(eid, WorldCoords(X, Y, Z), Direction(direction), it, meta);
       }
     }
 

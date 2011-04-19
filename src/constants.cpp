@@ -123,13 +123,13 @@ BlockItemInfoMap BLOCKITEM_INFO = {
   { ITEM_PaintingItem,     "" },
   { ITEM_GoldApple,     "" },
   { ITEM_Sign,     "" },
-  { ITEM_WoodenDoorBlock,     "" },
+  { ITEM_WoodenDoor,     "Wooden Door (item)" },
   { ITEM_Bucket,     "" },
   { ITEM_BucketWithWater,     "" },
   { ITEM_BucketWithLava,     "" },
   { ITEM_MineCart,     "" },
   { ITEM_Saddle,     "" },
-  { ITEM_IronDoor,     "" },
+  { ITEM_IronDoor,     "Iron Door (item)" },
   { ITEM_Redstone,     "" },
   { ITEM_Snowball,     "" },
   { ITEM_BoatItem,     "" },
@@ -294,7 +294,9 @@ PropertyMap STOP_LIGHT(16, {
 
 
 PropertyMap BLOCK_DIG_PROPERTIES(LEFTCLICK_DIGGABLE, {
-  { BLOCK_Torch, LEFTCLICK_REMOVABLE },
+  { BLOCK_Torch,      LEFTCLICK_REMOVABLE },
+  { BLOCK_WoodenDoor, LEFTCLICK_DIGGABLE | LEFTCLICK_TRIGGER   },
+  { BLOCK_IronDoor,   LEFTCLICK_DIGGABLE | LEFTCLICK_TRIGGER   },
 } );
 
 PropertyMap BLOCK_PLACEMENT_PROPERTIES(0, { } );

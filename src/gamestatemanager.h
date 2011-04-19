@@ -29,7 +29,7 @@ public:
   struct DigStatus { WorldCoords wc; long long int start_time; } recent_dig;
 
   /// Meta-data information on the direction from the user to wc.
-  uint8_t getRelativeDirection(const RealCoords & rc);
+  Direction getRelativeXZDirection(const RealCoords & rc);
 
 
   /// The inventory.
@@ -91,12 +91,14 @@ public:
 
   enum EBlockPlacement { OK_NO_META, OK_WITH_META, CANNOT_PLACE };
   EBlockPlacement blockPlacement(int32_t eid, const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta);
-
   void reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type);
-
+  void reactToToggle(const WorldCoords & wc, EBlockItem b);
   void reactToBlockDestruction(const WorldCoords & wc);
 
   void spawnSomething(uint16_t type, uint8_t number, uint8_t damage, const WorldCoords & wc);
+
+  void makeItemsDrop(const WorldCoords & wc);
+  bool fall(WorldCoords & wc);
 
   void handlePlayerMove(int32_t eid);
 

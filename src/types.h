@@ -166,6 +166,10 @@ inline ChunkCoords getChunkCoords(const RealCoords & rc)
 {
   return getChunkCoords(getFractionalCoords(rc));
 }
+inline RealCoords midpointRealCoords(const WorldCoords & wc)
+{
+  return RealCoords(wX(wc) + 0.5, wY(wc) + 0.5, wZ(wc) + 0.5);
+}
 
 
 /* Direction. We allow adding those to WorldCoords. */

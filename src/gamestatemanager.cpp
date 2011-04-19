@@ -22,28 +22,29 @@ PlayerState::PlayerState(EState s)
   std::fill(inventory_count.begin(), inventory_count.end(), 0);
 }
 
-uint8_t PlayerState::getRelativeDirection(const RealCoords & rc)
+/// Returns the direction of rc relative to the player's position
+/// (this will usally be the negative of what you're thinking about).
+
+Direction PlayerState::getRelativeXZDirection(const RealCoords & rc)
 {
   // We probably need fractional coordinates here for precision.
-
-  enum { BLOCK_BOTTOM = 0, BLOCK_NORTH = 1, BLOCK_SOUTH = 2, BLOCK_EAST = 3, BLOCK_WEST = 4, BLOCK_TOP = 5 };
 
   const double diffX = rX(rc) - rX(position);
   const double diffZ = rZ(rc) - rZ(position);
 
   std::cout << "Relative: " << diffX << ", " << diffZ << std::endl;
 
-  if (diffX > diffZ)
+  if (std::abs(diffX) > std::abs(diffZ))
   {
     // We compare on the x axis
-    if (diffX > 0)  return BLOCK_BOTTOM;
-    else            return BLOCK_EAST;
+    if (diffX > 0)  return BLOCK_XPLUS;
+    else            return BLOCK_XMINUS;
   }
   else
   {
     // We compare on the z axis
-    if (diffZ > 0) return BLOCK_SOUTH;
-    else           return BLOCK_NORTH;
+    if (diffZ > 0) return BLOCK_ZPLUS;
+    else           return BLOCK_ZMINUS;
   }
 }
 
@@ -261,11 +262,56 @@ bool isStackable(EBlockItem e)
     case BLOCK_Ice:
     case BLOCK_Cake:
     case BLOCK_Bed:
+    case BLOCK_Glass:
       return false;
 
     default:
       return true;
     }
+}
+
+
+/// Things we have to do when a block gets toggled: swing doors, flip switches.
+
+void GameStateManager::reactToToggle(const WorldCoords & wc, EBlockItem b)
+{
+  if (!m_map.haveChunk(getChunkCoords(wc))) return;
+
+  Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+
+  switch (b)
+  {
+  case BLOCK_WoodenDoor:
+  case BLOCK_IronDoor:
+    {
+      // We don't really care if the door is one, two or three blocks tall,
+      // but we'll only treat at most one block above and below the clicked one.
+
+      uint8_t meta = chunk.getBlockMetaData(getLocalCoords(wc));
+      meta ^= 0x4;
+      chunk.setBlockMetaData(getLocalCoords(wc), meta);
+      sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, b, meta));
+
+      if (wY(wc) < 127 && chunk.blockType(getLocalCoords(wc + BLOCK_YPLUS)) == b)
+      {
+        uint8_t meta = chunk.getBlockMetaData(getLocalCoords(wc + BLOCK_YPLUS));
+        meta ^= 0x4;
+        chunk.setBlockMetaData(getLocalCoords(wc + BLOCK_YPLUS), meta);
+        sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc + BLOCK_YPLUS, b, meta));
+      }
+
+      if (wY(wc) > 0 && chunk.blockType(getLocalCoords(wc + BLOCK_YMINUS)) == b)
+      {
+        uint8_t meta = chunk.getBlockMetaData(getLocalCoords(wc + BLOCK_YMINUS));
+        meta ^= 0x4;
+        chunk.setBlockMetaData(getLocalCoords(wc + BLOCK_YMINUS), meta);
+        sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc + BLOCK_YMINUS, b, meta));
+      }
+
+      break;
+    }
+  default: break;
+  }
 }
 
 
@@ -306,16 +352,12 @@ void GameStateManager::reactToBlockDestruction(const WorldCoords & wc)
 
 void GameStateManager::handlePlayerMove(int32_t eid)
 {
-  //std::cout << "Player #" << eid << " moves to " << m_states[eid].position << "/" << getWorldCoords(m_states[eid].position) << std::endl;
-
   auto interesting_blocks = m_map.blockAlerts().equal_range(getWorldCoords(m_states[eid]->position));
 
   for (auto it = interesting_blocks.first; it != interesting_blocks.second; ++it)
   {
     if (it->second.type == Map::BlockAlert::CONTAINS_SPAWN_ITEM)
     {
-      // std::cout << "Player #" << eid << " interacts with object " << it->second.data << " at " << it->first << "." << std::endl;
-
       const auto jt = m_map.items().find(it->second.data);
       if (jt != m_map.items().end())
       {
@@ -332,13 +374,19 @@ void GameStateManager::handlePlayerMove(int32_t eid)
 }
 
 
-// Returns false if the item dies.
-bool fall(WorldCoords & wbelow, const Map & map)
+/// A helper function to establish the nearest non-air block below. Returns false if the item dies.
+/// i.e. by falling out of the world or into fire or a cactus. The argument is expected to be the
+/// initial position and is modified to the final resting position.
+
+/// All this isn't quite right; in the real game it's possible to catch a falling item in mid-air
+/// even if it would otherwise fall to its death.
+
+bool GameStateManager::fall(WorldCoords & wbelow)
 {
   // This really shouldn't ever be able to happen...
-  if (! map.haveChunk(getChunkCoords(wbelow))) return false;
+  if (!m_map.haveChunk(getChunkCoords(wbelow))) return false;
 
-  const Chunk & chunk = map.chunk(getChunkCoords(wbelow));
+  const Chunk & chunk = m_map.chunk(getChunkCoords(wbelow));
 
   for ( ; ; wbelow += BLOCK_YMINUS)
   {
@@ -363,7 +411,7 @@ void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t dam
 {
   WorldCoords wbelow(wc);
 
-  if (!fall(wbelow, m_map)) return;
+  if (!fall(wbelow)) return;
 
   int32_t eid = GenerateEID();
 
@@ -372,6 +420,42 @@ void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t dam
   m_map.items().insert(std::make_pair(eid, type)); // stub
 
   sendToAll(MAKE_CALLBACK(packetSCPickupSpawn, eid, type, number, damage, wc));
+}
+
+
+/// Items dropping from destroyed blocks is a client-preempted
+/// reaction that we must track.
+
+void GameStateManager::makeItemsDrop(const WorldCoords & wc)
+{
+  Map::AlertMap new_alerts;
+  auto interesting_blocks = m_map.blockAlerts().equal_range(wc + BLOCK_YPLUS); // if y == 127, we won't find anything.
+
+  for (auto it = interesting_blocks.first; it != interesting_blocks.second; )
+  {
+    if (it->second.type == Map::BlockAlert::CONTAINS_SPAWN_ITEM)
+    {
+      WorldCoords wbelow(wc);
+
+      if (fall(wbelow))
+      {
+        new_alerts.insert(std::make_pair(wbelow, it->second));
+        std::cout << "Item " << it->second.data << " must fall from " << wc << " to " << wbelow << "." << std::endl;
+      }
+      else
+      {
+        std::cout << "Item " << it->second.data << " falls from " << wc << " to its death." << std::endl;
+      }
+  
+      m_map.blockAlerts().erase(it++);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  m_map.blockAlerts().insert(new_alerts.begin(), new_alerts.end());
 }
 
 
@@ -385,7 +469,26 @@ void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem b
   // this is just temporary
   std::cout << "Successfully dug at " << wc << " for " << BLOCKITEM_INFO.find(block_type)->second.name << std::endl;
 
-  if (block_type != 0)
+  if (block_type == BLOCK_WoodenDoor || block_type == BLOCK_IronDoor)
+  {
+    Chunk & chunk = m_map.chunk(getChunkCoords(wc));
+
+    if (wY(wc) < 127 && chunk.blockType(getLocalCoords(wc + BLOCK_YPLUS)) == block_type)
+    {
+      sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc + BLOCK_YPLUS, BLOCK_Air, 0));
+      chunk.blockType(getLocalCoords(wc + BLOCK_YPLUS)) = BLOCK_Air;
+    }
+
+    if (wY(wc) > 0 && chunk.blockType(getLocalCoords(wc + BLOCK_YMINUS)) == block_type)
+    {
+      sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc + BLOCK_YMINUS, BLOCK_Air, 0));
+      chunk.blockType(getLocalCoords(wc + BLOCK_YMINUS)) = BLOCK_Air;
+    }
+
+    spawnSomething(block_type == BLOCK_WoodenDoor ? ITEM_WoodenDoor : ITEM_IronDoor, 1, 0, wc);
+  }
+
+  else if (block_type != 0)
   {
     spawnSomething(uint16_t(block_type), 1, 0, wc);
 
@@ -399,36 +502,6 @@ void GameStateManager::reactToSuccessfulDig(const WorldCoords & wc, EBlockItem b
         break;
       }
     }
-
-    if (wY(wc) < 127)
-    {
-      Map::AlertMap new_alerts;
-      interesting_blocks = m_map.blockAlerts().equal_range(wc + BLOCK_YPLUS);
-
-      for (auto it = interesting_blocks.first; it != interesting_blocks.second; )
-      {
-        if (it->second.type == Map::BlockAlert::CONTAINS_SPAWN_ITEM)
-        {
-          WorldCoords wbelow(wc);
-
-          if (fall(wbelow, m_map))
-          {
-            new_alerts.insert(std::make_pair(wbelow, it->second));
-          }
-
-          std::cout << "Item " << it->second.data << " must fall from " << wc << " to " << wbelow << "." << std::endl;
-
-          m_map.blockAlerts().erase(it++);
-        }
-        else
-        {
-          ++it;
-        }
-      }
-
-      m_map.blockAlerts().insert(new_alerts.begin(), new_alerts.end());
-    }
-
   }
 }
 
@@ -470,7 +543,8 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
 
       if (wY(wc) == 0 || dir == BLOCK_YMINUS) return CANNOT_PLACE;
 
-      meta = m_states[eid]->getRelativeDirection(wc + dir);
+      // Stairs are oriented to have their low end pointing toward the player.
+      meta = 5 - int(m_states[eid]->getRelativeXZDirection(midpointRealCoords(wc + dir)));
       return OK_WITH_META;
     }
 
@@ -480,6 +554,7 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
     {
       std::cout << "Special block: #" << eid << " is trying to place a torch." << std::endl;
 
+      // Torches are oriented simply to attach to the face which the user clicked.
       switch (int(dir))
       {
       case 2: meta = 4; break;
@@ -492,6 +567,58 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
       m_map.blockAlerts().insert(std::make_pair(wc, Map::BlockAlert(Map::BlockAlert::SUPPORTS_CANDLE)));
 
       return OK_WITH_META;
+    }
+
+  case ITEM_WoodenDoor:
+  case ITEM_IronDoor:
+    {
+      // Doors can only be placed from above.
+      if (dir != BLOCK_YPLUS) return CANNOT_PLACE;
+
+      const auto d = m_states[eid]->getRelativeXZDirection(midpointRealCoords(wc + dir));
+      const unsigned char b = it->first == ITEM_WoodenDoor ? BLOCK_WoodenDoor : BLOCK_IronDoor;
+
+      uint8_t meta;
+
+      enum { HINGE_NE = 0, HINGE_SE = 1, HINGE_SW = 2, HINGE_NW = 3, SWUNG = 4 };
+
+      switch (d)
+      {
+      case BLOCK_XPLUS:  meta = HINGE_NE; break;
+      case BLOCK_XMINUS: meta = HINGE_SW; break;
+      case BLOCK_ZPLUS:  meta = HINGE_SE; break;
+      case BLOCK_ZMINUS: meta = HINGE_NW; break;
+      default: return CANNOT_PLACE;
+      }
+
+      // Double-door algorithm: only check for a door on the left (apparently that's what the client does).
+      if      (d == BLOCK_XMINUS && m_map.chunk(getChunkCoords(wc + dir + BLOCK_ZPLUS)) .blockType(getLocalCoords(wc + dir + BLOCK_ZPLUS))  == b)
+      {
+        meta = HINGE_SE | SWUNG;
+      }
+      else if (d == BLOCK_XPLUS  && m_map.chunk(getChunkCoords(wc + dir + BLOCK_ZMINUS)).blockType(getLocalCoords(wc + dir + BLOCK_ZMINUS)) == b)
+      {
+        meta = HINGE_NW | SWUNG;
+      }
+      else if (d == BLOCK_ZMINUS && m_map.chunk(getChunkCoords(wc + dir + BLOCK_XMINUS)).blockType(getLocalCoords(wc + dir + BLOCK_XMINUS)) == b)
+      {
+        meta = HINGE_SW | SWUNG;
+      }
+      else if (d == BLOCK_ZPLUS  && m_map.chunk(getChunkCoords(wc + dir + BLOCK_XPLUS)) .blockType(getLocalCoords(wc + dir + BLOCK_XPLUS))  == b)
+      {
+        meta = HINGE_NE | SWUNG;
+      }
+
+      sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc + dir, b, meta));
+      sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc + dir + BLOCK_YPLUS, b, meta | 0x8));
+
+      Chunk & chunk = m_map.chunk(getChunkCoords(wc + dir));
+      chunk.blockType(getLocalCoords(wc + dir)) = b;
+      chunk.setBlockMetaData(getLocalCoords(wc + dir), meta);
+      chunk.blockType(getLocalCoords(wc + dir + BLOCK_YPLUS)) = b;
+      chunk.setBlockMetaData(getLocalCoords(wc + dir + BLOCK_YPLUS), meta | 0x8);
+
+      return OK_NO_META;
     }
 
   default:

@@ -183,7 +183,7 @@ enum EBlockItem
   ITEM_PaintingItem        = 0x141,
   ITEM_GoldApple           = 0x142,
   ITEM_Sign                = 0x143,
-  ITEM_WoodenDoorBlock     = 0x144,
+  ITEM_WoodenDoor          = 0x144,
   ITEM_Bucket              = 0x145,
   ITEM_BucketWithWater     = 0x146,
   ITEM_BucketWithLava      = 0x147,
