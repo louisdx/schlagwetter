@@ -23,6 +23,9 @@ To run:
   /tmp/workspace/build/src/bin/schlagwetter
 
 
+Please read the TODO file for current known issues.
+
+
 Design goals:
 
   *  Portability. Idiomatic C++0x and boost::{ASIO, program_options, iostreams}. (Other libraries: ZLib, Noise, GNU Readline [optional]; cNBT and boost::regex for NBT file import).

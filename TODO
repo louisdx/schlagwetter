@@ -22,10 +22,15 @@ Conveniece
 Known Issues (may be easy to fix)
 ---------------------------------
 
-* Lighting seems to miss a one-block wide strip along chunk boundaries, sometimes.
-
 * Block placement sometimes doesn't prevent placing a block in the position of the player
   (this seems to be because the target block is reported incorrectly).
+
+* Currently, only ASCII characters are sent out correctly in strings, because I use
+  a naive conversion to UTF16 by padding with zero. A genuine UTF8 to UTF16 conversion,
+  restricted to the BMP, would be desirable.
+
+* It is unclear whether the client can handle non-BMP characters. Surely sending the
+  number of characters, as oppsed to the number of encoded bytes, does not inspire confidence.
 
 
 Mystery Puzzle of the Day
@@ -77,6 +82,8 @@ High Priority
 
 Known Issues (may be easy to fix)
 ---------------------------------
+
+* Lighting seems to miss a one-block wide strip along chunk boundaries, sometimes.
 
 * Chunk zip cache and tainting doesn't seem to taint modified chunks in all cases (all non-0,0 chunks?).
 
