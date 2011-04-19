@@ -262,7 +262,6 @@ bool isStackable(EBlockItem e)
     case BLOCK_Ice:
     case BLOCK_Cake:
     case BLOCK_Bed:
-    case BLOCK_Glass:
       return false;
 
     default:
@@ -573,7 +572,12 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
   case ITEM_IronDoor:
     {
       // Doors can only be placed from above.
-      if (dir != BLOCK_YPLUS) return CANNOT_PLACE;
+      if (dir != BLOCK_YPLUS)
+        return CANNOT_PLACE;
+
+      // Doors cannot be placed on glass, it seems.
+      if (m_map.chunk(getChunkCoords(wc)).blockType(getLocalCoords(wc)) == BLOCK_Glass)
+        return CANNOT_PLACE;
 
       const auto d = m_states[eid]->getRelativeXZDirection(midpointRealCoords(wc + dir));
       const unsigned char b = it->first == ITEM_WoodenDoor ? BLOCK_WoodenDoor : BLOCK_IronDoor;
