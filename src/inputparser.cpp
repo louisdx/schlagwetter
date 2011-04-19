@@ -170,15 +170,29 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::shared_ptr<SyncQueue> q
       GUARDLOCK;
 
       readInt8(queue, tmp);
+
       protocol_version = readInt32(queue, tmp);
+
       username_len     = readInt16(queue, tmp);
-      if (int(queue->size()) < username_len) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < 2 * username_len) { rewindJournal(queue, tmp); break; }
       username         = readString(queue, tmp, username_len);
-      password_len     = readInt16(queue, tmp);
-      if (int(queue->size()) < password_len) { rewindJournal(queue, tmp); break; }
-      password         = readString(queue, tmp, password_len);
+
+      /// As of 1.5, the password doesn't seem to get sent, at least when we send "-". ///
+
+      if (protocol_version < 0x0B)
+      {
+        password_len     = readInt16(queue, tmp);
+        if (int(queue->size()) < 2 * password_len) { rewindJournal(queue, tmp); break; }
+        password         = readString(queue, tmp, password_len);
+      }
+      else
+      {
+        password = "[NOT SENT]";
+      }
+
       if (int(queue->size()) < 9) { rewindJournal(queue, tmp); break; }
       map_seed         = readInt64(queue, tmp);
+
       dimension        = readInt8(queue, tmp);
     }
 
@@ -201,7 +215,7 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::shared_ptr<SyncQueue> q
 
       readInt8(queue, tmp);
       str_len = readInt16(queue, tmp);
-      if (int(queue->size()) < str_len) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < 2 * str_len) { rewindJournal(queue, tmp); break; }
       str = readString(queue, tmp, str_len);
 
       //std::cout << "Remaining queue size = " << queue->size() << std::endl;
@@ -293,19 +307,19 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::shared_ptr<SyncQueue> q
       Z = readInt32(queue, tmp);
 
       len1 = readInt16(queue, tmp);
-      if (int(queue->size()) < len1) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < 2 * len1) { rewindJournal(queue, tmp); break; }
       line1 = readString(queue, tmp, len1);
 
       len2 = readInt16(queue, tmp);
-      if (int(queue->size()) < len2) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < 2 * len2) { rewindJournal(queue, tmp); break; }
       line2 = readString(queue, tmp, len2);
 
       len3 = readInt16(queue, tmp);
-      if (int(queue->size()) < len3) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < 2 * len3) { rewindJournal(queue, tmp); break; }
       line3 = readString(queue, tmp, len3);
 
       len4 = readInt16(queue, tmp);
-      if (int(queue->size()) < len4) { rewindJournal(queue, tmp); break; }
+      if (int(queue->size()) < 2 * len4) { rewindJournal(queue, tmp); break; }
       line4 = readString(queue, tmp, len4);
     }
 

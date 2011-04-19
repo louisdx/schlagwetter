@@ -11,10 +11,16 @@
  ******************                  ****************/
 
 
+
+/**** Client to Server ****/
+
+
 void GameStateManager::packetCSPlayerDigging(int32_t eid, int32_t X, uint8_t Y, int32_t Z, uint8_t status, uint8_t face)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerDigging from #" << std::dec << eid << ": [" << X << ", " << (unsigned int)(Y)
             << ", " << Z << ", " << (unsigned int)(status) << ", " << (unsigned int)(face) << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 
   /*** Digging, aka "the left mouse button" ***
 
@@ -109,6 +115,7 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
             << Direction(direction) << ", " << block_id << ", " << int(amount) << ", " << damage << "]" << std::endl;
   std::cout << "Player position is " << m_states[eid]->position << std::endl;
 
+  if (m_states.find(eid) == m_states.end()) return;
 
   /*** Placement, aka "the right mouse button" ***
 
@@ -243,6 +250,9 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
 void GameStateManager::packetCSKeepAlive(int32_t eid)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received KeepAlive from #" << eid << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
+
   packetSCKeepAlive(eid);
 }
 
@@ -250,21 +260,29 @@ void GameStateManager::packetCSChunkRequest(int32_t eid, int32_t X, int32_t Z, b
 {
   //if (PROGRAM_OPTIONS.count("verbose"))
     std::cout << "GSM: Received ChunkRequest from #" << eid << ": [" << X << ", " << Z << ", " << mode << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSUseEntity(int32_t eid, int32_t e, int32_t target, bool leftclick)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received UseEntity from #" << eid << ": [" << e << ", " << target << ", " << leftclick << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSPlayer(int32_t eid, bool ground)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerOnGround from #" << eid << ": " << ground << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSPlayerPosition(int32_t eid, double X, double Y, double Z, double stance, bool ground)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPosition from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", " << stance << ", " << ground << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 
   const RealCoords rc(X, Y, Z);
 
@@ -281,12 +299,16 @@ void GameStateManager::packetCSPlayerPosition(int32_t eid, double X, double Y, d
 void GameStateManager::packetCSPlayerLook(int32_t eid, float yaw, float pitch, bool ground)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerLook from #" << eid << ": [" << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool ground)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerPositionAndLook from #" << eid << ": [" << X << ", " << Y << ", " << Z << ", "
             << stance << ", " << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 
   const RealCoords rc(X, Y, Z);
   m_states[eid]->position = rc;
@@ -308,16 +330,22 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
 void GameStateManager::packetCSHoldingChange(int32_t eid, int16_t slot)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received HoldingChange from #" << std::dec << eid << ": " << slot << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSArmAnimation(int32_t eid, int32_t e, int8_t animate)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Animation from #" << std::dec << eid << ": [" << e << ", " << (unsigned int)(animate) << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSEntityCrouchBed(int32_t eid, int32_t e, int8_t action)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received CrouchBed from #" << std::dec << eid << ": [" << e << ", " << (unsigned int)(action) << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSPickupSpawn(int32_t eid, int32_t e, int32_t X, int32_t Y, int32_t Z,
@@ -325,16 +353,22 @@ void GameStateManager::packetCSPickupSpawn(int32_t eid, int32_t e, int32_t X, in
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PickupSpawn from #" << std::dec << eid << ": [" << e << ", " << X << ", " << Y << ", " << Z << ", "
             << rot << ", " << pitch << ", " << roll << ", " << (unsigned int)(count) << ", " << item << ", " << data << ", "<< "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSRespawn(int32_t eid)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Respawn from #" << std::dec << eid << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSCloseWindow(int32_t eid, int8_t window_id)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received CloseWindow from #" << std::dec << eid << ": " << (unsigned int)(window_id) << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
@@ -372,6 +406,8 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
             << int(dimension)
             << "]" << std::endl;
 
+  if (m_states.find(eid) == m_states.end()) return;
+
   std::string name = m_connection_manager.getNickname(eid);
 
   if (name != username)
@@ -386,7 +422,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     PacketCrafter p(PACKET_LOGIN_REQUEST);
     p.addInt32(eid);
     p.addJString("");
-    p.addJString("");
+    if (protocol_version < 0x0B) p.addJString("");
     p.addInt64(12345);
     p.addInt8(0); // 0: normal, -1: Nether
     m_connection_manager.sendDataToClient(eid, p.craft());
@@ -461,25 +497,26 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
     player.position = RealCoords(wX(start_pos) + 0.5, wZ(start_pos) + 0.5, wZ(start_pos) + 0.5);
 
-    sendMoreChunksToPlayer(eid);
-
-    m_states[eid]->state = PlayerState::READYTOSPAWN;
+    player.state = PlayerState::READYTOSPAWN;
 
     packetSCSpawn(eid, start_pos);
+
+    sendMoreChunksToPlayer(eid);
+
     packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
 
-    m_states[eid]->setInv(37, ITEM_DiamondPickaxe, 1, 0);
-    m_states[eid]->setInv(36, BLOCK_Torch, 50, 0);
-    m_states[eid]->setInv(29, ITEM_Coal, 50, 0);
-    m_states[eid]->setInv(21, BLOCK_Cobblestone, 60, 0);
-    m_states[eid]->setInv(22, BLOCK_IronOre, 60, 0);
-    m_states[eid]->setInv(30, BLOCK_Wood, 50, 0);
-    m_states[eid]->setInv(38, ITEM_DiamondShovel, 1, 0);
-    m_states[eid]->setInv(39, BLOCK_BrickBlock, 64, 0);
-    m_states[eid]->setInv(40, BLOCK_Stone, 64, 0);
-    m_states[eid]->setInv(41, BLOCK_Glass, 64, 0);
-    m_states[eid]->setInv(42, BLOCK_WoodenPlank, 64, 0);
-    m_states[eid]->setInv(43, ITEM_Bucket, 1, 0);
+    player.setInv(37, ITEM_DiamondPickaxe, 1, 0);
+    player.setInv(36, BLOCK_Torch, 50, 0);
+    player.setInv(29, ITEM_Coal, 50, 0);
+    player.setInv(21, BLOCK_Cobblestone, 60, 0);
+    player.setInv(22, BLOCK_IronOre, 60, 0);
+    player.setInv(30, BLOCK_Wood, 50, 0);
+    player.setInv(38, ITEM_DiamondShovel, 1, 0);
+    player.setInv(39, BLOCK_BrickBlock, 64, 0);
+    player.setInv(40, BLOCK_Stone, 64, 0);
+    player.setInv(41, BLOCK_Glass, 64, 0);
+    player.setInv(42, BLOCK_WoodenPlank, 64, 0);
+    player.setInv(43, ITEM_Bucket, 1, 0);
     sendInventoryToPlayer(eid);
   }
 }
@@ -487,12 +524,18 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received ChatMessage from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSDisconnect(int32_t eid, std::string message)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Disconnect from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
+
   m_connection_manager.safeStop(eid);
+
+  if (m_states.find(eid) == m_states.end()) return;
+
   m_states[eid]->state = PlayerState::TERMINATED;
 }
 
@@ -500,12 +543,20 @@ void GameStateManager::packetCSWindowClick(int32_t eid, int8_t window_id, int16_
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received WindowClick from #" << std::dec << eid << ": [" << (unsigned int)(window_id) << ", " << slot << ", " << (unsigned int)(right_click) << ", "
             << action << ", " << item_id << ", " << (unsigned int)(item_count) << ", " << item_uses << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
 
 void GameStateManager::packetCSSign(int32_t eid, int32_t X, int16_t Y, int32_t Z, std::string line1, std::string line2, std::string line3, std::string line4)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Sign from #" << std::dec << eid << ": [" << X << ", " << Y << ", " << Z << ", \"" << line1 << "\", " << line2 << "\", " << line3 << "\", " << line4 << "]" << std::endl;
+
+  if (m_states.find(eid) == m_states.end()) return;
 }
+
+
+
+/**** Server to Client ****/
 
 
 void GameStateManager::packetSCKeepAlive(int32_t eid)

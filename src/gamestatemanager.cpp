@@ -22,17 +22,14 @@ PlayerState::PlayerState(EState s)
   std::fill(inventory_count.begin(), inventory_count.end(), 0);
 }
 
-/// Returns the direction of rc relative to the player's position
-/// (this will usally be the negative of what you're thinking about).
+/// Returns the horizontal direction of rc relative to the player's
+/// position (this will usally be the negative of what you're thinking
+/// about, but numerically more convenient for the block metadata values).
 
 Direction PlayerState::getRelativeXZDirection(const RealCoords & rc)
 {
-  // We probably need fractional coordinates here for precision.
-
   const double diffX = rX(rc) - rX(position);
   const double diffZ = rZ(rc) - rZ(position);
-
-  std::cout << "Relative: " << diffX << ", " << diffZ << std::endl;
 
   if (std::abs(diffX) > std::abs(diffZ))
   {
@@ -185,6 +182,15 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
 void GameStateManager::sendInventoryToPlayer(int32_t eid)
 {
+  // I don't understand why we need this here (but we do), it should be possible to filter that already in the packet handlers.
+  if (m_states.find(eid) == m_states.end())
+  {
+    std::cout << "Error, player state hasn't been constructed." << std::endl;
+    packetSCKick(eid, "Server error.");
+    m_connection_manager.safeStop(eid);
+    return;
+  }
+
   const PlayerState & ps = *m_states[eid];
   for (size_t i = 0; i < ps.inventory_ids.size(); ++i)
   {

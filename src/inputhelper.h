@@ -9,6 +9,51 @@
 
 #include "syncqueue.h"
 
+
+
+typedef struct _twobytestring_t
+{
+  unsigned char byte1;
+  unsigned char byte2;
+} twobytestring_t;
+
+typedef union t_codepoint_tmp
+{
+  char c[4];
+  unsigned char u[4];
+  unsigned int i;
+} t_codepoint;
+
+/** Creates a UTF-8 representation of a single unicode codepoint.
+ */
+void codepointToUTF8(unsigned int cp, t_codepoint * szOut)
+{
+  size_t len = 0;
+
+  szOut->u[0] = szOut->u[1] = szOut->u[2] = szOut->u[3] = 0;
+
+  if (cp < 0x0080) len++;
+  else if (cp < 0x0800) len += 2;
+  else len += 3;
+
+  int i = 0;
+  if (cp < 0x0080)
+    szOut->u[i++] = (unsigned char) cp;
+  else if (cp < 0x0800)
+  {
+    szOut->u[i++] = 0xc0 | (( cp ) >> 6 );
+    szOut->u[i++] = 0x80 | (( cp ) & 0x3F );
+  }
+  else
+  {
+    szOut->u[i++] = 0xE0 | (( cp ) >> 12 );
+    szOut->u[i++] = 0x80 | (( ( cp ) >> 6 ) & 0x3F );
+    szOut->u[i++] = 0x80 | (( cp ) & 0x3F );
+  }
+}
+
+
+
 /* The #defines are for reading from a std::vector,
  *  the read*() functions are for reversible reading from the deque.
  */
@@ -78,13 +123,24 @@ static inline int64_t readInt64(std::shared_ptr<SyncQueue> q, std::list<unsigned
 
 static inline std::string readString(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal, uint16_t len)
 {
-  std::string r(len, 0);
-  for (size_t i = 0; i < len; ++i)
+  t_codepoint     ccp;
+  twobytestring_t cbuf;
+  std::string     s;
+  size_t          n = len;
+
+  while (n--)
   {
-    r[i] = q->pop_unsafe();
-    journal.push_back(r[i]);
+    cbuf.byte1 = q->pop_unsafe();
+    cbuf.byte2 = q->pop_unsafe();
+
+    journal.push_back(cbuf.byte1);
+    journal.push_back(cbuf.byte2);
+
+    codepointToUTF8(((unsigned int)(cbuf.byte1)<<8) | ((unsigned int)(cbuf.byte2)), &ccp);
+    s += std::string(ccp.c);
   }
-  return r;
+
+  return s;
 }
 
 static inline void rewindJournal(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal)

@@ -6,6 +6,9 @@
 #include <string>
 #include "constants.h"
 
+
+/// This is now obsolete; strings are encoded as UTF16.
+
 static inline void convertToJavaString(std::string & s)
 {
   for (std::string::iterator i = s.begin(); i != s.end(); )
@@ -17,6 +20,14 @@ static inline void convertToJavaString(std::string & s)
     i = s.insert(i, char(0x80)); ++i;
   }
 }
+
+/// The new string converter. Evil hack, not real. Must use something better like iconv(). Only works for ASCII!
+
+static inline uint16_t BE_UTF16FromChar(char c)
+{
+  return 0x0000 | ((unsigned int)(unsigned char)(c) & 0xFF);
+}
+
 
 class PacketCrafter
 {
@@ -68,7 +79,12 @@ public:
     m_buffer.push_back(b1);
   }
 
-  inline void addJString(const std::string & s) { addInt16(s.length()); m_buffer.insert(m_buffer.end(), s.begin(), s.end()); }
+  inline void addJString(const std::string & s)
+  {
+    addInt16(s.length());
+    for (std::string::const_iterator it = s.begin(); it != s.end(); ++it)
+      addInt16(BE_UTF16FromChar(*it));
+  }
   
   inline void addByteArray(const char * data, size_t length) { m_buffer.insert(m_buffer.end(), data, data + length); }
 
