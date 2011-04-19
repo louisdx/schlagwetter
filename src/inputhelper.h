@@ -121,6 +121,20 @@ static inline int64_t readInt64(std::shared_ptr<SyncQueue> q, std::list<unsigned
   return int64_t(r);
 }
 
+/// This does not actually convert the Java null-byte surrogate back to 0, it's just
+/// a function to deal with pre-1.5 strings (ordinary 8-bit strings, modified-UTF8-encoded).
+/// Since we use UTF8 internally, there's nothing to do.
+static inline std::string readJString(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal, uint16_t len)
+{
+  std::string r(len, 0);
+  for (size_t i = 0; i < len; ++i)
+  {
+    r[i] = q->pop_unsafe();
+    journal.push_back(r[i]);
+  }
+  return r;
+}
+
 static inline std::string readString(std::shared_ptr<SyncQueue> q, std::list<unsigned char> & journal, uint16_t len)
 {
   t_codepoint     ccp;

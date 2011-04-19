@@ -217,8 +217,6 @@ bool InputParser::dispatchIfEnoughData(int32_t eid, std::shared_ptr<SyncQueue> q
       str_len = readInt16(queue, tmp);
       if (int(queue->size()) < 2 * str_len) { rewindJournal(queue, tmp); break; }
       str = readString(queue, tmp, str_len);
-
-      //std::cout << "Remaining queue size = " << queue->size() << std::endl;
     }
 
     switch (type)

@@ -443,7 +443,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
     /// Load all available chunks to memory, but only send the first 50 to the client.
 
-    WorldCoords start_pos(100, 66, 78);
+    WorldCoords start_pos(100, 120, 78);
 
     std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(start_pos))); // L1-sorted by distance from centre.
     size_t counter = 0;
@@ -456,7 +456,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
       auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
       m_map.insertChunk(c);
         
-      if (counter < 120)
+      if (counter < 100)
       {
         bc.push_back(*i);
       }
@@ -523,7 +523,8 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
 void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)
 {
-  if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received ChatMessage from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
+  //if (PROGRAM_OPTIONS.count("verbose"))
+  std::cout << "GSM: Received ChatMessage from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
 
   if (m_states.find(eid) == m_states.end()) return;
 }
