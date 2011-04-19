@@ -1,6 +1,13 @@
 Thoughts about making the server moddable
 =========================================
 
+
+SUMMARY: The client preempts both left-clicks and right-clicks.
+Server modding should only happen within the boundaries of the
+expectations of the client.
+
+
+
 The game logic of the server should be as modular as possible
 to allow easy maintenance, extension and modification. Concerning
 which aspects of the logic should be modifiable, two distinct
@@ -99,3 +106,13 @@ Level 1. Actions which are entirely handled server-side
 
 Level 2. For advanced modding, overridable actions like inventory
          movement could also be made accessible to scripts.
+
+
+Random Notes
+------------
+
+* Items fall from a destroyed block. This must be tracked.
+  Torches do not automatically dismount from destroyed blocks,
+  that is a server reaction.
+
+* Who handles items that fall into fire or onto a cactus?
