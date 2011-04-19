@@ -391,7 +391,7 @@ void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
   m_states.insert(std::make_pair(eid, std::make_shared<PlayerState>(PlayerState::PRELOGIN)));
 
   PacketCrafter p(PACKET_HANDSHAKE);
-  p.addJString("-");
+  p.addString("-");
 
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
@@ -421,8 +421,8 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
   {
     PacketCrafter p(PACKET_LOGIN_REQUEST);
     p.addInt32(eid);
-    p.addJString("");
-    if (protocol_version < 0x0B) p.addJString("");
+    p.addString("");
+    if (protocol_version < 0x0B) p.addString("");
     p.addInt64(12345);
     p.addInt8(0); // 0: normal, -1: Nether
     m_connection_manager.sendDataToClient(eid, p.craft());
@@ -568,7 +568,7 @@ void GameStateManager::packetSCKeepAlive(int32_t eid)
 void GameStateManager::packetSCKick(int32_t eid, const std::string & message)
 {
   PacketCrafter p(PACKET_DISCONNECT);
-  p.addJString(message);
+  p.addString(message);
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 

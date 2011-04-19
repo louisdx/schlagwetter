@@ -79,7 +79,13 @@ public:
     m_buffer.push_back(b1);
   }
 
+  // This produces the old, pre 1.5 string.
   inline void addJString(const std::string & s)
+  {
+    addInt16(s.length()); m_buffer.insert(m_buffer.end(), s.begin(), s.end());
+  }
+  
+  inline void addString(const std::string & s)
   {
     addInt16(s.length());
     for (std::string::const_iterator it = s.begin(); it != s.end(); ++it)
