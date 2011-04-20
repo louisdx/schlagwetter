@@ -505,6 +505,8 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
     packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
 
+    sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), 0, 0, 0), eid);
+
     player.setInv(37, ITEM_DiamondPickaxe, 1, 0);
     player.setInv(36, BLOCK_Torch, 50, 0);
     player.setInv(29, ITEM_Coal, 50, 0);
@@ -525,6 +527,8 @@ void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)
 {
   //if (PROGRAM_OPTIONS.count("verbose"))
   std::cout << "GSM: Received ChatMessage from #" << std::dec << eid << ": \"" << message << "\"" << std::endl;
+
+  sendToAllExceptOne(MAKE_CALLBACK(packetSCChatMessage, message), eid);
 
   if (m_states.find(eid) == m_states.end()) return;
 }
@@ -701,3 +705,16 @@ void GameStateManager::packetSCChatMessage(int32_t eid, std::string message)
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
+void GameStateManager::packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, uint8_t rot, uint8_t pitch, uint16_t item_id)
+{
+  PacketCrafter p(PACKET_NAMED_ENTITY_SPAWN);
+  p.addInt32(e);
+  p.addString(m_connection_manager.getNickname(e));
+  p.addInt32(fX(fc));
+  p.addInt32(fY(fc));
+  p.addInt32(fZ(fc));
+  p.addInt8(rot);
+  p.addInt8(pitch);
+  p.addInt16(item_id);
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}

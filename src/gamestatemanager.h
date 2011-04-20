@@ -55,6 +55,7 @@ public:
 
   /// Use with an std::bound-outgoing packet builder below to send a packet to all clients.
   void sendToAll(std::function<void(int32_t)> f);
+  void sendToAllExceptOne(std::function<void(int32_t)> f, int32_t eid);
 
   /* The following macros are useful for invoking sendToAll().
    * MAKE_CALLBACK is for most handlers
@@ -150,6 +151,7 @@ public:
   void packetSCCollectItem(int32_t eid, int32_t collectee_eid, int32_t collector_eid);
   void packetSCDestroyEntity(int32_t eid, int32_t e);
   void packetSCChatMessage(int32_t eid, std::string message);
+  void packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, uint8_t rot, uint8_t pitch, uint16_t item_id);
 
 private:
   ConnectionManager & m_connection_manager;

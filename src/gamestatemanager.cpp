@@ -110,6 +110,21 @@ void GameStateManager::sendToAll(std::function<void(int32_t)> f)
     f(*it);
 }
 
+void GameStateManager::sendToAllExceptOne(std::function<void(int32_t)> f, int32_t eid)
+{
+  std::list<int32_t> todo;
+
+  {
+    std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
+    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+      if (it->first != eid)
+        todo.push_back(it->first);
+  }
+
+  for (auto it = todo.begin(); it != todo.end(); ++it)
+    f(*it);
+}
+
 void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 {
   std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
