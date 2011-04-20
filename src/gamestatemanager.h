@@ -140,7 +140,7 @@ public:
   void packetCSSign(int32_t eid, int32_t X, int16_t Y, int32_t Z, std::string line1, std::string line2, std::string line3, std::string line4);
 
 
-  /* Outgoing packet builders */
+  /* Outgoing packet builders. The "raw" version does not post the packet, only returns its data. */
 
   void packetSCKick(int32_t eid, const std::string & message);
   void packetSCKeepAlive(int32_t eid);
