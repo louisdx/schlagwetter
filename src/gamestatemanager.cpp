@@ -13,7 +13,7 @@ int32_t GenerateEID() { return ++EID_POOL; }
 PlayerState::PlayerState(EState s)
   :
   state(s),
-  position(), pitch(0), yaw(0),
+  position(), stance(0), pitch(0), yaw(0),
   known_chunks(),
   inventory_ids(),
   inventory_damage(),
@@ -125,6 +125,35 @@ void GameStateManager::sendToAllExceptOne(std::function<void(int32_t)> f, int32_
 
   for (auto it = todo.begin(); it != todo.end(); ++it)
     f(*it);
+}
+
+void GameStateManager::sendRawToAll(const std::string & data)
+{
+  std::list<int32_t> todo;
+
+  {
+    std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
+    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+      todo.push_back(it->first);
+  }
+
+  for (auto it = todo.begin(); it != todo.end(); ++it)
+    m_connection_manager.sendDataToClient(*it, data);
+}
+
+void GameStateManager::sendRawToAllExceptOne(const std::string & data, int32_t eid)
+{
+  std::list<int32_t> todo;
+
+  {
+    std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
+    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+      if (it->first != eid)
+        todo.push_back(it->first);
+  }
+
+  for (auto it = todo.begin(); it != todo.end(); ++it)
+    m_connection_manager.sendDataToClient(*it, data);
 }
 
 void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
@@ -376,7 +405,7 @@ void GameStateManager::handlePlayerMove(int32_t eid)
 {
   const PlayerState & player = *m_states[eid];
 
-  sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), player.yaw, player.pitch, 0), eid);
+  sendRawToAllExceptOne(rawPacketSCEntityTeleport(eid, getFractionalCoords(player.position), player.yaw, player.pitch), eid);
 
   auto interesting_blocks = m_map.blockAlerts().equal_range(getWorldCoords(player.position));
 

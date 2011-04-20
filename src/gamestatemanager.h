@@ -21,6 +21,7 @@ public:
 
   /// The current position of the player
   RealCoords position;
+  float stance;
   float pitch;
   float yaw;
 
@@ -58,6 +59,10 @@ public:
   /// Use with an std::bound-outgoing packet builder below to send a packet to all clients.
   void sendToAll(std::function<void(int32_t)> f);
   void sendToAllExceptOne(std::function<void(int32_t)> f, int32_t eid);
+
+  /// Maybe sending raw data is more efficient, not invoking the packet builder each time.
+  void sendRawToAll(const std::string & data);
+  void sendRawToAllExceptOne(const std::string & data, int32_t eid);
 
   /* The following macros are useful for invoking sendToAll().
    * MAKE_CALLBACK is for most handlers
@@ -141,6 +146,7 @@ public:
   void packetSCKeepAlive(int32_t eid);
   void packetSCSpawn(int32_t eid, const WorldCoords & wc);
   void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
+  std::string rawPacketSCPlayerPositionAndLook(const RealCoords & rc, double stance, float yaw, float pitch, bool on_ground);
   void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
   void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md = 0);
   void packetSCTime(int32_t eid, int64_t ticks);
@@ -154,6 +160,7 @@ public:
   void packetSCDestroyEntity(int32_t eid, int32_t e);
   void packetSCChatMessage(int32_t eid, std::string message);
   void packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, double rot, double pitch, uint16_t item_id);
+  std::string rawPacketSCEntityTeleport(int32_t e, const FractionalCoords & fc, double yaw, double pitch);
 
 private:
   ConnectionManager & m_connection_manager;

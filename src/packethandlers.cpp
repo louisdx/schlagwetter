@@ -292,6 +292,7 @@ void GameStateManager::packetCSPlayerPosition(int32_t eid, double X, double Y, d
   }
 
   m_states[eid]->position = rc;
+  m_states[eid]->stance   = stance;
 
   handlePlayerMove(eid);
 }
@@ -315,6 +316,7 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
 
   const RealCoords rc(X, Y, Z);
   m_states[eid]->position = rc;
+  m_states[eid]->stance   = stance;
   m_states[eid]->pitch    = pitch;
   m_states[eid]->yaw      = yaw;
 
@@ -500,7 +502,8 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     const WorldCoords start_pos(8, 80, 8);
     //const WorldCoords start_pos(16, 66, -32);
 
-    player.position = RealCoords(wX(start_pos) + 0.5, wZ(start_pos) + 0.5, wZ(start_pos) + 0.5);
+    player.position = RealCoords(wX(start_pos) + 0.5, wY(start_pos) + 0.5, wZ(start_pos) + 0.5);
+    player.stance   = wY(start_pos) + 0.5;
 
     player.state = PlayerState::READYTOSPAWN;
 
@@ -510,8 +513,16 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
     packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
 
+    // Inform all others that this player has spawned.
     sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), 0, 0, 0), eid);
-    // We should also make all the existing entities known to the player...
+
+    // Inform this player of all the other players' positions. (Apparently one should only do this with players that are in range.)
+    {
+      std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
+      for (auto it = m_states.begin(); it != m_states.end(); ++it)
+        if (it->first != eid)
+          packetSCSpawnEntity(eid, it->first, getFractionalCoords(it->second->position), it->second->yaw, it->second->pitch, 0);
+    }
 
     player.setInv(37, ITEM_DiamondPickaxe, 1, 0);
     player.setInv(36, BLOCK_Torch, 50, 0);
@@ -628,6 +639,19 @@ void GameStateManager::packetSCPlayerPositionAndLook(int32_t eid, double X, doub
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
+std::string GameStateManager::rawPacketSCPlayerPositionAndLook(const RealCoords & rc, double stance, float yaw, float pitch, bool on_ground)
+{
+  PacketCrafter p(PACKET_PLAYER_POSITION_AND_LOOK);
+  p.addDouble(rX(rc));  // X
+  p.addDouble(rY(rc));  // Y
+  p.addDouble(stance);  // stance
+  p.addDouble(rZ(rc));  // Z
+  p.addFloat(yaw);      // yaw
+  p.addFloat(pitch);    // pitch
+  p.addBool(on_ground); // on ground
+  return p.craft();
+}
+
 void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count, int16_t uses)
 {
   PacketCrafter p(PACKET_SET_SLOT);
@@ -723,4 +747,16 @@ void GameStateManager::packetSCSpawnEntity(int32_t eid, int32_t e, const Fractio
   p.addAngleAsByte(pitch);
   p.addInt16(item_id);
   m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
+std::string GameStateManager::rawPacketSCEntityTeleport(int32_t e, const FractionalCoords & fc, double yaw, double pitch)
+{
+  PacketCrafter p(PACKET_ENTITY_TELEPORT);
+  p.addInt32(e);
+  p.addInt32(fX(fc));
+  p.addInt32(fY(fc));
+  p.addInt32(fZ(fc));
+  p.addAngleAsByte(yaw);
+  p.addAngleAsByte(pitch);
+  return p.craft();
 }
