@@ -301,6 +301,9 @@ void GameStateManager::packetCSPlayerLook(int32_t eid, float yaw, float pitch, b
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received PlayerLook from #" << eid << ": [" << yaw << ", " << pitch << ", " << ground << "]" << std::endl;
 
   if (m_states.find(eid) == m_states.end()) return;
+
+  m_states[eid]->pitch = pitch;
+  m_states[eid]->yaw   = yaw;
 }
 
 void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool ground)
@@ -312,6 +315,8 @@ void GameStateManager::packetCSPlayerPositionAndLook(int32_t eid, double X, doub
 
   const RealCoords rc(X, Y, Z);
   m_states[eid]->position = rc;
+  m_states[eid]->pitch    = pitch;
+  m_states[eid]->yaw      = yaw;
 
   handlePlayerMove(eid);
 
@@ -506,6 +511,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
 
     sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), 0, 0, 0), eid);
+    // We should also make all the existing entities known to the player...
 
     player.setInv(37, ITEM_DiamondPickaxe, 1, 0);
     player.setInv(36, BLOCK_Torch, 50, 0);
@@ -705,7 +711,7 @@ void GameStateManager::packetSCChatMessage(int32_t eid, std::string message)
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
-void GameStateManager::packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, uint8_t rot, uint8_t pitch, uint16_t item_id)
+void GameStateManager::packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, double rot, double pitch, uint16_t item_id)
 {
   PacketCrafter p(PACKET_NAMED_ENTITY_SPAWN);
   p.addInt32(e);
@@ -713,8 +719,8 @@ void GameStateManager::packetSCSpawnEntity(int32_t eid, int32_t e, const Fractio
   p.addInt32(fX(fc));
   p.addInt32(fY(fc));
   p.addInt32(fZ(fc));
-  p.addInt8(rot);
-  p.addInt8(pitch);
+  p.addAngleAsByte(rot);
+  p.addAngleAsByte(pitch);
   p.addInt16(item_id);
   m_connection_manager.sendDataToClient(eid, p.craft());
 }

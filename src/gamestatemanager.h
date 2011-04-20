@@ -21,6 +21,8 @@ public:
 
   /// The current position of the player
   RealCoords position;
+  float pitch;
+  float yaw;
 
   /// The chunks that we've sent to the player
   std::unordered_set<ChunkCoords, PairHash<int32_t, int32_t>> known_chunks;
@@ -151,7 +153,7 @@ public:
   void packetSCCollectItem(int32_t eid, int32_t collectee_eid, int32_t collector_eid);
   void packetSCDestroyEntity(int32_t eid, int32_t e);
   void packetSCChatMessage(int32_t eid, std::string message);
-  void packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, uint8_t rot, uint8_t pitch, uint16_t item_id);
+  void packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, double rot, double pitch, uint16_t item_id);
 
 private:
   ConnectionManager & m_connection_manager;

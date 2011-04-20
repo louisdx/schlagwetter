@@ -12,7 +12,9 @@ int32_t GenerateEID() { return ++EID_POOL; }
 
 PlayerState::PlayerState(EState s)
   :
-  state(s), position(), known_chunks(),
+  state(s),
+  position(), pitch(0), yaw(0),
+  known_chunks(),
   inventory_ids(),
   inventory_damage(),
   inventory_count()
@@ -372,7 +374,11 @@ void GameStateManager::reactToBlockDestruction(const WorldCoords & wc)
 
 void GameStateManager::handlePlayerMove(int32_t eid)
 {
-  auto interesting_blocks = m_map.blockAlerts().equal_range(getWorldCoords(m_states[eid]->position));
+  const PlayerState & player = *m_states[eid];
+
+  sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), player.yaw, player.pitch, 0), eid);
+
+  auto interesting_blocks = m_map.blockAlerts().equal_range(getWorldCoords(player.position));
 
   for (auto it = interesting_blocks.first; it != interesting_blocks.second; ++it)
   {
