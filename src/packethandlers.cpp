@@ -693,3 +693,11 @@ void GameStateManager::packetSCDestroyEntity(int32_t eid, int32_t e)
   p.addInt32(e);                // item EID
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
+
+void GameStateManager::packetSCChatMessage(int32_t eid, std::string message)
+{
+  PacketCrafter p(PACKET_CHAT_MESSAGE);
+  p.addString(message);
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+

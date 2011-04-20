@@ -190,10 +190,14 @@ void Server::processSchedule200ms(int dt)
   {
     game_seconds = (m_map.tick_counter % 24000) / 20;
 
-    if (PROGRAM_OPTIONS.count("verbose")) 
-      std::cout << "The game time is " << std::dec << std::setw(2) << std::setfill('0')
-                << game_seconds / 60 << ":" << std::setw(2) << std::setfill('0') << game_seconds % 60
-                << "." << std::endl;
+    std::stringstream ss;
+    ss  << "The game time is " << std::dec << std::setw(2) << std::setfill('0') << game_seconds / 60
+        << ":" << std::setw(2) << std::setfill('0') << game_seconds % 60 << ".";
+
+    if (PROGRAM_OPTIONS.count("verbose")) std::cout << ss.str() << std::endl;
+
+    if (game_seconds % 60 == 0)
+      m_gsm.sendToAll(std::bind(&GameStateManager::packetSCChatMessage, &m_gsm, std::placeholders::_1, ss.str()));
   }
 
   const long long int work_time = clockTick() - timer;

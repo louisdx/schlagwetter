@@ -6,6 +6,7 @@
 #include <deque>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include "syncqueue.h"
 
@@ -19,36 +20,69 @@ typedef struct _twobytestring_t
 
 typedef union t_codepoint_tmp
 {
-  char c[4];
-  unsigned char u[4];
-  unsigned int i;
+  char c[7];
+  unsigned char u[7];
 } t_codepoint;
 
 /** Creates a UTF-8 representation of a single unicode codepoint.
+ *  Implements the Prosser-Thompson scheme, szOut.c is always null-terminated.
  */
 void codepointToUTF8(unsigned int cp, t_codepoint * szOut)
 {
-  size_t len = 0;
+  std::fill(szOut->u, szOut->u + 7, 0);
 
-  szOut->u[0] = szOut->u[1] = szOut->u[2] = szOut->u[3] = 0;
+  // We don't need this. It's just for information.
+  /*
+  if      (cp < 0x00000080) len = 1;
+  else if (cp < 0x00000800) len = 2;
+  else if (cp < 0x00010000) len = 3;
+  else if (cp < 0x04000000) len = 4;
+  else if (cp < 0x80000000) len = 5;
+  else                      len = 6;
+  */
 
-  if (cp < 0x0080) len++;
-  else if (cp < 0x0800) len += 2;
-  else len += 3;
+  size_t i = 0;
 
-  int i = 0;
-  if (cp < 0x0080)
-    szOut->u[i++] = (unsigned char) cp;
-  else if (cp < 0x0800)
+  if (cp < 0x80) szOut->u[i] = cp & 0x7F;
+
+  else if (cp < 0x800)
   {
-    szOut->u[i++] = 0xc0 | (( cp ) >> 6 );
-    szOut->u[i++] = 0x80 | (( cp ) & 0x3F );
+    szOut->u[i++] = 0xc0 | (cp >> 6);
+    szOut->u[i++] = 0x80 | (cp & 0x3F);
   }
+
+  else if (cp < 0x10000)
+  {
+    szOut->u[i++] = 0xE0 | ( cp >> 12         );
+    szOut->u[i++] = 0x80 | ((cp >>  6) & 0x3F );
+    szOut->u[i++] = 0x80 | ( cp        & 0x3F );
+  }
+
+  else if (cp < 0x4000000)
+  {
+    szOut->u[i++] = 0xF0 | ( cp >> 18         );
+    szOut->u[i++] = 0x80 | ((cp >> 12) & 0x3F );
+    szOut->u[i++] = 0x80 | ((cp >>  6) & 0x3F );
+    szOut->u[i++] = 0x80 | ( cp        & 0x3F );
+  }
+
+  else if (cp < 0x80000000)
+  {
+    szOut->u[i++] = 0xF8 | ( cp >> 24         );
+    szOut->u[i++] = 0x80 | ((cp >> 18) & 0x3F );
+    szOut->u[i++] = 0x80 | ((cp >> 12) & 0x3F );
+    szOut->u[i++] = 0x80 | ((cp >>  6) & 0x3F );
+    szOut->u[i++] = 0x80 | ( cp        & 0x3F );
+  }
+
   else
   {
-    szOut->u[i++] = 0xE0 | (( cp ) >> 12 );
-    szOut->u[i++] = 0x80 | (( ( cp ) >> 6 ) & 0x3F );
-    szOut->u[i++] = 0x80 | (( cp ) & 0x3F );
+    szOut->u[i++] = 0xFC | ( cp >> 30         );
+    szOut->u[i++] = 0x80 | ((cp >> 24) & 0x3F );
+    szOut->u[i++] = 0x80 | ((cp >> 18) & 0x3F );
+    szOut->u[i++] = 0x80 | ((cp >> 12) & 0x3F );
+    szOut->u[i++] = 0x80 | ((cp >>  6) & 0x3F );
+    szOut->u[i++] = 0x80 | ( cp        & 0x3F );
   }
 }
 

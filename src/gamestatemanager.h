@@ -149,6 +149,7 @@ public:
   inline void packetSCMapChunk(int32_t eid, const ChunkCoords & cc, const std::string & data) { packetSCMapChunk(eid, 16 * cX(cc), 0, 16 * cZ(cc), data); }
   void packetSCCollectItem(int32_t eid, int32_t collectee_eid, int32_t collector_eid);
   void packetSCDestroyEntity(int32_t eid, int32_t e);
+  void packetSCChatMessage(int32_t eid, std::string message);
 
 private:
   ConnectionManager & m_connection_manager;
