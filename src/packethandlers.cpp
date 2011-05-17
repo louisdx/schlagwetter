@@ -535,6 +535,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     player.setInv(40, BLOCK_Stone, 64, 0);
     player.setInv(41, BLOCK_Glass, 64, 0);
     player.setInv(42, BLOCK_WoodenPlank, 64, 0);
+    player.setInv(44, BLOCK_Obsidian, 64, 0);
     player.setInv(43, ITEM_Bucket, 1, 0);
     sendInventoryToPlayer(eid);
   }
