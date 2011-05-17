@@ -12,6 +12,7 @@ set(SOURCES
   main.cpp
   map.cpp
   packethandlers.cpp
+  random.cpp
   serializer.cpp
   server.cpp
   ui.cpp

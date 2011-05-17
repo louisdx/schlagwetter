@@ -9,6 +9,7 @@
 #include "cmdlineoptions.h"
 #include "ui.h"
 #include "filereader.h"
+#include "random.h"
 
 po::variables_map PROGRAM_OPTIONS;
 namespace fs = boost::filesystem;
@@ -51,6 +52,8 @@ int main(int argc, char* argv[])
     std::cout << "The specified input files (.idx and .dat) do not exist." << std::endl;
     return 0;
   }
+
+  initPRNG();
 
 #if USE_SIGNALS > 0
   signal(SIGINT, sigINTHandler);
