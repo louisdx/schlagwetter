@@ -290,6 +290,31 @@ uint16_t GameStateManager::updatePlayerInventory(int32_t eid, int16_t type, uint
 }
 
 
+bool isPassable(EBlockItem e)
+{
+  // Whether or not things can pass through this block
+
+  switch (e)
+    {
+    case BLOCK_Torch:
+    case BLOCK_RedstoneTorchOff:
+    case BLOCK_RedstoneTorchOn:
+    case BLOCK_RedstoneWire:
+    case BLOCK_Water:
+    case BLOCK_StationaryWater:
+    case BLOCK_Air:
+    case BLOCK_Rails:
+    case BLOCK_WoodenDoor:
+    case BLOCK_IronDoor:
+    case BLOCK_SignPost:
+    case BLOCK_WallSign:
+      return true;
+
+    default:
+      return false;
+    }
+}
+
 bool isStackable(EBlockItem e)
 {
   // See below; I don't think this is an official feature.
@@ -454,10 +479,10 @@ bool GameStateManager::fall(WorldCoords & wbelow)
       return false; // won't even spawn an item that's died.
     }
 
-    if (chunk.blockType(getLocalCoords(wbelow)) != BLOCK_Air) break;
+    if (!isPassable(EBlockItem(chunk.blockType(getLocalCoords(wbelow))))) break;
   }
 
-  wbelow += BLOCK_YPLUS; // wbelow is now the last air block
+  wbelow += BLOCK_YPLUS; // wbelow is now the last passable block
 
   return true;
 }
