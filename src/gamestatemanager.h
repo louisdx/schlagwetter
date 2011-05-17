@@ -97,7 +97,7 @@ public:
   /// of items that couldn't be allocated (if the inventory is full).
   uint16_t updatePlayerInventory(int32_t eid, int16_t type, uint16_t count, uint16_t damage, bool send_packets = true);
 
-  enum EBlockPlacement { OK_NO_META, OK_WITH_META, CANNOT_PLACE };
+  enum EBlockPlacement { OK_NO_META, OK_WITH_META, CANNOT_PLACE, CANNOT_PLACE_AIRFORCE };
   EBlockPlacement blockPlacement(int32_t eid, const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta);
   void reactToSuccessfulDig(const WorldCoords & wc, EBlockItem block_type);
   void reactToToggle(const WorldCoords & wc, EBlockItem b);

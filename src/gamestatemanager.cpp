@@ -289,6 +289,21 @@ uint16_t GameStateManager::updatePlayerInventory(int32_t eid, int16_t type, uint
   return count;
 }
 
+bool isBuildable(EBlockItem e)
+{
+  // Whether or not a new block may be placed in this block
+
+  switch (e)
+    {
+    case BLOCK_Water:
+    case BLOCK_StationaryWater:
+    case BLOCK_Air:
+      return true;
+
+    default:
+      return false;
+    }
+}
 
 bool isPassable(EBlockItem e)
 {
@@ -591,10 +606,9 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
     const WorldCoords & wc, Direction dir, BlockItemInfoMap::const_iterator it, uint8_t & meta)
 {
   // I believe we are never allowed to place anything on an already occupied block.
-  // If that's false, we have to refactor this check.
+  // If that's false, we have to refactor this check. Water counts as unoccupied.
 
-  if (!m_map.haveChunk(getChunkCoords(wc + dir)) ||
-      EBlockItem(m_map.chunk(getChunkCoords(wc + dir)).blockType(getLocalCoords(wc + dir))) != BLOCK_Air)
+  if (!m_map.haveChunk(getChunkCoords(wc + dir)) || !isBuildable(EBlockItem(m_map.chunk(getChunkCoords(wc + dir)).blockType(getLocalCoords(wc + dir)))))
   {
     std::cout << "Sorry, cannot place object on occupied block at " << wc + dir << "." << std::endl;
     return CANNOT_PLACE;
@@ -669,10 +683,42 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
 
       switch (d)
       {
-      case BLOCK_XPLUS:  meta = HINGE_NE; break;
-      case BLOCK_XMINUS: meta = HINGE_SW; break;
-      case BLOCK_ZPLUS:  meta = HINGE_SE; break;
-      case BLOCK_ZMINUS: meta = HINGE_NW; break;
+      case BLOCK_XPLUS:
+        {
+          if (m_map.haveChunk(getChunkCoords(wc + dir + BLOCK_ZPLUS)) &&
+              !isBuildable(EBlockItem(m_map.chunk(getChunkCoords(wc + dir + BLOCK_ZPLUS)).blockType(getLocalCoords(wc + dir + BLOCK_ZPLUS)))))
+            meta = HINGE_NW | SWUNG;
+          else
+            meta = HINGE_NE;
+          break;
+        }
+      case BLOCK_XMINUS:
+        {
+          if (m_map.haveChunk(getChunkCoords(wc + dir + BLOCK_ZMINUS)) &&
+              !isBuildable(EBlockItem(m_map.chunk(getChunkCoords(wc + dir + BLOCK_ZMINUS)).blockType(getLocalCoords(wc + dir + BLOCK_ZMINUS)))))
+            meta = HINGE_SE | SWUNG;
+          else
+            meta = HINGE_SW;
+          break;
+        }
+      case BLOCK_ZPLUS:
+        {
+          if (m_map.haveChunk(getChunkCoords(wc + dir + BLOCK_XMINUS)) &&
+              !isBuildable(EBlockItem(m_map.chunk(getChunkCoords(wc + dir + BLOCK_XMINUS)).blockType(getLocalCoords(wc + dir + BLOCK_XMINUS)))))
+            meta = HINGE_NE | SWUNG;
+          else
+            meta = HINGE_SE;
+          break;
+        }
+      case BLOCK_ZMINUS:
+        {
+          if (m_map.haveChunk(getChunkCoords(wc + dir + BLOCK_XPLUS)) &&
+              !isBuildable(EBlockItem(m_map.chunk(getChunkCoords(wc + dir + BLOCK_XPLUS)).blockType(getLocalCoords(wc + dir + BLOCK_XPLUS)))))
+            meta = HINGE_SW | SWUNG;
+          else
+            meta = HINGE_NW;
+          break;
+        }
       default: return CANNOT_PLACE;
       }
 

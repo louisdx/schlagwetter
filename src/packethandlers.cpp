@@ -222,9 +222,14 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
             sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, 0));
           }
         }
-        else // CANNOT_PLACE
+        else if (bp_res == CANNOT_PLACE)
+        {
+        }
+        else if (bp_res == CANNOT_PLACE_AIRFORCE)
         {
           // Naughty client gets slapped on the fingers.
+          // This means the server overrides the client decision, so we change the official behaviour.
+          // Should not generally be needed for the official client.
           packetSCBlockChange(eid, wc, BLOCK_Air, 0);
         }
       }
