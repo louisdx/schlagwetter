@@ -13,8 +13,10 @@
 po::variables_map PROGRAM_OPTIONS;
 namespace fs = boost::filesystem;
 
-
+#ifndef USE_SIGNALS
 #define USE_SIGNALS 0
+#endif
+
 #if USE_SIGNALS > 0
 #include <signal.h>
 bool sig_flag = true;
