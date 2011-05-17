@@ -59,7 +59,7 @@ public:
 
   inline void save() { m_serializer.serialize(); }
 
-  inline void load(std::string basename) { m_serializer.deserialize(basename); }
+  inline void load(const std::string & basename) { m_serializer.deserialize(basename); }
 
   unsigned long long int tick_counter;
 

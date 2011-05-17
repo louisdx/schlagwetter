@@ -111,6 +111,9 @@ public:
 
   std::function<void(unsigned int)> sleepMilli;
 
+  /// Loading and saving player states to disk.
+  void serializePlayer(int32_t eid);
+  void deserializePlayer(int32_t eid);
 
   /* Incoming packet handlers */
 

@@ -7,6 +7,7 @@ set(SOURCES
   constants.cpp
   filereader.cpp
   gamestatemanager.cpp
+  gamestateserializer.cpp
   generator.cpp
   inputparser.cpp
   main.cpp

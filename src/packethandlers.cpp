@@ -393,24 +393,6 @@ void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
 
   m_connection_manager.setNickname(eid, name);
 
-  /*
-  std::string nickhash = sha1::calcToString(name.data(), name.length());
-
-  if (PROGRAM_OPTIONS.count("verbose")) 
-  {
-    std::cout << "Player nickname is \"" << name << "\", hash: 0x" << std::hex << std::uppercase;
-    for (size_t i = 0; i < nickhash.length(); ++i)
-      std::cout << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(nickhash[i]);
-    std::cout << "." << std::endl;
-  }
-  */
-
-  std::string nickhash = generateHash(name);
-  std::cout << "Player nickname is \"" << name << "\", hash: 0x" << std::hex << std::uppercase;
-  for (size_t i = 4; i < nickhash.length(); ++i)
-    std::cout << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(nickhash[i]);
-  std::cout << ", salt: 0x" << getSalt(nickhash) << std::endl;
-
   auto it = m_states.find(eid);
 
   if (it != m_states.end())
@@ -442,7 +424,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
   if (m_states.find(eid) == m_states.end()) return;
 
-  std::string name = m_connection_manager.getNickname(eid);
+  const std::string name = m_connection_manager.getNickname(eid);
 
   if (name != username)
   {
@@ -464,108 +446,32 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
   m_states[eid]->state = PlayerState::POSTLOGIN;
 
-  if (!PROGRAM_OPTIONS["testfile"].as<std::string>().empty())
+  deserializePlayer(eid);
+
+  PlayerState & player = *m_states[eid];
+
+  player.state = PlayerState::READYTOSPAWN;
+
+  const WorldCoords start_pos = getWorldCoords(player.position);
+
+  packetSCSpawn(eid, start_pos);
+
+  sendMoreChunksToPlayer(eid);
+
+  packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
+
+  // Inform all others that this player has spawned.
+  sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), 0, 0, 0), eid);
+
+  // Inform this player of all the other players' positions. (Apparently one should only do this with players that are in range.)
   {
-    RegionFile f(PROGRAM_OPTIONS["testfile"].as<std::string>());
-    f.parse();
-
-    std::vector<ChunkCoords> ac, bc;
-
-    for (size_t x = 0; x < 32; ++x)
-      for (size_t z = 0; z < 32; ++z)
-        if (f.chunkSize(x, z) != 0) ac.push_back(ChunkCoords(x, z));
-
-    /// Load all available chunks to memory, but only send the first 50 to the client.
-
-    WorldCoords start_pos(100, 120, 78);
-
-    std::sort(ac.begin(), ac.end(), L1DistanceFrom(getChunkCoords(start_pos))); // L1-sorted by distance from centre.
-    size_t counter = 0;
-
-    for (auto i = ac.begin(); i != ac.end(); ++i, ++counter)
-    {
-      std::string chuck = f.getCompressedChunk(cX(*i), cZ(*i));
-      if (chuck == "") continue;
-
-      auto c = NBTExtract(reinterpret_cast<const unsigned char*>(chuck.data()), chuck.length(), *i);
-      m_map.insertChunk(c);
-        
-      if (counter < 100)
-      {
-        bc.push_back(*i);
-      }
-    }
-
-    for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
-    {
-      m_map.ensureChunkIsReadyForImmediateUse(*i);
-    }
-
-    for (auto i = bc.begin(); i != bc.end(); ++i, ++counter)
-    {
-      m_map.chunk(*i).spreadAllLight(m_map);
-
-      // Not sure if the client has a problem with data coming in too fast...
-      sleepMilli(10);
-
-      std::pair<const unsigned char *, size_t> p = m_map.chunk(*i).compress_beefedup();
-      packetSCPreChunk(eid, *i, true);
-
-      if (p.second > 18)
-        packetSCMapChunk(eid, p);
-      else
-        packetSCMapChunk(eid, *i, m_map.chunk(*i).compress());
-    }
-
-    m_states[eid]->state = PlayerState::READYTOSPAWN;
-
-    packetSCSpawn(eid, start_pos);
-    packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, false);
+    std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
+    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+      if (it->first != eid)
+        packetSCSpawnEntity(eid, it->first, getFractionalCoords(it->second->position), it->second->yaw, it->second->pitch, 0);
   }
-  else
-  {
-    PlayerState & player = *m_states[eid];
 
-    const WorldCoords start_pos(8, 80, 8);
-    //const WorldCoords start_pos(16, 66, -32);
-
-    player.position = RealCoords(wX(start_pos) + 0.5, wY(start_pos) + 0.5, wZ(start_pos) + 0.5);
-    player.stance   = wY(start_pos) + 0.5;
-
-    player.state = PlayerState::READYTOSPAWN;
-
-    packetSCSpawn(eid, start_pos);
-
-    sendMoreChunksToPlayer(eid);
-
-    packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
-
-    // Inform all others that this player has spawned.
-    sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), 0, 0, 0), eid);
-
-    // Inform this player of all the other players' positions. (Apparently one should only do this with players that are in range.)
-    {
-      std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
-      for (auto it = m_states.begin(); it != m_states.end(); ++it)
-        if (it->first != eid)
-          packetSCSpawnEntity(eid, it->first, getFractionalCoords(it->second->position), it->second->yaw, it->second->pitch, 0);
-    }
-
-    player.setInv(37, ITEM_DiamondPickaxe, 1, 0);
-    player.setInv(36, BLOCK_Torch, 50, 0);
-    player.setInv(29, ITEM_Coal, 50, 0);
-    player.setInv(21, BLOCK_Cobblestone, 60, 0);
-    player.setInv(22, BLOCK_IronOre, 60, 0);
-    player.setInv(30, BLOCK_Wood, 50, 0);
-    player.setInv(38, ITEM_DiamondShovel, 1, 0);
-    player.setInv(39, BLOCK_BrickBlock, 64, 0);
-    player.setInv(40, BLOCK_Stone, 64, 0);
-    player.setInv(41, BLOCK_Glass, 64, 0);
-    player.setInv(42, BLOCK_WoodenPlank, 64, 0);
-    player.setInv(44, BLOCK_Obsidian, 64, 0);
-    player.setInv(43, ITEM_Bucket, 1, 0);
-    sendInventoryToPlayer(eid);
-  }
+  sendInventoryToPlayer(eid);
 }
 
 void GameStateManager::packetCSChatMessage(int32_t eid, std::string message)

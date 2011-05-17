@@ -4,6 +4,7 @@
 
 #include <deque>
 #include <mutex>
+#include <iostream>
 
 /*  Class SyncQueue: Thread-safe queueing. Modelled on std::deque,
  *  but always adds at the back and removes from the front.
