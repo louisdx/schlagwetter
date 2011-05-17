@@ -17,7 +17,8 @@ PlayerState::PlayerState(EState s)
   known_chunks(),
   inventory_ids(),
   inventory_damage(),
-  inventory_count()
+  inventory_count(),
+  holding(0)
 {
   std::fill(inventory_ids.begin(), inventory_ids.end(), -1);
   std::fill(inventory_damage.begin(), inventory_damage.end(), 0);
@@ -469,7 +470,7 @@ void GameStateManager::handlePlayerMove(int32_t eid)
 }
 
 
-/// A helper function to establish the nearest non-air block below. Returns false if the item dies.
+/// A helper function to establish the nearest non-passable block below. Returns false if the item dies.
 /// i.e. by falling out of the world or into fire or a cactus. The argument is expected to be the
 /// initial position and is modified to the final resting position.
 
@@ -518,7 +519,7 @@ void GameStateManager::spawnSomething(uint16_t type, uint8_t number, uint8_t dam
 }
 
 
-/// Items dropping from destroyed blocks is a client-preempted
+/// Items that rest on a block that gets destroyed fall; this is a client-preempted
 /// reaction that we must track.
 
 void GameStateManager::makeItemsDrop(const WorldCoords & wc)

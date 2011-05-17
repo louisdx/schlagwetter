@@ -34,11 +34,11 @@ public:
   /// Meta-data information on the direction from the user to wc.
   Direction getRelativeXZDirection(const RealCoords & rc);
 
-
   /// The inventory.
   std::array< int16_t, 45> inventory_ids;
   std::array<uint16_t, 45> inventory_damage;
   std::array<uint16_t, 45> inventory_count;
+  size_t                   holding; // 0-8, the inventory slot currently held in the hand
 
   inline void setInv(size_t slot, int16_t type, uint16_t count, uint16_t damage)
   {
@@ -46,7 +46,6 @@ public:
     inventory_count[slot]  = count;
     inventory_damage[slot] = damage;
   }
-
 };
 
 class GameStateManager
@@ -161,6 +160,7 @@ public:
   void packetSCChatMessage(int32_t eid, std::string message);
   void packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, double rot, double pitch, uint16_t item_id);
   std::string rawPacketSCEntityTeleport(int32_t e, const FractionalCoords & fc, double yaw, double pitch);
+  std::string rawPacketSCHoldingChange(int16_t slot);
 
 private:
   ConnectionManager & m_connection_manager;

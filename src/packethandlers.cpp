@@ -343,7 +343,10 @@ void GameStateManager::packetCSHoldingChange(int32_t eid, int16_t slot)
 {
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received HoldingChange from #" << std::dec << eid << ": " << slot << std::endl;
 
-  if (m_states.find(eid) == m_states.end()) return;
+  if (m_states.find(eid) == m_states.end() || slot < 0 || slot > 8) return;
+
+  m_states[eid]->holding = slot;
+  sendRawToAllExceptOne(rawPacketSCHoldingChange(slot), eid);
 }
 
 void GameStateManager::packetCSArmAnimation(int32_t eid, int32_t e, int8_t animate)
@@ -764,5 +767,12 @@ std::string GameStateManager::rawPacketSCEntityTeleport(int32_t e, const Fractio
   p.addInt32(fZ(fc));
   p.addAngleAsByte(yaw);
   p.addAngleAsByte(pitch);
+  return p.craft();
+}
+
+std::string GameStateManager::rawPacketSCHoldingChange(int16_t slot)
+{
+  PacketCrafter p(PACKET_HOLDING_CHANGE);
+  p.addInt16(slot);
   return p.craft();
 }
