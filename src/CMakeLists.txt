@@ -15,6 +15,7 @@ set(SOURCES
   random.cpp
   serializer.cpp
   server.cpp
+  sha1.cpp
   ui.cpp
 )
 

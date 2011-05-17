@@ -12,6 +12,8 @@ Particular contribution credits are in order:
 
 - Ditto GNU Readline, if you enable it.
 
+- The SHA1 implementation is Micael Hildenborg's smallsha1, http://code.google.com/p/smallsha1/.
+
 - The main inspiration, and hopefully large parts of the code,
   (will) come from the mineserver project: https://github.com/fador/mineserver
 

@@ -4,6 +4,7 @@
 #include "cmdlineoptions.h"
 #include "map.h"
 #include "filereader.h"
+#include "salt.h"
 
 
 /******************                  ****************
@@ -391,6 +392,24 @@ void GameStateManager::packetCSHandshake(int32_t eid, const std::string & name)
   if (PROGRAM_OPTIONS.count("verbose")) std::cout << "GSM: Received Handshake from #" << std::dec << eid << ": " << name << std::endl;
 
   m_connection_manager.setNickname(eid, name);
+
+  /*
+  std::string nickhash = sha1::calcToString(name.data(), name.length());
+
+  if (PROGRAM_OPTIONS.count("verbose")) 
+  {
+    std::cout << "Player nickname is \"" << name << "\", hash: 0x" << std::hex << std::uppercase;
+    for (size_t i = 0; i < nickhash.length(); ++i)
+      std::cout << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(nickhash[i]);
+    std::cout << "." << std::endl;
+  }
+  */
+
+  std::string nickhash = generateHash(name);
+  std::cout << "Player nickname is \"" << name << "\", hash: 0x" << std::hex << std::uppercase;
+  for (size_t i = 4; i < nickhash.length(); ++i)
+    std::cout << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(nickhash[i]);
+  std::cout << ", salt: 0x" << getSalt(nickhash) << std::endl;
 
   auto it = m_states.find(eid);
 
