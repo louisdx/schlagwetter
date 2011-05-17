@@ -2,14 +2,16 @@
 #define H_GENERATOR
 
 #include <cstdint>
+#include <memory>
 #include <libnoise/noise.h>
+
 #include "constants.h"
 #include "types.h"
 
 class NoiseGenerator
 {
 public:
-  explicit NoiseGenerator(int seed = 137337, bool addCaveLava = true, unsigned int caveSize = 30, double caveThreshold = 0.5);
+  explicit NoiseGenerator(bool addCaveLava = true, unsigned int caveSize = 30, double caveThreshold = 0.5);
 
   inline void addCaves(uint8_t & block, const WorldCoords & wc)
   {
@@ -26,7 +28,7 @@ private:
   double m_caveThreshold;
 };
 
-extern NoiseGenerator NG;
+extern std::shared_ptr<NoiseGenerator> pNG;
 
 class Chunk;
 

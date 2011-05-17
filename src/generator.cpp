@@ -1,16 +1,31 @@
 #include "generator.h"
+#include "random.h"
+#include "cmdlineoptions.h"
 #include "map.h"
 #include "packetcrafter.h"
 
-NoiseGenerator NG;
+std::shared_ptr<NoiseGenerator> pNG;
 
-NoiseGenerator::NoiseGenerator(int seed, bool addCaveLava, unsigned int caveSize, double caveThreshold)
+NoiseGenerator::NoiseGenerator(bool addCaveLava, unsigned int caveSize, double caveThreshold)
   : caveNoise(),
     ridgedMultiNoise(),
     m_addCaveLava(addCaveLava),
     m_caveSize(caveSize),
     m_caveThreshold(caveThreshold)
 {
+  int seed = 137337;
+  seed = PROGRAM_OPTIONS["seed"].as<int>();
+
+  if (seed != -1)
+  {
+    std::cout << "Global map seed set by user (" << seed << "), thank you." << std::endl;
+  }
+  else
+  {
+    seed = uniformUINT32();
+    std::cout << "Global map seed not set, generating: " << seed << std::endl;
+  }
+
   caveNoise.SetSeed(seed + 22);
   caveNoise.SetFrequency(1.0 / m_caveSize);
   caveNoise.SetOctaveCount(4);
@@ -38,7 +53,7 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
     for (int bZ = 0; bZ < 16; ++bZ)
     {
       //heightmap[(bZ << 4) + bX] = currentHeight = (uint8_t)((NG.ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);
-      uint8_t currentHeight = (uint8_t)((NG.ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);
+      uint8_t currentHeight = (uint8_t)((pNG->ridgedMultiNoise.GetValue(bX + 16 * cX(cc), 0, bZ + 16 * cZ(cc)) * 15) + 64);
 
       const uint8_t stoneHeight = (currentHeight * 94) / 100;
       const uint8_t ymax = std::max(currentHeight, sea_level);
@@ -61,7 +76,7 @@ void generateWithNoise(Chunk & c, const ChunkCoords & cc)
             c.blockType(lc) = BLOCK_Stone;
 
             // Add caves
-            if (add_caves) NG.addCaves(c.blockType(lc), getWorldCoords(lc, cc));
+            if (add_caves) pNG->addCaves(c.blockType(lc), getWorldCoords(lc, cc));
           }
           else
           {

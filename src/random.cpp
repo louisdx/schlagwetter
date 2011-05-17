@@ -4,6 +4,7 @@
 #include <ctime>
 
 #include "random.h"
+#include "generator.h"
 
 uint32_t seedval = 0;
 
@@ -26,4 +27,6 @@ void initPRNG()
   std::cout << "Seeding the PRNG with: 0x" << std::hex << seedval << std::endl;
 
   prng.seed(seedval);
+
+  pNG.reset(new NoiseGenerator);
 }
