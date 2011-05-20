@@ -11,7 +11,7 @@
 class NoiseGenerator
 {
 public:
-  explicit NoiseGenerator(bool addCaveLava = true, unsigned int caveSize = 30, double caveThreshold = 0.5);
+  explicit NoiseGenerator(int mapseed, bool addCaveLava = true, unsigned int caveSize = 30, double caveThreshold = 0.5);
 
   inline void addCaves(uint8_t & block, const WorldCoords & wc)
   {

@@ -16,7 +16,7 @@ class Map
 {
 public:
 
-  Map(unsigned long long int ticks);
+  Map(unsigned long long int ticks, int seed);
 
   struct BlockAlert
   {
@@ -43,6 +43,9 @@ public:
   inline const AlertMap & blockAlerts() const { return m_block_alerts; }
   inline       AlertMap & blockAlerts()       { return m_block_alerts; }
 
+  inline int seed() const { return m_seed; }
+  inline int & seed()     { return m_seed; }
+
   /// If no chunk exists at cc, load from disk or create a random one if none exists.
   void ensureChunkIsLoaded(const ChunkCoords & cc);
 
@@ -68,6 +71,8 @@ private:
   ItemMap    m_items;
   AlertMap   m_block_alerts;
   Serializer m_serializer;
+
+  int        m_seed;
 };
 
 #endif

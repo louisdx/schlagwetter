@@ -6,10 +6,12 @@
 #include <boost/noncopyable.hpp>
 #include "chunk.h"
 
+class Map;
+
 class Serializer : private boost::noncopyable
 {
 public:
-  Serializer(ChunkMap & chunk_map);
+  Serializer(ChunkMap & chunk_map, Map & map);
 
   bool haveChunk(const ChunkCoords & cc);
   ChunkMap::mapped_type loadChunk(const ChunkCoords & cc);
@@ -20,6 +22,7 @@ public:
 
 private:
   ChunkMap & m_chunk_map;
+  Map      & m_map;
 };
 
 

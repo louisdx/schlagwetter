@@ -6,6 +6,7 @@
 #include "server.h"
 #include "inputparser.h"
 #include "constants.h"
+#include "random.h"
 
 // For PROGRAM_OPTIONS and ambientChunks(), respectively, if we precompute chunks.
 #include "cmdlineoptions.h"
@@ -34,7 +35,7 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   m_server_should_stop(false),
   m_connection_manager(m_io_service),
   m_next_connection(new Connection(m_io_service, m_connection_manager)),
-  m_map(13400 /* eve */),
+  m_map(13400 /* eve */, PROGRAM_OPTIONS["seed"].as<int>()),
   m_gsm(std::bind(&Server::sleepMilli, this, std::placeholders::_1), m_connection_manager, m_map),
   m_input_parser(m_gsm),
   m_deadline_timer(m_io_service),
@@ -51,9 +52,12 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
   if (!PROGRAM_OPTIONS["load"].as<std::string>().empty())
   {
     m_map.load(PROGRAM_OPTIONS["load"].as<std::string>());
+    initPRNG(m_map.seed());
   }
   else
   {
+    initPRNG(PROGRAM_OPTIONS["seed"].as<int>());
+
     std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), PLAYER_CHUNK_HORIZON);
     std::cout << "Precomputing map (" << std::dec << ac.size() << " chunks):" << std::endl << "  Generating terrain: ";
 

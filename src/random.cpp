@@ -12,7 +12,7 @@ MyRNG prng;
 
 std::uniform_int<uint32_t> m_uniformUINT32(0, std::numeric_limits<uint32_t>::max());
 
-void initPRNG()
+void initPRNG(int mapseed)
 {
   std::ifstream urandom("/dev/urandom");
   if (urandom)
@@ -24,9 +24,9 @@ void initPRNG()
     seedval = std::time(NULL);
   }
 
-  std::cout << "Seeding the PRNG with: 0x" << std::hex << seedval << std::endl;
+  std::cout << "Seeding the PRNG with: 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(8) << seedval << std::endl;
 
   prng.seed(seedval);
 
-  pNG.reset(new NoiseGenerator);
+  pNG.reset(new NoiseGenerator(mapseed));
 }

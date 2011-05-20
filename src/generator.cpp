@@ -6,7 +6,7 @@
 
 std::shared_ptr<NoiseGenerator> pNG;
 
-NoiseGenerator::NoiseGenerator(bool addCaveLava, unsigned int caveSize, double caveThreshold)
+NoiseGenerator::NoiseGenerator(int mapseed, bool addCaveLava, unsigned int caveSize, double caveThreshold)
   : caveNoise(),
     ridgedMultiNoise(),
     m_addCaveLava(addCaveLava),
@@ -14,16 +14,16 @@ NoiseGenerator::NoiseGenerator(bool addCaveLava, unsigned int caveSize, double c
     m_caveThreshold(caveThreshold)
 {
   int seed = 137337;
-  seed = PROGRAM_OPTIONS["seed"].as<int>();
+  seed = mapseed;
 
   if (seed != -1)
   {
-    std::cout << "Global map seed set by user (" << seed << "), thank you." << std::endl;
+    std::cout << "Global map seed set by user (" << std::dec << (unsigned int)(seed) << "), thank you." << std::endl;
   }
   else
   {
     seed = uniformUINT32();
-    std::cout << "Global map seed not set, generating: " << seed << std::endl;
+    std::cout << "Global map seed not set, generating: " << std::dec << (unsigned int)(seed) << std::endl;
   }
 
   caveNoise.SetSeed(seed + 22);

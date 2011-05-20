@@ -53,8 +53,6 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-  initPRNG();
-
 #if USE_SIGNALS > 0
   signal(SIGINT, sigINTHandler);
   signal(SIGTERM, sigTERMHandler);

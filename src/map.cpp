@@ -4,12 +4,13 @@
 #include "generator.h"
 
 
-Map::Map(unsigned long long int ticks)
+Map::Map(unsigned long long int ticks, int seed)
   :
   tick_counter(ticks),
   m_chunks(),
   m_items(),
-  m_serializer(m_chunks)
+  m_serializer(m_chunks, *this),
+  m_seed(seed)
 {
 }
 

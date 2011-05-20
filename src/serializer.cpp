@@ -9,10 +9,12 @@
 #include <boost/iostreams/read.hpp>
 
 #include "serializer.h"
+#include "cmdlineoptions.h"
+#include "map.h"
 
 
-Serializer::Serializer(ChunkMap & chunk_map)
-  : m_chunk_map(chunk_map)
+Serializer::Serializer(ChunkMap & chunk_map, Map & map)
+  : m_chunk_map(chunk_map), m_map(map)
 {
 }
 
@@ -36,25 +38,31 @@ void Serializer::serialize()
 
   std::ofstream idxfile("/tmp/mymap.idx", std::ios::binary);
   std::ofstream datfile("/tmp/mymap.dat", std::ios::binary);
+  std::ofstream metfile("/tmp/mymap.meta", std::ios::binary);
 
-  if (!idxfile || !datfile)
+  if (!idxfile || !datfile || !metfile)
   {
     std::cerr << "Error while opening save files. Map was NOT saved." << std::endl;
+    return;
   }
 
   boost::iostreams::filtering_ostreambuf zidx;
   boost::iostreams::filtering_ostreambuf zdat;
+  boost::iostreams::filtering_ostreambuf zmet;
 
   zidx.push(boost::iostreams::zlib_compressor());
   zdat.push(boost::iostreams::zlib_compressor());
+  zmet.push(boost::iostreams::zlib_compressor());
 
   zidx.push(idxfile);
   zdat.push(datfile);
+  zmet.push(metfile);
 
   std::set<ChunkCoords> s;
   for (auto i = m_chunk_map.begin(); i != m_chunk_map.end(); ++i)
     s.insert(i->first);
 
+  /* Save map chunk data */
   for (size_t counter = 0; !s.empty(); ++counter)
   {
     const ChunkCoords & cc = *s.begin();
@@ -62,12 +70,17 @@ void Serializer::serialize()
     int32_t Z = cZ(cc);
 
     boost::iostreams::write(zdat, reinterpret_cast<const char*>(m_chunk_map[cc]->data().data()), Chunk::sizeBlockType + Chunk::sizeBlockMetaData);
+
     boost::iostreams::write(zidx, reinterpret_cast<const char*>(&X), 4);
     boost::iostreams::write(zidx, reinterpret_cast<const char*>(&Z), 4);
     boost::iostreams::write(zidx, reinterpret_cast<const char*>(&counter), 4);
 
     s.erase(s.begin());
   }
+
+  /* Save map metadata */
+  const uint32_t seed = PROGRAM_OPTIONS["seed"].as<int>();
+  boost::iostreams::write(zmet, reinterpret_cast<const char*>(&seed), 4);
 
   std::cout << "saving ... done!" << std::endl;
 }
@@ -78,20 +91,25 @@ void Serializer::deserialize(const std::string & basename)
 
   std::ifstream idxfile(basename + ".idx", std::ios::binary);
   std::ifstream datfile(basename + ".dat", std::ios::binary);
+  std::ifstream metfile(basename + ".meta", std::ios::binary);
 
-  if (!idxfile || !datfile)
+  if (!idxfile || !datfile || !metfile)
   {
     std::cerr << "Error while opening save files. Map was NOT loaded." << std::endl;
+    return;
   }
 
   boost::iostreams::filtering_istreambuf zidx;
   boost::iostreams::filtering_istreambuf zdat;
+  boost::iostreams::filtering_istreambuf zmet;
 
   zidx.push(boost::iostreams::zlib_decompressor());
   zdat.push(boost::iostreams::zlib_decompressor());
+  zmet.push(boost::iostreams::zlib_decompressor());
 
   zidx.push(idxfile);
   zdat.push(datfile);
+  zmet.push(metfile);
 
   for (size_t counter = 0; ; ++counter)
   {
@@ -114,6 +132,12 @@ void Serializer::deserialize(const std::string & basename)
 
     m_chunk_map.insert(std::make_pair(chunk->coords(), chunk));
   }
+
+
+  uint32_t seed;
+  boost::iostreams::read(zmet, reinterpret_cast<char*>(&seed), 4);
+  m_map.seed() = seed;
+  std::cout << "Reading map seed from file: " << std::dec << seed << std::endl;
 
   std::cout << "loading ... done!" << std::endl;
 }
