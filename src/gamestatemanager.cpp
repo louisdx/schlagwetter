@@ -643,6 +643,21 @@ GameStateManager::EBlockPlacement GameStateManager::blockPlacement(int32_t eid,
       return OK_WITH_META;
     }
 
+  case BLOCK_FurnaceBlock:
+    {
+      std::cout << "Special block: #" << eid << " is trying to place a furnace." << std::endl;
+
+      if (wY(wc) == 0 || dir == BLOCK_YMINUS) return CANNOT_PLACE_AIRFORCE;
+
+      const int d = int(m_states[eid]->getRelativeXZDirection(midpointRealCoords(wc + dir)));
+
+      if      (d == 2) meta = 3;
+      else if (d == 3) meta = 2;
+      else if (d == 4) meta = 5;
+      else if (d == 5) meta = 4;
+
+      return OK_WITH_META;
+    }
   case BLOCK_Torch:
   case BLOCK_RedstoneTorchOff:
   case BLOCK_RedstoneTorchOn:
