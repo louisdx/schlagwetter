@@ -159,20 +159,22 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
 
     /// Stage 2: Interactive block, open window.
 
-    if (chunk.blockType(getLocalCoords(wc)) == BLOCK_CraftingTable ||
-        chunk.blockType(getLocalCoords(wc)) == BLOCK_FurnaceBlock  ||
-        chunk.blockType(getLocalCoords(wc)) == BLOCK_ChestBlock    ||
-        chunk.blockType(getLocalCoords(wc)) == BLOCK_DispenserBlock  )
+    if (chunk.blockType(getLocalCoords(wc)) == BLOCK_CraftingTable        ||
+        chunk.blockType(getLocalCoords(wc)) == BLOCK_FurnaceBlock         ||
+        chunk.blockType(getLocalCoords(wc)) == BLOCK_FurnaceBurningBlock  ||
+        chunk.blockType(getLocalCoords(wc)) == BLOCK_ChestBlock           ||
+        chunk.blockType(getLocalCoords(wc)) == BLOCK_DispenserBlock         )
      {
        uint8_t w = -1, slots = -1;
        std::string title = "";
 
        switch (chunk.blockType(getLocalCoords(wc)))
          {
-         case BLOCK_CraftingTable:  w = WINDOW_CraftingTable; slots = 9;  title = "Make it so!"; break;
-         case BLOCK_FurnaceBlock:   w = WINDOW_Furnace;       slots = 9;  title = "Furnace";     break;
-         case BLOCK_ChestBlock:     w = WINDOW_Chest;         slots = 60; title = "Myspace";     break;
-         case BLOCK_DispenserBlock: w = WINDOW_Dispenser;     slots = 9;  title = "Dispenser";   break;
+         case BLOCK_CraftingTable:       w = WINDOW_CraftingTable; slots = 9;  title = "Make it so!"; break;
+         case BLOCK_FurnaceBlock:        w = WINDOW_Furnace;       slots = 9;  title = "Furnace";     break;
+         case BLOCK_FurnaceBurningBlock: w = WINDOW_Furnace;       slots = 9;  title = "Furnace";     break;
+         case BLOCK_ChestBlock:          w = WINDOW_Chest;         slots = 60; title = "Myspace";     break;
+         case BLOCK_DispenserBlock:      w = WINDOW_Dispenser;     slots = 9;  title = "Dispenser";   break;
          }
 
        packetSCOpenWindow(eid, 123 /* window ID? */, w, title, slots);
