@@ -210,7 +210,7 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
         uint8_t meta;
         const auto bp_res = blockPlacement(eid, WorldCoords(X, Y, Z), Direction(direction), it, meta);
 
-        if (bp_res != CANNOT_PLACE)
+        if (bp_res != CANNOT_PLACE && bp_res != CANNOT_PLACE_AIRFORCE)
         {
           chunk.blockType(getLocalCoords(wc)) = block_id;
           chunk.taint();
