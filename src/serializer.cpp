@@ -79,7 +79,7 @@ void Serializer::serialize()
   }
 
   /* Save map metadata */
-  const uint32_t seed = PROGRAM_OPTIONS["seed"].as<int>();
+  const uint32_t seed = m_map.seed();
   boost::iostreams::write(zmet, reinterpret_cast<const char*>(&seed), 4);
 
   std::cout << "saving ... done!" << std::endl;
