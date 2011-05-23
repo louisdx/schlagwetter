@@ -17,7 +17,7 @@ Further libraries are:
   - GNU Readline: optional for the console UI
 
 It should be possible to compile the server for any platform that supports
-Boost, zlib and libnoise.
+Boost, zlib and libnoise. The SHA1 algorithm has been taken Micael Hildenborg's "smallsha1".
 
 
 2. Server design

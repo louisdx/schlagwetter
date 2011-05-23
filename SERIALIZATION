@@ -1,0 +1,42 @@
+Serialization (a.k.a. "save and restore")
+=========================================
+
+[All occurences of the word "filename" in the sequel are replaced
+ by the value of the '-r' parameter.]
+
+There are three fundamental pieces of persistent data that need to be
+saved to and restored from disk:
+
+1. The world:
+
+   The world data comprises the block type and block
+   metadata for each block in the world. This is implemented
+   in serializer.*; the data is stored in filename.{dat,idx}
+   and consists simply of a flat, DEFLATE-compressed dump of
+   all the block data of all loaded chunks. (The index file
+   contains the offsets of each chunk for quick random access.)
+
+2. World metadata:
+
+   Meta data comprises the following information:
+
+   - Map randomness generator seed
+   - Game time of day
+   - Default initial spawn position
+   - Saplings, signs
+   - Spawn items and chest content (read "chests, furnaces, dispensers")
+
+   The data is stored in filename.meta, but THE FORMAT IS NOT FIXED YET.
+
+3. Per-player data:
+
+   Per-player data comprises the following information:
+
+   - Position and orientation
+   - Health
+   - Inventory
+
+   The data is stored in filename.player.HASH, where HASH is replaced
+   by the SHA1 hash of the UTF-8 representation of the player's nickname.
+
+   THE FORMAT IS NOT YET FIXED.
