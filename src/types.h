@@ -234,16 +234,16 @@ inline std::vector<ChunkCoords> ambientChunks(const ChunkCoords & cc, size_t rad
  */
 
 template <class T>
-inline void hash_combine(std::size_t & seed, T const & v)
+inline void hash_combine(std::size_t & seed, const T & v)
 {
   std::hash<T> hasher;
-  seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-template <class Tuple, size_t Index = std::tuple_size<Tuple>::value - 1>
+template <class Tuple, std::size_t Index = std::tuple_size<Tuple>::value - 1>
 struct TupleHashValueImpl
 {
-  static void apply(size_t & seed, Tuple const & tuple)
+  static inline void apply(std::size_t & seed, Tuple const & tuple)
   {
     TupleHashValueImpl<Tuple, Index - 1>::apply(seed, tuple);
     hash_combine(seed, std::get<Index>(tuple));
@@ -253,7 +253,7 @@ struct TupleHashValueImpl
 template <class Tuple>
 struct TupleHashValueImpl<Tuple, 0>
 {
-  static void apply(size_t & seed, Tuple const & tuple)
+  static inline void apply(std::size_t & seed, Tuple const & tuple)
   {
     hash_combine(seed, std::get<0>(tuple));
   }
@@ -262,20 +262,20 @@ struct TupleHashValueImpl<Tuple, 0>
 namespace std
 {
   template<typename ...Args>
-  struct hash<std::tuple<Args...>> : public std::unary_function<const std::tuple<Args...> &, size_t>
+  struct hash<std::tuple<Args...>> : public std::unary_function<const std::tuple<Args...> &, std::size_t>
   {
-    inline size_t operator()(const std::tuple<Args...> & v) const
+    inline std::size_t operator()(const std::tuple<Args...> & v) const
     {
-      size_t seed = 0;
+      std::size_t seed = 0;
       TupleHashValueImpl<std::tuple<Args...>>::apply(seed, v);
       return seed;
     }
   };
 
   template<typename S, typename T>
-  struct hash<std::pair<S, T>> : public std::unary_function<const std::pair<S, T> &, size_t>
+  struct hash<std::pair<S, T>> : public std::unary_function<const std::pair<S, T> &, std::size_t>
   {
-    inline size_t operator()(const std::pair<S, T> & v) const
+    inline std::size_t operator()(const std::pair<S, T> & v) const
     {
       std::size_t seed = 0;
       hash_combine(seed, v.first);
