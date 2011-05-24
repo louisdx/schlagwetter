@@ -5,11 +5,44 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <map>
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
 
 #include "chunk.h"
 #include "serializer.h"
+
+
+struct InventoryItem
+{
+  int16_t  id;
+  uint16_t count;
+  uint16_t damage;
+};
+
+typedef std::map<size_t, InventoryItem> InventoryCollection; // maps slot number to inventory item
+
+enum EStorage { SINGLE_CHEST = 0x10, DOUBLE_CHEST = 0x20, FURNACE = 0x30, DISPENSER = 0x40 };
+
+struct StorageUnit
+{
+  EStorage type; // single chest, double chest, furnace, dispenser
+  InventoryCollection inventory;
+};
+
+/// Every world storage object (chests, furnaces, dispensers) gets a unique ID.
+/// and to each ID we associate an inventory collection.
+typedef std::unordered_map<uint32_t, StorageUnit> MapStorage;
+
+/// Each storage unit is stored sorted by its ID.
+typedef std::unordered_map<WorldCoords, uint32_t> StorageIndex;
+
+/// Open windows need a temporarily unique ID, but we only have 8 bits for that.
+typedef std::unordered_map<uint32_t, int8_t> WindowIDs;
+
+extern uint32_t INVENTORY_UID_POOL;
+
+inline uint32_t GenerateInventoryUID() { return ++INVENTORY_UID_POOL; }
 
 
 class Map
@@ -28,7 +61,7 @@ public:
   };
 
   typedef std::unordered_map<int32_t, int> ItemMap;
-  typedef std::unordered_multimap<WorldCoords, BlockAlert, TripleHash<int32_t, int32_t, int32_t>> AlertMap;
+  typedef std::unordered_multimap<WorldCoords, BlockAlert> AlertMap;
 
   inline bool haveChunk(const ChunkCoords & cc) const { return m_chunks.count(cc) > 0; }
 
@@ -60,6 +93,9 @@ public:
 
   inline bool hasItem(int32_t eid) const { return m_items.count(eid) > 0; }
 
+  void addStorage(const WorldCoords & wc, uint8_t block_type);
+  void removeStorage(const WorldCoords & wc);
+
   inline void save() { m_serializer.serialize(); }
 
   inline void load(const std::string & basename) { m_serializer.deserialize(basename); }
@@ -73,6 +109,10 @@ private:
   Serializer m_serializer;
 
   int        m_seed;
+
+  MapStorage m_storage;
+  StorageIndex m_stridx;
+  WindowIDs  m_window_ids;
 };
 
 #endif

@@ -177,7 +177,7 @@ private:
 };
 
 
-typedef std::unordered_map<ChunkCoords, std::shared_ptr<Chunk>, PairHash<int32_t, int32_t>> ChunkMap;
+typedef std::unordered_map<ChunkCoords, std::shared_ptr<Chunk>> ChunkMap;
 
 
 #endif

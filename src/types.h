@@ -240,29 +240,49 @@ inline void hash_combine(std::size_t & seed, T const & v)
   seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
 }
 
-template<typename S, typename T>
-struct PairHash : public std::unary_function<std::pair<S, T>, size_t>
+template <class Tuple, size_t Index = std::tuple_size<Tuple>::value - 1>
+struct TupleHashValueImpl
 {
-  inline size_t operator()(const std::pair<S, T> & v) const
+  static void apply(size_t & seed, Tuple const & tuple)
   {
-    std::size_t seed = 0;
-    hash_combine(seed, v.first);
-    hash_combine(seed, v.second);
-    return seed;
+    TupleHashValueImpl<Tuple, Index - 1>::apply(seed, tuple);
+    hash_combine(seed, std::get<Index>(tuple));
   }
 };
 
-template<typename T1, typename T2, typename T3>
-struct TripleHash : public std::unary_function<std::tuple<T1, T2, T3>, size_t>
+template <class Tuple>
+struct TupleHashValueImpl<Tuple, 0>
 {
-  inline size_t operator()(const std::tuple<T1, T2, T3> & v) const
+  static void apply(size_t & seed, Tuple const & tuple)
   {
-    std::size_t seed = 0;
-    hash_combine(seed, std::get<0>(v));
-    hash_combine(seed, std::get<1>(v));
-    hash_combine(seed, std::get<2>(v));
-    return seed;
+    hash_combine(seed, std::get<0>(tuple));
   }
 };
+
+namespace std
+{
+  template<typename ...Args>
+  struct hash<std::tuple<Args...>> : public std::unary_function<const std::tuple<Args...> &, size_t>
+  {
+    inline size_t operator()(const std::tuple<Args...> & v) const
+    {
+      size_t seed = 0;
+      TupleHashValueImpl<std::tuple<Args...>>::apply(seed, v);
+      return seed;
+    }
+  };
+
+  template<typename S, typename T>
+  struct hash<std::pair<S, T>> : public std::unary_function<const std::pair<S, T> &, size_t>
+  {
+    inline size_t operator()(const std::pair<S, T> & v) const
+    {
+      std::size_t seed = 0;
+      hash_combine(seed, v.first);
+      hash_combine(seed, v.second);
+      return seed;
+    }
+  };
+}
 
 #endif

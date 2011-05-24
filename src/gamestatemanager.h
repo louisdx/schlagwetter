@@ -26,7 +26,7 @@ public:
   float yaw;
 
   /// The chunks that we've sent to the player
-  std::unordered_set<ChunkCoords, PairHash<int32_t, int32_t>> known_chunks;
+  std::unordered_set<ChunkCoords> known_chunks;
 
   /// The last dig operation, which we must validate.
   struct DigStatus { WorldCoords wc; long long int start_time; } recent_dig;
@@ -150,6 +150,7 @@ public:
   void packetSCPlayerPositionAndLook(int32_t eid, double X, double Y, double Z, double stance, float yaw, float pitch, bool on_ground);
   std::string rawPacketSCPlayerPositionAndLook(const RealCoords & rc, double stance, float yaw, float pitch, bool on_ground);
   void packetSCSetSlot(int32_t eid, int8_t window, int16_t slot, int16_t item, int8_t count = 1, int16_t uses = 0);
+  void packetSCHoldingChange(int32_t eid, int16_t slot);
   void packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md = 0);
   void packetSCTime(int32_t eid, int64_t ticks);
   void packetSCOpenWindow(int32_t eid, int8_t window_id, int8_t window_type, std::string title, int8_t slots);
