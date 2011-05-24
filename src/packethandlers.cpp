@@ -599,6 +599,13 @@ void GameStateManager::packetSCSetSlot(int32_t eid, int8_t window, int16_t slot,
   m_connection_manager.sendDataToClient(eid, p.craft());
 }
 
+void GameStateManager::packetSCHoldingChange(int32_t eid, int16_t slot)
+{
+  PacketCrafter p(PACKET_HOLDING_CHANGE);
+  p.addInt16(slot);
+  m_connection_manager.sendDataToClient(eid, p.craft());
+}
+
 void GameStateManager::packetSCBlockChange(int32_t eid, const WorldCoords & wc, int8_t block_type, int8_t block_md)
 {
   std::cout << "Sending BlockChange to #" << std::dec << eid << ": " << wc << ", block type " << int(block_type) << std::endl;

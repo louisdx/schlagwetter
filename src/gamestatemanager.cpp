@@ -239,11 +239,14 @@ void GameStateManager::sendInventoryToPlayer(int32_t eid)
   }
 
   const PlayerState & ps = *m_states[eid];
+
   for (size_t i = 0; i < ps.inventory_ids.size(); ++i)
   {
     // "no item" means type -1
     packetSCSetSlot(eid, 0, i, ps.inventory_ids[i], ps.inventory_count[i], ps.inventory_damage[i]);    
   }
+
+  //packetSCHoldingChange(eid, ps.holding); // this is not a valid Server-to-Client packet!
 }
 
 

@@ -58,6 +58,8 @@ void GameStateManager::deserializePlayer(int32_t eid)
     player.setInv(42, BLOCK_WoodenPlank, 64, 0);
     player.setInv(44, BLOCK_Obsidian, 64, 0);
     player.setInv(43, ITEM_Bucket, 1, 0);
+
+    player.holding = 4;
   }
   else
   {
