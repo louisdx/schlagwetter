@@ -32,6 +32,9 @@ Known Issues (may be easy to fix)
 * It is unclear whether the client can handle non-BMP characters. Surely sending the
   number of characters, as oppsed to the number of encoded bytes, does not inspire confidence.
 
+* Door placement seems to be wrong when there are glass blocks on the right of the door
+  (glass may have to be treated like air).
+
 
 Mystery Puzzle of the Day
 -------------------------
