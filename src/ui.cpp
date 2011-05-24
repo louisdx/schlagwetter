@@ -70,6 +70,7 @@ bool pump(Server & server, UI & ui)
               << "  dump:                    Dump each connection's data" << std::endl
               << "  raw <client> <data>:     Sends raw data to a client (prob. not very useful)" << std::endl
               << "  kick <client> <message>: Kicks a client with a given message" << std::endl
+              << "  showinv:                 Lists world storage units (chests, furnaces, dispensers)" << std::endl
               << "  save:                    Write out the current map to a file" << std::endl
               << "  exit:                    Shuts down the server" << std::endl
               << std::endl;
@@ -151,6 +152,28 @@ bool pump(Server & server, UI & ui)
   else if (line.compare(0, 4, "save") == 0)
   {
     server.m_map.save();
+  }
+  else if (line.compare(0, 7, "showinv") == 0)
+  {
+    std::cout << "World storage units:" << std::endl;
+
+    if (server.m_map.m_stridx.empty())
+    {
+      std::cout << "  None." << std::endl;
+    }
+
+    for (auto it = server.m_map.m_stridx.begin(); it != server.m_map.m_stridx.end(); ++it)
+    {
+      std::cout << "ID #" << std::setw(4) << std::dec << it->second << " at " << it->first << ", type ";
+      switch (server.m_map.m_storage.find(it->second)->second.type)
+      {
+        case FURNACE:      std::cout << "FURNACE"; break;
+        case DISPENSER:    std::cout << "DISPENSER"; break;
+        case SINGLE_CHEST: std::cout << "SINGLE CHEST"; break;
+        case DOUBLE_CHEST: std::cout << "DOUBLE CHEST"; break;
+        default:           std::cout << "[UNKNOWN]"; break;
+      }
+    }
   }
   else
   {

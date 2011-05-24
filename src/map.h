@@ -45,8 +45,13 @@ extern uint32_t INVENTORY_UID_POOL;
 inline uint32_t GenerateInventoryUID() { return ++INVENTORY_UID_POOL; }
 
 
+class Server;
+class UI;
+
 class Map
 {
+  friend bool pump(Server &, UI &);
+
 public:
 
   Map(unsigned long long int ticks, int seed);
