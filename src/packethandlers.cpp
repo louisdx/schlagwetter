@@ -224,6 +224,12 @@ void GameStateManager::packetCSBlockPlacement(int32_t eid, int32_t X, int8_t Y, 
           {
             sendToAll(MAKE_CALLBACK(packetSCBlockChange, wc, block_id, 0));
           }
+
+          if (block_id == BLOCK_FurnaceBlock || block_id == BLOCK_FurnaceBurningBlock ||
+              block_id == BLOCK_ChestBlock || block_id == BLOCK_DispenserBlock)
+          {
+            m_map.addStorage(wc, block_id);
+          }
         }
         else if (bp_res == CANNOT_PLACE)
         {

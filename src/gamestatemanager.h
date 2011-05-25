@@ -34,6 +34,9 @@ public:
   /// Meta-data information on the direction from the user to wc.
   Direction getRelativeXZDirection(const RealCoords & rc);
 
+  /// SHA1 hash of the player nickname
+  std::array<unsigned char, 20> nickhash;
+
   /// The inventory.
   std::array< int16_t, 45> inventory_ids;
   std::array<uint16_t, 45> inventory_damage;

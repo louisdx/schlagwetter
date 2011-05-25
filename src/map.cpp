@@ -72,6 +72,20 @@ void Map::addStorage(const WorldCoords & wc, uint8_t block_type)
 
 }
 
+void Map::addStorage(const WorldCoords & wc, EStorage type)
+{
+  if (m_stridx.find(wc) != m_stridx.end())
+  {
+    std::cout << "Trying to add map storage unit at already occupied location" << wc << "." << std::endl;
+    return;
+  }
+
+  const uint32_t uid = GenerateInventoryUID();
+  m_stridx.insert(StorageIndex::value_type(wc, uid));
+  m_storage[uid].type = type;
+  m_storage[uid].inventory.clear();
+}
+
 
 // TODO: have to decide who handles the inventory of the destroyed unit
 void Map::removeStorage(const WorldCoords & wc)

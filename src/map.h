@@ -22,11 +22,23 @@ struct InventoryItem
 
 typedef std::map<size_t, InventoryItem> InventoryCollection; // maps slot number to inventory item
 
-enum EStorage { SINGLE_CHEST = 0x10, DOUBLE_CHEST = 0x20, FURNACE = 0x30, DISPENSER = 0x40 };
+enum EStorage { ERROR = 0x00, SINGLE_CHEST = 0x01, DOUBLE_CHEST = 0x02, FURNACE = 0x03, DISPENSER = 0x04 };
 
 struct StorageUnit
 {
+  StorageUnit()
+  :
+  type(ERROR),
+  nickhash(),
+  inventory()
+  {
+    std::fill(nickhash.begin(), nickhash.end(), 0);
+  }
+
   EStorage type; // single chest, double chest, furnace, dispenser
+
+  std::array<unsigned char, 20> nickhash;
+
   InventoryCollection inventory;
 };
 
@@ -51,6 +63,7 @@ class UI;
 class Map
 {
   friend bool pump(Server &, UI &);
+  friend class Serializer;
 
 public:
 
@@ -99,7 +112,13 @@ public:
   inline bool hasItem(int32_t eid) const { return m_items.count(eid) > 0; }
 
   void addStorage(const WorldCoords & wc, uint8_t block_type);
+  void addStorage(const WorldCoords & wc, EStorage type);
   void removeStorage(const WorldCoords & wc);
+  inline uint32_t storageIndex(const WorldCoords & wc) const
+  {
+    auto it = m_stridx.find(wc);
+    return it == m_stridx.end() ? 0 : it->second;
+  }
 
   inline void save() { m_serializer.serialize(); }
 

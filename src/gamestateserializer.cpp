@@ -18,8 +18,11 @@ void GameStateManager::serializePlayer(int32_t eid)
 
 void GameStateManager::deserializePlayer(int32_t eid)
 {
+  PlayerState & player = *m_states[eid];
+
   const std::string name = m_connection_manager.getNickname(eid);
   const std::string nickhash = sha1::calcToString(name.data(), name.length());
+  std::copy(nickhash.begin(), nickhash.end(), player.nickhash.begin());
 
   if (PROGRAM_OPTIONS.count("verbose")) 
   {
@@ -28,8 +31,6 @@ void GameStateManager::deserializePlayer(int32_t eid)
       std::cout << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(nickhash[i]);
     std::cout << ". Attempting to load player data from disk...";
   }
-
-  PlayerState & player = *m_states[eid];
 
   std::ifstream playerfile("/tmp/mymap.player." + nickhash, std::ios::binary);
 

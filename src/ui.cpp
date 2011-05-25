@@ -173,6 +173,7 @@ bool pump(Server & server, UI & ui)
         case DOUBLE_CHEST: std::cout << "DOUBLE CHEST"; break;
         default:           std::cout << "[UNKNOWN]"; break;
       }
+      std::cout << std::endl;
     }
   }
   else

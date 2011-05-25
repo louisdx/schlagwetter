@@ -11,6 +11,7 @@
 #include "serializer.h"
 #include "cmdlineoptions.h"
 #include "map.h"
+#include "constants.h"
 
 
 Serializer::Serializer(ChunkMap & chunk_map, Map & map)
@@ -79,8 +80,36 @@ void Serializer::serialize()
   }
 
   /* Save map metadata */
-  const uint32_t seed = m_map.seed();
-  boost::iostreams::write(zmet, reinterpret_cast<const char*>(&seed), 4);
+
+  uint32_t tmp = m_map.seed();
+  boost::iostreams::write(zmet, reinterpret_cast<const char*>(&tmp), 4);
+
+  tmp = m_map.m_storage.size();
+  boost::iostreams::write(zmet, reinterpret_cast<const char*>(&tmp), 4);
+
+  for (auto it = m_map.m_stridx.begin(); it != m_map.m_stridx.end(); ++it)
+  {
+    uint32_t t = it->second; // UID
+    boost::iostreams::write(zmet, reinterpret_cast<const char*>(&t), 4);
+
+    const StorageUnit & su = m_map.m_storage.find(t)->second;
+
+    t = su.type & 0x1F;      // Storage Type
+    // later we'll add a privacy flag and double-chestness here:
+    // Lower 4 bit: Storage type; Bits 5-7: double-chest orientation; Bit 8: Privacy flag
+    boost::iostreams::write(zmet, reinterpret_cast<const char*>(&t), 4);
+
+    t = wX(it->first);
+    boost::iostreams::write(zmet, reinterpret_cast<const char*>(&t), 4);
+
+    t = wY(it->first);
+    boost::iostreams::write(zmet, reinterpret_cast<const char*>(&t), 4);
+
+    t = wZ(it->first);
+    boost::iostreams::write(zmet, reinterpret_cast<const char*>(&t), 4);
+
+    boost::iostreams::write(zmet, reinterpret_cast<const char*>(su.nickhash.data()), su.nickhash.size());
+  }
 
   std::cout << "saving ... done!" << std::endl;
 }
@@ -131,13 +160,76 @@ void Serializer::deserialize(const std::string & basename)
     }
 
     m_chunk_map.insert(std::make_pair(chunk->coords(), chunk));
+
+    /*
+    for (size_t x = 0; x < 16; ++x)
+    {
+      for (size_t z = 0; z < 16; ++z)
+      {
+        for (size_t y = 0; y < 128; ++y)
+        {
+          const LocalCoords lc(x, y, z);
+          const unsigned char block = chunk->blockType(lc);
+
+          if (block == BLOCK_FurnaceBlock || block == BLOCK_FurnaceBurningBlock)
+          {
+            m_map.addStorage(getWorldCoords(lc, chunk->coords()), FURNACE);
+
+            std::cout << "Furnace at " << getWorldCoords(lc, chunk->coords()) << ", assigning UID "
+                      << m_map.storageIndex(getWorldCoords(lc, chunk->coords())) << "." << std::endl;
+          }
+          else if (block == BLOCK_DispenserBlock)
+          {
+            std::cout << "Dispenser at " << getWorldCoords(lc, chunk->coords()) << std::endl;
+          }
+          else if (block == BLOCK_ChestBlock)
+          {
+            ChunkMap::const_iterator it;
+
+            if (x > 0 && chunk->blockType(LocalCoords(x-1, y, z)) == BLOCK_ChestBlock)
+            {
+              std::cout << "Double chest at " << getWorldCoords(lc, chunk->coords())
+                        << "/" << getWorldCoords(LocalCoords(x-1, y, z), chunk->coords()) << std::endl;
+            }
+
+            else
+            {
+              std::cout << "Single chest at " << getWorldCoords(lc, chunk->coords()) << std::endl;
+            }
+          }
+
+        }
+      }
+    }
+    */
   }
 
+  uint32_t tmp, uid, st, x, y, z;
+  unsigned char n[20];
 
-  uint32_t seed;
-  boost::iostreams::read(zmet, reinterpret_cast<char*>(&seed), 4);
-  m_map.seed() = seed;
-  std::cout << "Reading map seed from file: " << std::dec << seed << std::endl;
+  boost::iostreams::read(zmet, reinterpret_cast<char*>(&tmp), 4);
+  m_map.seed() = tmp;
+  std::cout << "Reading map seed from file: " << std::dec << tmp << std::endl;
+
+  boost::iostreams::read(zmet, reinterpret_cast<char*>(&tmp), 4);
+
+  std::cout << "Reading " << std::dec << tmp << " storage units." << std::endl;
+  for (uint32_t i = 0; i < tmp; ++i)
+  {
+    boost::iostreams::read(zmet, reinterpret_cast<char*>(&uid), 4);
+    boost::iostreams::read(zmet, reinterpret_cast<char*>(&st), 4);
+    boost::iostreams::read(zmet, reinterpret_cast<char*>(&x), 4);
+    boost::iostreams::read(zmet, reinterpret_cast<char*>(&y), 4);
+    boost::iostreams::read(zmet, reinterpret_cast<char*>(&z), 4);
+    boost::iostreams::read(zmet, reinterpret_cast<char*>(n), 20);
+
+    const WorldCoords wc(x, y, z);
+
+    std::cout << "UID " << uid << " at " << wc << " of type " << st << std::endl;
+    m_map.m_stridx[wc] = uid;
+    m_map.m_storage[uid].type = EStorage(st);
+    std::copy(n, n + 20, m_map.m_storage[uid].nickhash.begin());
+  }
 
   std::cout << "loading ... done!" << std::endl;
 }
