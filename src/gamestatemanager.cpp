@@ -195,7 +195,15 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
   }
 
   // Round 3: Send the fully updated chunks to the client.
+  // 3a: Prechunks
+  for (auto i = ac.begin(); i != ac.end(); ++i)
+  {
+    if (player.known_chunks.count(*i) > 0) continue;
 
+    Chunk & chunk = m_map.chunk(*i);
+    packetSCPreChunk(eid, *i, true);
+  }
+  // 3b: Actual chunks
   for (auto i = ac.begin(); i != ac.end(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
@@ -203,13 +211,12 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     Chunk & chunk = m_map.chunk(*i);
 
     // Not sure if the client has a problem with data coming in too fast...
-    sleepMilli(5);
+    //sleepMilli(5);
 
 #define USE_ZCACHE 0   // The local chache doesn't seem to work reliably.
 #if USE_ZCACHE > 0
     // This is using a chunk-local zip cache.
     std::pair<const unsigned char *, size_t> p = chunk.compress_beefedup();
-    packetSCPreChunk(eid, *i, true);
 
     if (p.second > 18)
       packetSCMapChunk(eid, p);
@@ -217,7 +224,6 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
       packetSCMapChunk(eid, *i, chunk.compress());
 #else
     // This is the safe way.
-    packetSCPreChunk(eid, *i, true);
     packetSCMapChunk(eid, *i, chunk.compress());
 #endif
 #undef USE_ZCACHE
