@@ -447,7 +447,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
     p.addInt32(eid);
     p.addString("");
     if (protocol_version < 0x0B) p.addString("");
-    p.addInt64(12345);
+    p.addInt64(m_map.seed());
     p.addInt8(0); // 0: normal, -1: Nether
     m_connection_manager.sendDataToClient(eid, p.craft());
   }
@@ -462,9 +462,9 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
   const WorldCoords start_pos = getWorldCoords(player.position);
 
-  packetSCSpawn(eid, start_pos);
-
   sendMoreChunksToPlayer(eid);
+
+  packetSCSpawn(eid, start_pos);
 
   packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
 
