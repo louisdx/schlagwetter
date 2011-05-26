@@ -59,11 +59,11 @@ void Connection::handleRead(const boost::system::error_code & e, std::size_t byt
   }
   else
   {
-    if (e != boost::asio::error::operation_aborted)
+    if (e != boost::asio::error::operation_aborted && e != boost::asio::error::eof)
     {
       std::cout << "ASIO: Terminating connection, error code " << std::dec << e << "." << std::endl;
     }
-    else if (e == boost::asio::error::operation_aborted)
+    else if (e == boost::asio::error::operation_aborted || e == boost::asio::error::eof)
     {
       std::cout << "Ending connection #" << std::dec << EID() << "." << std::endl;
     }
