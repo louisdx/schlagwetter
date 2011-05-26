@@ -202,18 +202,18 @@ void ConnectionManager::sendDataToClient(int32_t eid, const unsigned char * data
   {
     if (PROGRAM_OPTIONS.count("verbose"))
     {
-      std::cout << "Sending data to client #" << eid << ", " << len << " bytes. " << (debug_message ? debug_message : "") << std::endl;
+      std::cout << "Sending data to client #" << std::dec << eid << ", " << len << " bytes. " << (debug_message ? debug_message : "") << std::endl;
     }
 #ifdef DEBUG
     else if (debug_message) // No need for "verbose", just print annotated packets.
     {
-      std::cout << "Sending data to client #" << eid << ", " << len << " bytes. " << debug_message << std::endl;
+      std::cout << "Sending data to client #" << std::dec << eid << ", " << len << " bytes. " << debug_message << std::endl;
     }
 #endif
 
 #define PRINT_EGRESS_DATA 0
 #if PRINT_EGRESS_DATA > 0
-    std::cout << "Sending data to client #" << eid << ":";
+    std::cout << "Sending data to client #" << std::dec << eid << ":";
     for (size_t i = 0; i < len; ++i)
       std::cout << " " << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)(data[i]);
     std::cout << std::endl;
