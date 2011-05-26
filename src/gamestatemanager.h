@@ -168,6 +168,7 @@ public:
   void packetSCSpawnEntity(int32_t eid, int32_t e, const FractionalCoords & fc, double rot, double pitch, uint16_t item_id);
   std::string rawPacketSCEntityTeleport(int32_t e, const FractionalCoords & fc, double yaw, double pitch);
   std::string rawPacketSCHoldingChange(int16_t slot);
+  std::string rawPacketSCDestroyEntity(int32_t e);
 
 private:
   ConnectionManager & m_connection_manager;

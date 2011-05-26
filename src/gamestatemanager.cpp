@@ -550,6 +550,7 @@ void GameStateManager::makeItemsDrop(const WorldCoords & wc)
       else
       {
         std::cout << "Item " << it->second.data << " falls from " << wc << " to its death." << std::endl;
+        sendRawToAll(rawPacketSCDestroyEntity(it->second.data));
       }
   
       m_map.blockAlerts().erase(it++);

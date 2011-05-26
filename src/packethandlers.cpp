@@ -716,3 +716,10 @@ std::string GameStateManager::rawPacketSCHoldingChange(int16_t slot)
   p.addInt16(slot);
   return p.craft();
 }
+
+std::string GameStateManager::rawPacketSCDestroyEntity(int32_t e)
+{
+  PacketCrafter p(PACKET_DESTROY_ENTITY);
+  p.addInt32(e);
+  return p.craft();
+}
