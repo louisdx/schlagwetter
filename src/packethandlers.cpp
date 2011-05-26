@@ -466,7 +466,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
 
   packetSCSpawn(eid, start_pos);
 
-  packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.6, 0.0, 0.0, true);
+  packetSCPlayerPositionAndLook(eid, wX(start_pos), wY(start_pos), wZ(start_pos), wY(start_pos) + 1.62, 0.0, 0.0, true);
 
   // Inform all others that this player has spawned.
   sendToAllExceptOne(MAKE_CALLBACK(packetSCSpawnEntity, eid, getFractionalCoords(player.position), 0, 0, 0), eid);
