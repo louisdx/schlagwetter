@@ -60,7 +60,7 @@ void Serializer::serialize()
   zmet.push(metfile);
 
   std::set<ChunkCoords> s;
-  for (auto i = m_chunk_map.begin(); i != m_chunk_map.end(); ++i)
+  for (auto i = m_chunk_map.cbegin(); i != m_chunk_map.cend(); ++i)
     s.insert(i->first);
 
   /* Save map chunk data */
@@ -87,7 +87,7 @@ void Serializer::serialize()
   tmp = m_map.m_storage.size();
   boost::iostreams::write(zmet, reinterpret_cast<const char*>(&tmp), 4);
 
-  for (auto it = m_map.m_stridx.begin(); it != m_map.m_stridx.end(); ++it)
+  for (auto it = m_map.m_stridx.cbegin(); it != m_map.m_stridx.cend(); ++it)
   {
     uint32_t t = it->second; // UID
     boost::iostreams::write(zmet, reinterpret_cast<const char*>(&t), 4);

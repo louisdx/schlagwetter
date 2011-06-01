@@ -26,10 +26,8 @@ void GameStateManager::deserializePlayer(int32_t eid)
 
   if (PROGRAM_OPTIONS.count("verbose")) 
   {
-    std::cout << "Player nickname is \"" << name << "\", hash: 0x" << std::hex << std::uppercase;
-    for (size_t i = 0; i < nickhash.length(); ++i)
-      std::cout << std::setw(2) << std::setfill('0') << (unsigned int)(unsigned char)(nickhash[i]);
-    std::cout << ". Attempting to load player data from disk...";
+    std::cout << "Player nickname is \"" << name << "\", hash: 0x" << hexify(nickhash)
+              << ". Attempting to load player data from disk...";
   }
 
   std::ifstream playerfile("/tmp/mymap.player." + nickhash, std::ios::binary);

@@ -105,11 +105,11 @@ void GameStateManager::sendToAll(std::function<void(int32_t)> f)
 
   {
     std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
-    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+    for (auto it = m_states.cbegin(); it != m_states.cend(); ++it)
       todo.push_back(it->first);
   }
 
-  for (auto it = todo.begin(); it != todo.end(); ++it)
+  for (auto it = todo.cbegin(); it != todo.cend(); ++it)
     f(*it);
 }
 
@@ -119,12 +119,12 @@ void GameStateManager::sendToAllExceptOne(std::function<void(int32_t)> f, int32_
 
   {
     std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
-    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+    for (auto it = m_states.cbegin(); it != m_states.cend(); ++it)
       if (it->first != eid)
         todo.push_back(it->first);
   }
 
-  for (auto it = todo.begin(); it != todo.end(); ++it)
+  for (auto it = todo.cbegin(); it != todo.cend(); ++it)
     f(*it);
 }
 
@@ -134,11 +134,11 @@ void GameStateManager::sendRawToAll(const std::string & data)
 
   {
     std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
-    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+    for (auto it = m_states.cbegin(); it != m_states.cend(); ++it)
       todo.push_back(it->first);
   }
 
-  for (auto it = todo.begin(); it != todo.end(); ++it)
+  for (auto it = todo.cbegin(); it != todo.cend(); ++it)
     m_connection_manager.sendDataToClient(*it, data);
 }
 
@@ -148,12 +148,12 @@ void GameStateManager::sendRawToAllExceptOne(const std::string & data, int32_t e
 
   {
     std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
-    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+    for (auto it = m_states.cbegin(); it != m_states.cend(); ++it)
       if (it->first != eid)
         todo.push_back(it->first);
   }
 
-  for (auto it = todo.begin(); it != todo.end(); ++it)
+  for (auto it = todo.cbegin(); it != todo.cend(); ++it)
     m_connection_manager.sendDataToClient(*it, data);
 }
 
@@ -176,7 +176,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
   // Round 1: Load all relevant chunks to memory
 
-  for (auto i = ac.begin(); i != ac.end(); ++i)
+  for (auto i = ac.cbegin(); i != ac.cend(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
 
@@ -186,7 +186,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
   // Round 2: Spread light to all chunks in memory. Light only spreads to loaded chunks.
 
-  for (auto i = ac.begin(); i != ac.end(); ++i)
+  for (auto i = ac.cbegin(); i != ac.cend(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
 
@@ -196,7 +196,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
 
   // Round 3: Send the fully updated chunks to the client.
   // 3a: Prechunks
-  for (auto i = ac.begin(); i != ac.end(); ++i)
+  for (auto i = ac.cbegin(); i != ac.cend(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
 
@@ -204,7 +204,7 @@ void GameStateManager::sendMoreChunksToPlayer(int32_t eid)
     packetSCPreChunk(eid, *i, true);
   }
   // 3b: Actual chunks
-  for (auto i = ac.begin(); i != ac.end(); ++i)
+  for (auto i = ac.cbegin(); i != ac.cend(); ++i)
   {
     if (player.known_chunks.count(*i) > 0) continue;
 

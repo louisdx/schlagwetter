@@ -77,7 +77,7 @@ int main(int argc, char * argv[])
   std::copy(fs::directory_iterator(dir), fs::directory_iterator(), std::back_inserter(filenames));
 
   std::cout << "The directory \"" << dir << "\" contains the following files:" << std::endl;
-  for (auto it = filenames.begin(); it != filenames.end(); ++it)
+  for (auto it = filenames.cbegin(); it != filenames.cend(); ++it)
   {
     std::string name = fs::basename(*it);
     std::string ext = fs::extension(*it);

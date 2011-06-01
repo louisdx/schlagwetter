@@ -77,7 +77,7 @@ bool pump(Server & server, UI & ui)
   }
   else if (line == "list")
   {
-    for (auto i = server.m_connection_manager.connections().begin(); i != server.m_connection_manager.connections().end(); ++i)
+    for (auto i = server.m_connection_manager.connections().cbegin(); i != server.m_connection_manager.connections().cend(); ++i)
     {
       auto di = server.m_connection_manager.clientData().find((*i)->EID());
       std::cout << "Connection #" << std::dec << (*i)->EID() << ": " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port()
@@ -88,7 +88,7 @@ bool pump(Server & server, UI & ui)
   }
   else if (line == "dump")
   {
-    for (auto  i = server.m_connection_manager.connections().begin(); i != server.m_connection_manager.connections().end(); ++i)
+    for (auto  i = server.m_connection_manager.connections().cbegin(); i != server.m_connection_manager.connections().cend(); ++i)
     {
       std::cout << "Connection: " << (*i)->peer().address().to_string() << ":" << std::dec << (*i)->peer().port() << ".";
       auto di = server.m_connection_manager.clientData().find((*i)->EID());
@@ -99,7 +99,7 @@ bool pump(Server & server, UI & ui)
       else
       {
         // This is not thread-safe. Use at your own risk.
-        for (auto it = di->second->q().begin(); it != di->second->q().end(); ++it)
+        for (auto it = di->second->q().cbegin(); it != di->second->q().cend(); ++it)
           std::cout << " " << std::hex << std::setw(2) << (unsigned int)(*it);
       }
       std::cout << std::endl;
@@ -162,7 +162,7 @@ bool pump(Server & server, UI & ui)
       std::cout << "  None." << std::endl;
     }
 
-    for (auto it = server.m_map.m_stridx.begin(); it != server.m_map.m_stridx.end(); ++it)
+    for (auto it = server.m_map.m_stridx.cbegin(); it != server.m_map.m_stridx.cend(); ++it)
     {
       std::cout << "ID #" << std::setw(4) << std::dec << it->second << " at " << it->first << ", type ";
       switch (server.m_map.m_storage.find(it->second)->second.type)

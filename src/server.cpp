@@ -61,7 +61,7 @@ Server::Server(const std::string & bindaddr, unsigned short int port)
     std::vector<ChunkCoords> ac = ambientChunks(ChunkCoords(0, 0), PLAYER_CHUNK_HORIZON);
     std::cout << "Precomputing map (" << std::dec << ac.size() << " chunks):" << std::endl << "  Generating terrain: ";
 
-    for (auto i = ac.begin(); i != ac.end(); ++i)
+    for (auto i = ac.cbegin(); i != ac.cend(); ++i)
     {
       m_map.ensureChunkIsLoaded(*i);
       std::cout << "*"; std::cout.flush();

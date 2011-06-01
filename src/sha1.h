@@ -44,4 +44,24 @@ namespace sha1
 } // namespace sha1
 
 
+
+/* Thanks to "Advanced STL Part 5" for this neat piece of code. */
+
+template <typename T> std::string hexify(const T & v)
+{
+  static const char HEXCHARS[] = "0123456789ABCDEF";
+
+  std::string res(2 * v.size(), 'x');
+  std::string::iterator k = res.begin();
+
+  for (typename T::const_iterator i = v.begin(); i != v.end(); ++i)
+  {
+    *k++ = HEXCHARS[(unsigned char)(*i) >> 4];
+    *k++ = HEXCHARS[(unsigned char)(*i) & 0x0F];
+  }
+
+  return res;
+}
+
+
 #endif // SHA1_DEFINED

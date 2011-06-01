@@ -474,7 +474,7 @@ void GameStateManager::packetCSLoginRequest(int32_t eid, int32_t protocol_versio
   // Inform this player of all the other players' positions. (Apparently one should only do this with players that are in range.)
   {
     std::lock_guard<std::recursive_mutex> lock(m_gs_mutex);
-    for (auto it = m_states.begin(); it != m_states.end(); ++it)
+    for (auto it = m_states.cbegin(); it != m_states.cend(); ++it)
       if (it->first != eid)
         packetSCSpawnEntity(eid, it->first, getFractionalCoords(it->second->position), it->second->yaw, it->second->pitch, 0);
   }
