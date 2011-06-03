@@ -2,6 +2,7 @@
 #include <string>
 #include <functional>
 #include <thread>
+#include <csignal>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 
@@ -14,12 +15,6 @@
 po::variables_map PROGRAM_OPTIONS;
 namespace fs = boost::filesystem;
 
-#ifndef USE_SIGNALS
-#define USE_SIGNALS 0
-#endif
-
-#if USE_SIGNALS > 0
-#include <signal.h>
 bool sig_flag = true;
 void sigINTHandler(int)
 {
@@ -32,7 +27,6 @@ void sigTERMHandler(int)
   std::cout << "SIGTERM received; we will try to shut down the server peacefully, please be patient." << std::endl;
   sig_flag = false;
 }
-#endif
 
 int main(int argc, char* argv[])
 {
@@ -53,10 +47,8 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-#if USE_SIGNALS > 0
-  signal(SIGINT, sigINTHandler);
-  signal(SIGTERM, sigTERMHandler);
-#endif
+  std::signal(SIGINT, sigINTHandler);
+  std::signal(SIGTERM, sigTERMHandler);
 
   try
   {
@@ -73,11 +65,7 @@ int main(int argc, char* argv[])
     SimpleUI      ui;
 #endif
 
-    while (pump(server, ui)
-#if USE_SIGNALS > 0
-     && sig_flag
-#endif
-          ) { }
+    while (pump(server, ui) && sig_flag) { }
 
     server.stop();
     thread_io.join();
