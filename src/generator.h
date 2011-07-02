@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <memory>
 
-#ifdef LIBNOISE
+#include "configure.h"
+
+#ifdef HAVE_LIBNOISE_DIR
 #include <libnoise/noise.h>
 #else
 #include <noise/noise.h>

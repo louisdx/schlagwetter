@@ -1,0 +1,7 @@
+#ifndef H_CONFIGURE
+#define H_CONFIGURE
+
+#define HAVE_LIBNOISE_DIR ${NOISE_DIR_IS_LIBNOISE}
+
+#endif
+
