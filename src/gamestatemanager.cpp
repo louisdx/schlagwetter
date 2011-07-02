@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <functional>
+#include <list>
 
 #include "gamestatemanager.h"
 #include "map.h"

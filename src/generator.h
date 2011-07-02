@@ -3,7 +3,12 @@
 
 #include <cstdint>
 #include <memory>
+
+#ifdef LIBNOISE
 #include <libnoise/noise.h>
+#else
+#include <noise/noise.h>
+#endif
 
 #include "constants.h"
 #include "types.h"
