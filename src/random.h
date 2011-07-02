@@ -25,7 +25,7 @@ extern uint32_t seedval;
 
 void initPRNG(int mapseed = -1);
 
-extern std::uniform_int<uint32_t> m_uniformUINT32;
+extern std::uniform_int_distribution<uint32_t> m_uniformUINT32;
 
 inline uint32_t uniformUINT32() { return m_uniformUINT32(prng); }
 

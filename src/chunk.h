@@ -164,7 +164,7 @@ private:
       cache[12] = 0x7F; // 127
       cache[13] = 0x0F; // 15
 
-      WorldCoords wc = getWorldCoords(LocalCoords(0, 0), cc);
+      WorldCoords wc = getWorldCoords(LocalCoords(0, 0, 0), cc);
       writeInt32(wX(wc), cache.data() + 1);
       writeInt16(wY(wc), cache.data() + 5);
       writeInt32(wZ(wc), cache.data() + 7);

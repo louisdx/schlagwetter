@@ -10,7 +10,7 @@ uint32_t seedval = 0;
 
 MyRNG prng;
 
-std::uniform_int<uint32_t> m_uniformUINT32(0, std::numeric_limits<uint32_t>::max());
+std::uniform_int_distribution<uint32_t> m_uniformUINT32(0, std::numeric_limits<uint32_t>::max());
 
 void initPRNG(int mapseed)
 {
