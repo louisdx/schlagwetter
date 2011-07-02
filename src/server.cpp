@@ -2,6 +2,7 @@
 #include <thread>
 #include <iostream>
 #include <iomanip>
+#include <list>
 
 #include "server.h"
 #include "inputparser.h"
