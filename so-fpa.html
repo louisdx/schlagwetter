@@ -6,28 +6,33 @@
     <style type="text/css">
       html { background-color: #666; font-size: medium; }
       body { margin: 1em 2em; padding: 0; }
-      ul { display: block; background-color: #444; margin: 0; padding: 1ex; border-radius: 5px; font-family: "DejaVu Sans", "Trebuchet MS", "Droid Sans", Helvetica, sans-serif; }
-      li { display: inline-block; border-left: medium solid #AAA; padding: 0; margin: 0; color: white; }
-      li:first-child { border-left: none; }
-      li span { margin: 0 1ex; padding: .25ex .5ex; border-radius: 2px; font-weight: normal; font-size: 90%; line-height: 150%; }
-      li span:hover { background-color: #AAA; color: black; }
-      li span a:link, li span a:visited { color: inherit; text-decoration: none; }
+      ul.nav { display: block; background-color: #444; margin: 0; padding: 1ex; border-radius: 5px; font-family: "DejaVu Sans", "Trebuchet MS", "Droid Sans", Helvetica, sans-serif; }
+      ul.nav li { display: inline-block; border-left: medium solid #AAA; padding: 0; margin: 0; color: white; }
+      ul.nav li:first-child { border-left: none; }
+      ul.nav li span { margin: 0 1ex; padding: .25ex .5ex; border-radius: 2px; font-weight: normal; font-size: 90%; line-height: 150%; }
+      ul.nav li span:hover { background-color: #AAA; color: black; }
+      ul.nav li span a:link, ul.nav li span a:visited { color: inherit; text-decoration: none; }
       h1 { color: #DDD; font-weight: normal; font-size: xx-large; font-style: italic; border-bottom: medium dotted #DDD;
            margin: 1em 0 1ex 0; padding: 0 0 .25ex 0; }
       h2 { color: #DDD; font-size: large;  border-bottom: thin solid #DDD; margin: 2em 0 1em 0; padding: 0 0 1ex 0; display: inline-block; }
       p { color: #DFDFDF; line-height: 150%; margin: 0; padding: 0; }
       div.listing, code { font-family: "DejaVu Sans Mono", Consolas, Courier, monospace; }
-      div.listing { border-radius: 5px; margin: 1em 0; padding: 1em; background-color: #EEE; white-space: pre; line-height: 135%; }
+      div.listing { white-space: pre; }
+      .listing { border-radius: 5px; margin: 1em 0; padding: 1em; background-color: #EEE; line-height: 135%; color: #333; }
       code { margin: 0 .5ex; }
+      ul { list-style-type: disc; list-style-position: inside; margin: 1em 0; padding: 1ex; background-color: #888; border-radius: 5px; }
+      li { margin: 0; padding: 1ex 0 1ex 1em; }
+      a:link, a:visited { text-decoration: none; padding: 0 1ex .5ex 1ex; color: #FFF; border-radius: 2px; }
+      a:link:hover, a:visited:hover { background-color: #666; color: #FFF; }
     </style>
   </head>
 
   <body>
-    <ul>
+    <ul class="nav">
       <li><span>Perspective</span></li>
       <li><span>Intuition</span></li>
       <li><span>Video</span></li>
-      <li><span>Links</span></li>
+      <li><span><a href="#links">Links</a></span></li>
       <li><span><a href="#getline">getline</a></span></li>
       <li><span><a href="#random">random</a></span></li>
       <li><span><a href="#new">new/delete</a></span></li>
@@ -98,6 +103,17 @@ void operator delete(void * p) throw()
 
     <p>In C++11, the exception specifications change to &ldquo;none&rdquo; for
     <code>operator new()</code> and to <code>noexcept</code> for <code>operator delete()</code>.</p>
+
+    <h2><a name="java">Any Java question</a></h2>
+    <p style="font-style: italic;" class="listing">&ldquo;You'll need an abstract factory class. Usually those are good for creating abstract wrappers for concrete types in a generic fashion. Factories are often implemented as singletons, too.&rdquo;</p>
+
+    <h1><a name="links">Links</a></h1>
+    <p>Many topics have been asked and answered before time and time again. Here are some good answers,
+    for reference and for use as &ldquo;exact duplicate&rdquo;s.</p>
+
+    <ul>
+      <li><a href="http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags/1732454#1732454">Parsing HTML with regular expressions</a></li>
+    </ul>
 
   </body>
 </html>
