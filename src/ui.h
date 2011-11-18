@@ -33,7 +33,6 @@ class GNUReadlineUI : public UI
 {
 private:
   std::string m_histfile;
-  char      * m_line;
 
 public:
   GNUReadlineUI(const std::string & histfile);

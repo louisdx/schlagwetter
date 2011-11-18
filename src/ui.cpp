@@ -34,7 +34,7 @@ GNUReadlineUI::~GNUReadlineUI()
 
 std::string GNUReadlineUI::readline(const std::string & prompt)
 {
-  m_line = ::readline(prompt.c_str());
+  char * const m_line = ::readline(prompt.c_str());
 
   if (m_line == NULL) return "exit";
 
@@ -42,6 +42,7 @@ std::string GNUReadlineUI::readline(const std::string & prompt)
 
   std::string line(m_line);
   free(m_line);
+
   return line;
 }
 

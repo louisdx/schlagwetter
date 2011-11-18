@@ -17,13 +17,17 @@ static std::mutex            chunk_mutex;
 
 RegionFile::RegionFile()
   :
-  m_file()
+  m_file(),
+  m_header(),
+  m_size(0)
 {
 }
 
 RegionFile::RegionFile(const std::string & s)
  :
-  m_file(s, std::ios_base::in | std::ios_base::binary)
+  m_file(s, std::ios_base::in | std::ios_base::binary),
+  m_header(),
+  m_size(0)
 {
   if (!m_file) std::cerr << "Error: Could not open file \"" << s << "\"." << std::endl;
 }

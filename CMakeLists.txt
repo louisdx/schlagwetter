@@ -11,7 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-W -Wall -W -pedantic -std=c++0x")
+  set(CMAKE_CXX_FLAGS "-W -Wall -W -Weffc++ -pedantic -std=c++0x -pthread")
   set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g")
   set(CMAKE_CXX_FLAGS_PROFILE "-DDEBUG -g -pg")
   set(CMAKE_CXX_FLAGS_RELEASE "-march=native -O2 -s -DNDEBUG")

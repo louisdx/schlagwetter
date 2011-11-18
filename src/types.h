@@ -261,8 +261,7 @@ struct TupleHashValueImpl<Tuple, 0>
 
 namespace std
 {
-  template<typename ...Args>
-  struct hash<std::tuple<Args...>> : public std::unary_function<const std::tuple<Args...> &, std::size_t>
+  template<typename ...Args> struct hash<std::tuple<Args...>>
   {
     inline std::size_t operator()(const std::tuple<Args...> & v) const
     {
@@ -272,8 +271,7 @@ namespace std
     }
   };
 
-  template<typename S, typename T>
-  struct hash<std::pair<S, T>> : public std::unary_function<const std::pair<S, T> &, std::size_t>
+  template<typename S, typename T> struct hash<std::pair<S, T>>
   {
     inline std::size_t operator()(const std::pair<S, T> & v) const
     {
