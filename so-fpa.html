@@ -38,6 +38,7 @@
       <li><span><a href="#getline">getline</a></span></li>
       <li><span><a href="#random">random</a></span></li>
       <li><span><a href="#new">new/delete</a></span></li>
+      <li><span><a href="#wstring">narrow/wide-char/UTF8</a></span></li>
     </ul>
 
     <h1>To C++ and Beyond</h1>
@@ -105,6 +106,135 @@ void operator delete(void * p) throw()
 
     <p>In C++11, the exception specifications change to &ldquo;none&rdquo; for
     <code>operator new()</code> and to <code>noexcept</code> for <code>operator delete()</code>.</p>
+
+    <h2><a name="wstring">Converting narrow and wide strings</a></h2>
+
+    <div class="listing"><![CDATA[#include <vector>
+#include <string>
+#include <ostream>
+#include <iostream>
+#include <cstdlib>
+#include <cassert>
+#include <clocale>
+#include <cerrno>
+#include <iconv.h>
+
+const char * LOCALE = NULL;
+
+std::string  get_locale_string(const std::string  & s);
+std::string  get_locale_string(const std::wstring & s);
+std::wstring get_wstring      (const std::string  & s);
+std::wstring get_wstring      (const std::wstring & s);
+std::string  get_UTF8         (const std::wstring & s);
+
+inline std::ostream & operator<<(std::ostream & o, const std::wstring & s)
+{
+  return o << get_locale_string(s);
+}
+inline std::wostream & operator<<(std::wostream & o, const std::string & s)
+{
+  return o << get_wstring(s);
+}
+
+std::string  get_locale_string(const std::string & s)
+{
+  return s;
+}
+
+std::string get_locale_string(const std::wstring & s)
+{
+  const wchar_t * cs = s.c_str();
+  const std::size_t wn = std::wcsrtombs(NULL, &cs, 0, NULL);
+
+  if (wn == std::size_t(-1))
+  {
+    std::cout << "Error in wcsrtombs(): " << errno << std::endl;
+    return "";
+  }
+
+  std::vector<char> buf(wn + 1);
+  const std::size_t wn_again = std::wcsrtombs(buf.data(), &cs, wn + 1, NULL);
+
+  if (wn_again == std::size_t(-1))
+  {
+    std::cout << "Error in wcsrtombs(): " << errno << std::endl;
+    return "";
+  }
+
+  assert(cs == NULL); // successful conversion
+
+  return std::string(buf.data(), wn);
+}
+
+std::wstring get_wstring(const std::wstring & s)
+{
+  return s;
+}
+
+std::wstring get_wstring(const std::string & s)
+{
+  const char * cs = s.c_str();
+  const std::size_t wn = std::mbsrtowcs(NULL, &cs, 0, NULL);
+
+  if (wn == std::size_t(-1))
+  {
+    std::cout << "Error in mbsrtowcs(): " << errno << std::endl;
+    return L"";
+  }
+
+  std::vector<wchar_t> buf(wn + 1);
+  const std::size_t wn_again = std::mbsrtowcs(buf.data(), &cs, wn + 1, NULL);
+
+  if (wn_again == size_t(-1))
+  {
+    std::cout << "Error in mbsrtowcs(): " << errno << std::endl;
+    return L"";
+  }
+
+  assert(cs == NULL); // successful conversion
+
+  return std::wstring(buf.data(), wn);
+}
+
+std::string get_UTF8(const std::wstring & s)
+{
+  iconv_t cd = iconv_open("UTF8", "WCHAR_T");
+
+  if (cd == iconv_t(-1))
+  {
+    std::cout << "Error while initializing iconv: " << errno << std::endl;
+    iconv_close(cd);
+    return std::string();
+  }
+
+  std::size_t n = s.length() * 6 + 1; // Each character might use up to six CUs.
+  const std::size_t norig = n;
+  std::size_t m = s.length() * sizeof(std::wstring::value_type);
+
+  std::vector<char> obuf(n);
+  char * outbuf = obuf.data();
+  const char * inbuf = reinterpret_cast<const char*>(&s[0]);
+
+  const std::size_t ir = iconv(cd, const_cast<char**>(&inbuf), &m, &outbuf, &n);
+
+  if (ir == std::size_t(-1))
+  {
+    std::cout << "Error while converting with iconv(): " << errno << ":" << EINVAL << ", left " << m
+              << ", written " << std::dec << norig - n << " bytes." << std::endl;
+    iconv_close(cd);
+    return std::string();
+  }
+
+  iconv_close(cd);
+
+  return std::string(obuf.data(), norig - n);
+}
+
+int main(int argc, char * argv[])
+{
+  LOCALE = std::setlocale(LC_CTYPE, "");
+  std::wstring progname = get_wstring(std::string(argv[0]));
+}]]></div>
 
     <h2><a name="java">Any Java question</a></h2>
     <p style="font-style: italic;" class="listing">&ldquo;You'll need an abstract factory class. Usually those are good for creating abstract wrappers for concrete types in a generic fashion. Factories are often implemented as singletons, too.&rdquo;</p>
