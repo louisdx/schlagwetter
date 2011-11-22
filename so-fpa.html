@@ -39,10 +39,12 @@
       <li><span><a href="#random">random</a></span></li>
       <li><span><a href="#new">new/delete</a></span></li>
       <li><span><a href="#wstring">narrow/wide-char/UTF8</a></span></li>
+      <li><span><a href="#erase">remove/erase</a></span></li>
     </ul>
 
     <h1>To C++ and Beyond</h1>
     <p>The following pieces of code come up again and again and again.</p>
+
 
     <h2><a name="getline">Line-based input parsing</a></h2>
     <div class="listing"><![CDATA[#include <fstream>
@@ -68,6 +70,7 @@ int main()
     }
 }]]></div>
 
+
     <h2><a name="random">Random number generation</a></h2>
 
     <div class="listing"><![CDATA[#include <random>
@@ -88,6 +91,7 @@ int main()
   return random_number;
 }]]></div>
 
+
     <h2><a name="new">Replacing operators new and delete</a></h2>
 
     <div class="listing"><![CDATA[void * operator new(std::size_t n) throw(std::bad_alloc)
@@ -107,6 +111,17 @@ void operator delete(void * p) throw()
     <p>In C++11, the exception specifications change to &ldquo;none&rdquo; for
     <code>operator new()</code> and to <code>noexcept</code> for <code>operator delete()</code>.</p>
 
+    <p>The typical construction/destruction sequence:</p>
+
+    <div class="listing"><![CDATA[void * addr = ::operator new(sizeof(T)); // allocation
+
+T * p = ::new (addr) T;                  // construction
+
+p->~T();                                 // destruction
+
+::operator delete(addr);                 // deallocation]]></div>
+
+
     <h2><a name="wstring">Converting narrow and wide strings</a></h2>
 
     <div class="listing"><![CDATA[#include <vector>
@@ -117,6 +132,7 @@ void operator delete(void * p) throw()
 #include <cassert>
 #include <clocale>
 #include <cerrno>
+#include <cwchar>
 #include <iconv.h>
 
 const char * LOCALE = NULL;
@@ -236,6 +252,58 @@ int main(int argc, char * argv[])
   std::wstring progname = get_wstring(std::string(argv[0]));
 }]]></div>
 
+
+    <h2><a name="erase">Erasing from a container in a loop</a></h2>
+
+    <div class="listing"><![CDATA[// For an associative container "m" for which "erase()" returns "void":
+
+for (auto it = m.cbegin(); it != m.cend() /* not hoisted */; /* no increment */)
+{
+    if (delete_condition)
+    {
+        m.erase(it++);
+    }
+    else
+    {
+        ++it;
+    }
+}
+
+
+// For a sequence container "v" for which "erase()" returns the next iterator:
+
+for (auto it = v.cbegin(); it != v.cend() /* not hoisted */; /* no increment */)
+{
+    if (delete_condition)
+    {
+        it = v.erase(it);
+    }
+    else
+    {
+        ++it;
+    }
+}
+
+
+// Remove/erase idiom to erase by value from a sequence container "v" (but not "std::list" or "std::forward_list"):
+
+#include <algorithm>
+
+v.erase(std::remove(v.begin(), v.end(), val), v.end());
+
+
+// Remove/erase from lists:
+
+#include <list>
+#include <forward_list>
+
+std::list<T> l1;
+std::forward_list<T> l2;
+
+l1.remove(val);
+l2.remove(val);]]></div>
+
+
     <h2><a name="java">Any Java question</a></h2>
     <p style="font-style: italic;" class="listing">&ldquo;You'll need an abstract factory class. Usually those are good for creating abstract wrappers for concrete types in a generic fashion. Factories are often implemented as singletons, too.&rdquo;</p>
 
@@ -246,6 +314,8 @@ int main(int argc, char * argv[])
     <ul>
       <li><a href="http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags/1732454#1732454">Parsing HTML with regular expressions</a></li>
     </ul>
+
+    <!-- <div class="listing"><![CDATA[   ]]></div> -->
 
   </body>
 </html>
