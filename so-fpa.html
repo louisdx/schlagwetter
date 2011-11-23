@@ -31,15 +31,13 @@
 
   <body>
     <ul class="nav">
-      <li><span>Perspective</span></li>
-      <li><span>Intuition</span></li>
-      <li><span>Video</span></li>
       <li><span><a href="#links">Links</a></span></li>
       <li><span><a href="#getline">getline</a></span></li>
       <li><span><a href="#random">random</a></span></li>
       <li><span><a href="#new">new/delete</a></span></li>
       <li><span><a href="#wstring">narrow/wide-char/UTF8</a></span></li>
       <li><span><a href="#erase">remove/erase</a></span></li>
+      <li><span><a href="#timing">timing</a></span></li>
     </ul>
 
     <h1>To C++ and Beyond</h1>
@@ -302,6 +300,29 @@ std::forward_list&lt;T&gt; l2;
 
 l1.remove(val);
 l2.remove(val);</div>
+
+
+    <h2><a name="timing">Timing</a></h2>
+
+    <div class="listing">#include &lt;ctime&gt;
+
+#define CLOCK_TICK(acc, ctr)  ctr = std::clock()
+#define CLOCK_TOCK(acc, ctr)  acc += (std::clock() - ctr)
+#define CLOCK_RESET(acc)      acc = 0
+#define CLOCK_REPORT(acc)     (1000. * double(acc) / double(CLOCKS_PER_SEC))
+
+static clock_t tacc, tctr;
+
+int main()
+{
+    CLOCK_RESET(tacc);
+
+    CLOCK_TICK(tacc, tctr);
+    some_function();
+    CLOCK_TOCK(tacc, tctr);
+
+    // time taken: CLOCK_REPORT(tacc) milliseconds.
+}</div>
 
 
     <h2><a name="java">Any Java question</a></h2>
