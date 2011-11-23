@@ -47,9 +47,9 @@
 
 
     <h2><a name="getline">Line-based input parsing</a></h2>
-    <div class="listing"><![CDATA[#include <fstream>
-#include <sstream>
-#include <string>
+    <div class="listing">#include &lt;fstream&gt;
+#include &lt;sstream&gt;
+#include &lt;string&gt;
 
 int main()
 {
@@ -63,20 +63,20 @@ int main()
         std::istringstream iss(line);
         int n; double d; std::string s;
 
-        if (iss >> n >> d >> s)
+        if (iss &gt;&gt; n &gt;&gt; d &gt;&gt; s)
         {
             // process tokens
         }
     }
-}]]></div>
+}</div>
 
 
     <h2><a name="random">Random number generation</a></h2>
 
-    <div class="listing"><![CDATA[#include <random>
+    <div class="listing">#include &lt;random&gt;
 
 typedef std:::mt19937 rng_type;
-std::uniform_int_distribution<rng_type::result_type> udist(0, 200);
+std::uniform_int_distribution&lt;rng_type::result_type&gt; udist(0, 200);
 
 rng_type rng;
 
@@ -89,12 +89,12 @@ int main()
   rng_type::result_type random_number = udist(rng);
 
   return random_number;
-}]]></div>
+}</div>
 
 
     <h2><a name="new">Replacing operators new and delete</a></h2>
 
-    <div class="listing"><![CDATA[void * operator new(std::size_t n) throw(std::bad_alloc)
+    <div class="listing">void * operator new(std::size_t n) throw(std::bad_alloc)
 {
     void * const p = std::malloc(p);
 
@@ -106,74 +106,74 @@ int main()
 void operator delete(void * p) throw()
 {
     std::free(p);
-}]]></div>
+}</div>
 
     <p>In C++11, the exception specifications change to &ldquo;none&rdquo; for
     <code>operator new()</code> and to <code>noexcept</code> for <code>operator delete()</code>.</p>
 
     <p>The typical construction/destruction sequence:</p>
 
-    <div class="listing"><![CDATA[void * addr = ::operator new(sizeof(T)); // allocation
+    <div class="listing">void * addr = ::operator new(sizeof(T)); // allocation
 
 T * p = ::new (addr) T;                  // construction
 
 p->~T();                                 // destruction
 
-::operator delete(addr);                 // deallocation]]></div>
+::operator delete(addr);                 // deallocation</div>
 
 
     <h2><a name="wstring">Converting narrow and wide strings</a></h2>
 
-    <div class="listing"><![CDATA[#include <vector>
-#include <string>
-#include <ostream>
-#include <iostream>
-#include <cstdlib>
-#include <cassert>
-#include <clocale>
-#include <cerrno>
-#include <cwchar>
-#include <iconv.h>
+    <div class="listing">#include &lt;vector&gt;
+#include &lt;string&gt;
+#include &lt;ostream&gt;
+#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;cassert&gt;
+#include &lt;clocale&gt;
+#include &lt;cerrno&gt;
+#include &lt;cwchar&gt;
+#include &lt;iconv.h&gt;
 
 const char * LOCALE = NULL;
 
-std::string  get_locale_string(const std::string  & s);
-std::string  get_locale_string(const std::wstring & s);
-std::wstring get_wstring      (const std::string  & s);
-std::wstring get_wstring      (const std::wstring & s);
-std::string  get_UTF8         (const std::wstring & s);
+std::string  get_locale_string(const std::string  &amp; s);
+std::string  get_locale_string(const std::wstring &amp; s);
+std::wstring get_wstring      (const std::string  &amp; s);
+std::wstring get_wstring      (const std::wstring &amp; s);
+std::string  get_UTF8         (const std::wstring &amp; s);
 
-inline std::ostream & operator<<(std::ostream & o, const std::wstring & s)
+inline std::ostream &amp; operator&lt;&lt;(std::ostream &amp; o, const std::wstring &amp; s)
 {
-  return o << get_locale_string(s);
+  return o &lt;&lt; get_locale_string(s);
 }
-inline std::wostream & operator<<(std::wostream & o, const std::string & s)
+inline std::wostream &amp; operator&lt;&lt;(std::wostream &amp; o, const std::string &amp; s)
 {
-  return o << get_wstring(s);
+  return o &lt;&lt; get_wstring(s);
 }
 
-std::string  get_locale_string(const std::string & s)
+std::string  get_locale_string(const std::string &amp; s)
 {
   return s;
 }
 
-std::string get_locale_string(const std::wstring & s)
+std::string get_locale_string(const std::wstring &amp; s)
 {
   const wchar_t * cs = s.c_str();
-  const std::size_t wn = std::wcsrtombs(NULL, &cs, 0, NULL);
+  const std::size_t wn = std::wcsrtombs(NULL, &amp;cs, 0, NULL);
 
   if (wn == std::size_t(-1))
   {
-    std::cout << "Error in wcsrtombs(): " << errno << std::endl;
+    std::cout &lt;&lt; "Error in wcsrtombs(): " &lt;&lt; errno &lt;&lt; std::endl;
     return "";
   }
 
-  std::vector<char> buf(wn + 1);
-  const std::size_t wn_again = std::wcsrtombs(buf.data(), &cs, wn + 1, NULL);
+  std::vector&lt;char&gt; buf(wn + 1);
+  const std::size_t wn_again = std::wcsrtombs(buf.data(), &amp;cs, wn + 1, NULL);
 
   if (wn_again == std::size_t(-1))
   {
-    std::cout << "Error in wcsrtombs(): " << errno << std::endl;
+    std::cout &lt;&lt; "Error in wcsrtombs(): " &lt;&lt; errno &lt;&lt; std::endl;
     return "";
   }
 
@@ -182,28 +182,28 @@ std::string get_locale_string(const std::wstring & s)
   return std::string(buf.data(), wn);
 }
 
-std::wstring get_wstring(const std::wstring & s)
+std::wstring get_wstring(const std::wstring &amp; s)
 {
   return s;
 }
 
-std::wstring get_wstring(const std::string & s)
+std::wstring get_wstring(const std::string &amp; s)
 {
   const char * cs = s.c_str();
-  const std::size_t wn = std::mbsrtowcs(NULL, &cs, 0, NULL);
+  const std::size_t wn = std::mbsrtowcs(NULL, &amp;cs, 0, NULL);
 
   if (wn == std::size_t(-1))
   {
-    std::cout << "Error in mbsrtowcs(): " << errno << std::endl;
+    std::cout &lt;&lt; "Error in mbsrtowcs(): " &lt;&lt; errno &lt;&lt; std::endl;
     return L"";
   }
 
-  std::vector<wchar_t> buf(wn + 1);
-  const std::size_t wn_again = std::mbsrtowcs(buf.data(), &cs, wn + 1, NULL);
+  std::vector&lt;wchar_t&gt; buf(wn + 1);
+  const std::size_t wn_again = std::mbsrtowcs(buf.data(), &amp;cs, wn + 1, NULL);
 
   if (wn_again == size_t(-1))
   {
-    std::cout << "Error in mbsrtowcs(): " << errno << std::endl;
+    std::cout &lt;&lt; "Error in mbsrtowcs(): " &lt;&lt; errno &lt;&lt; std::endl;
     return L"";
   }
 
@@ -212,13 +212,13 @@ std::wstring get_wstring(const std::string & s)
   return std::wstring(buf.data(), wn);
 }
 
-std::string get_UTF8(const std::wstring & s)
+std::string get_UTF8(const std::wstring &amp; s)
 {
   iconv_t cd = iconv_open("UTF8", "WCHAR_T");
 
   if (cd == iconv_t(-1))
   {
-    std::cout << "Error while initializing iconv: " << errno << std::endl;
+    std::cout &lt;&lt; "Error while initializing iconv: " &lt;&lt; errno &lt;&lt; std::endl;
     iconv_close(cd);
     return std::string();
   }
@@ -227,16 +227,16 @@ std::string get_UTF8(const std::wstring & s)
   const std::size_t norig = n;
   std::size_t m = s.length() * sizeof(std::wstring::value_type);
 
-  std::vector<char> obuf(n);
+  std::vector&lt;char&gt; obuf(n);
   char * outbuf = obuf.data();
-  const char * inbuf = reinterpret_cast<const char*>(&s[0]);
+  const char * inbuf = reinterpret_cast&lt;const char*&gt;(&amp;s[0]);
 
-  const std::size_t ir = iconv(cd, const_cast<char**>(&inbuf), &m, &outbuf, &n);
+  const std::size_t ir = iconv(cd, const_cast&lt;char**&gt;(&amp;inbuf), &amp;m, &amp;outbuf, &amp;n);
 
   if (ir == std::size_t(-1))
   {
-    std::cout << "Error while converting with iconv(): " << errno << ":" << EINVAL << ", left " << m
-              << ", written " << std::dec << norig - n << " bytes." << std::endl;
+    std::cout &lt;&lt; "Error while converting with iconv(): " &lt;&lt; errno &lt;&lt; ":" &lt;&lt; EINVAL &lt;&lt; ", left " &lt;&lt; m
+              &lt;&lt; ", written " &lt;&lt; std::dec &lt;&lt; norig - n &lt;&lt; " bytes." &lt;&lt; std::endl;
     iconv_close(cd);
     return std::string();
   }
@@ -250,12 +250,12 @@ int main(int argc, char * argv[])
 {
   LOCALE = std::setlocale(LC_CTYPE, "");
   std::wstring progname = get_wstring(std::string(argv[0]));
-}]]></div>
+}</div>
 
 
     <h2><a name="erase">Erasing from a container in a loop</a></h2>
 
-    <div class="listing"><![CDATA[// For an associative container "m" for which "erase()" returns "void":
+    <div class="listing">// For an associative container "m" for which "erase()" returns "void":
 
 for (auto it = m.cbegin(); it != m.cend() /* not hoisted */; /* no increment */)
 {
@@ -287,21 +287,21 @@ for (auto it = v.cbegin(); it != v.cend() /* not hoisted */; /* no increment */)
 
 // Remove/erase idiom to erase by value from a sequence container "v" (but not "std::list" or "std::forward_list"):
 
-#include <algorithm>
+#include &lt;algorithm&gt;
 
 v.erase(std::remove(v.begin(), v.end(), val), v.end());
 
 
 // Remove/erase from lists:
 
-#include <list>
-#include <forward_list>
+#include &lt;list&gt;
+#include &lt;forward_list&gt;
 
-std::list<T> l1;
-std::forward_list<T> l2;
+std::list&lt;T&gt; l1;
+std::forward_list&lt;T&gt; l2;
 
 l1.remove(val);
-l2.remove(val);]]></div>
+l2.remove(val);</div>
 
 
     <h2><a name="java">Any Java question</a></h2>
@@ -314,8 +314,6 @@ l2.remove(val);]]></div>
     <ul>
       <li><a href="http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags/1732454#1732454">Parsing HTML with regular expressions</a></li>
     </ul>
-
-    <!-- <div class="listing"><![CDATA[   ]]></div> -->
 
   </body>
 </html>
