@@ -38,6 +38,7 @@
       <li><span><a href="#wstring">narrow/wide-char/UTF8</a></span></li>
       <li><span><a href="#erase">remove/erase</a></span></li>
       <li><span><a href="#timing">timing</a></span></li>
+      <li><span><a href="#typeerasure">type erasure</a></span></li>
     </ul>
 
     <h1>To C++ and Beyond</h1>
@@ -45,9 +46,9 @@
 
 
     <h2><a name="getline">Line-based input parsing</a></h2>
-    <div class="listing">#include &lt;fstream&gt;
-#include &lt;sstream&gt;
-#include &lt;string&gt;
+    <div class="listing">#include &lt;fstream&gt;   // for std::ifstream
+#include &lt;sstream&gt;   // for std::istringstream
+#include &lt;string&gt;    // for std::string and std::getline
 
 int main()
 {
@@ -73,7 +74,7 @@ int main()
 
     <div class="listing">#include &lt;random&gt;
 
-typedef std:::mt19937 rng_type;
+typedef std::mt19937 rng_type;
 std::uniform_int_distribution&lt;rng_type::result_type&gt; udist(0, 200);
 
 rng_type rng;
@@ -323,6 +324,57 @@ int main()
 
     // time taken: CLOCK_REPORT(tacc) milliseconds.
 }</div>
+
+
+    <h2><a name="typeerasure">Type erasure</a></h2>
+
+    <p>The following framework defines a public class <code>TEClass</code> which
+    has a templated family of constructors that accept arguments whose type will
+    be erased. All accepted argument types must expose some common interface as
+    required by the private virtual placeholder base class.</p>
+
+    <div class="listing">#include &lt;memory&gt;
+#include &lt;type_traits&gt;
+
+class TEClass
+{
+    struct TEImplBase
+    {
+        virtual ~TEImplBase() { }
+        virtual void do_something() = 0;
+    };
+
+    template &lt;typename&gt; struct TEImpl; // implement!
+
+    std::unique_ptr&lt;TEImplBase&gt; impl;
+
+public:
+
+    template &lt;typename T&gt;
+    TEClass(T && x)
+    : impl(new TEImpl&lt;typename std::decay&lt;T&gt;::type&gt;(std::forward&lt;T&gt;(x)))
+    {
+    }
+
+    void do_something()
+    {
+        impl-&gt;do_something();
+    }
+
+private:
+
+    /* A minimal implementation example:
+     *
+     * The concrete implementation must derive from TEImplBase, provide a
+     * matching constructor, and implementations of the TEImplBase interface.
+     */
+    template &lt;typename T&gt;
+    struct TEImpl : TEImplBase
+    {
+        TEImpl(T) { }
+        void do_something() { }
+    };
+};</div>
 
 
     <h2><a name="java">Any Java question</a></h2>
