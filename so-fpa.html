@@ -144,111 +144,112 @@ std::string  get_UTF8         (const std::wstring &amp; s);
 
 inline std::ostream &amp; operator&lt;&lt;(std::ostream &amp; o, const std::wstring &amp; s)
 {
-  return o &lt;&lt; get_locale_string(s);
+    return o &lt;&lt; get_locale_string(s);
 }
+
 inline std::wostream &amp; operator&lt;&lt;(std::wostream &amp; o, const std::string &amp; s)
 {
-  return o &lt;&lt; get_wstring(s);
+    return o &lt;&lt; get_wstring(s);
 }
 
 std::string  get_locale_string(const std::string &amp; s)
 {
-  return s;
+    return s;
 }
 
 std::string get_locale_string(const std::wstring &amp; s)
 {
-  const wchar_t * cs = s.c_str();
-  const std::size_t wn = std::wcsrtombs(NULL, &amp;cs, 0, NULL);
+    const wchar_t * cs = s.c_str();
+    const std::size_t wn = std::wcsrtombs(NULL, &amp;cs, 0, NULL);
 
-  if (wn == std::size_t(-1))
-  {
-    std::cout &lt;&lt; "Error in wcsrtombs(): " &lt;&lt; errno &lt;&lt; std::endl;
-    return "";
-  }
+    if (wn == std::size_t(-1))
+    {
+        std::cout &lt;&lt; "Error in wcsrtombs(): " &lt;&lt; errno &lt;&lt; std::endl;
+        return std::string();
+    }
 
-  std::vector&lt;char&gt; buf(wn + 1);
-  const std::size_t wn_again = std::wcsrtombs(buf.data(), &amp;cs, wn + 1, NULL);
+    std::vector&lt;char&gt; buf(wn + 1);
+    const std::size_t wn_again = std::wcsrtombs(buf.data(), &amp;cs, wn + 1, NULL);
 
-  if (wn_again == std::size_t(-1))
-  {
-    std::cout &lt;&lt; "Error in wcsrtombs(): " &lt;&lt; errno &lt;&lt; std::endl;
-    return "";
-  }
+    if (wn_again == std::size_t(-1))
+    {
+        std::cout &lt;&lt; "Error in wcsrtombs(): " &lt;&lt; errno &lt;&lt; std::endl;
+        return std::string();
+    }
 
-  assert(cs == NULL); // successful conversion
+    assert(cs == NULL); // successful conversion
 
-  return std::string(buf.data(), wn);
+    return std::string(buf.data(), wn);
 }
 
 std::wstring get_wstring(const std::wstring &amp; s)
 {
-  return s;
+    return s;
 }
 
 std::wstring get_wstring(const std::string &amp; s)
 {
-  const char * cs = s.c_str();
-  const std::size_t wn = std::mbsrtowcs(NULL, &amp;cs, 0, NULL);
+    const char * cs = s.c_str();
+    const std::size_t wn = std::mbsrtowcs(NULL, &amp;cs, 0, NULL);
 
-  if (wn == std::size_t(-1))
-  {
-    std::cout &lt;&lt; "Error in mbsrtowcs(): " &lt;&lt; errno &lt;&lt; std::endl;
-    return L"";
-  }
+    if (wn == std::size_t(-1))
+    {
+        std::cout &lt;&lt; "Error in mbsrtowcs(): " &lt;&lt; errno &lt;&lt; std::endl;
+        return std::wstring();
+    }
 
-  std::vector&lt;wchar_t&gt; buf(wn + 1);
-  const std::size_t wn_again = std::mbsrtowcs(buf.data(), &amp;cs, wn + 1, NULL);
+    std::vector&lt;wchar_t&gt; buf(wn + 1);
+    const std::size_t wn_again = std::mbsrtowcs(buf.data(), &amp;cs, wn + 1, NULL);
 
-  if (wn_again == size_t(-1))
-  {
-    std::cout &lt;&lt; "Error in mbsrtowcs(): " &lt;&lt; errno &lt;&lt; std::endl;
-    return L"";
-  }
+    if (wn_again == size_t(-1))
+    {
+        std::cout &lt;&lt; "Error in mbsrtowcs(): " &lt;&lt; errno &lt;&lt; std::endl;
+        return std::wstring();
+    }
 
-  assert(cs == NULL); // successful conversion
+    assert(cs == NULL); // successful conversion
 
-  return std::wstring(buf.data(), wn);
+    return std::wstring(buf.data(), wn);
 }
 
 std::string get_UTF8(const std::wstring &amp; s)
 {
-  iconv_t cd = iconv_open("UTF8", "WCHAR_T");
+    iconv_t cd = iconv_open("UTF8", "WCHAR_T");
 
-  if (cd == iconv_t(-1))
-  {
-    std::cout &lt;&lt; "Error while initializing iconv: " &lt;&lt; errno &lt;&lt; std::endl;
+    if (cd == iconv_t(-1))
+    {
+        std::cout &lt;&lt; "Error while initializing iconv: " &lt;&lt; errno &lt;&lt; std::endl;
+        iconv_close(cd);
+        return std::string();
+    }
+
+    std::size_t n = s.length() * 6 + 1; // Each character might use up to six CUs.
+    const std::size_t norig = n;
+    std::size_t m = s.length() * sizeof(std::wstring::value_type);
+
+    std::vector&lt;char&gt; obuf(n);
+    char * outbuf = obuf.data();
+    const char * inbuf = reinterpret_cast&lt;const char*&gt;(&amp;s[0]);
+
+    const std::size_t ir = iconv(cd, const_cast&lt;char**&gt;(&amp;inbuf), &amp;m, &amp;outbuf, &amp;n);
+
+    if (ir == std::size_t(-1))
+    {
+        std::cout &lt;&lt; "Error while converting with iconv(): " &lt;&lt; errno &lt;&lt; ":" &lt;&lt; EINVAL &lt;&lt; ", left " &lt;&lt; m
+                  &lt;&lt; ", written " &lt;&lt; std::dec &lt;&lt; norig - n &lt;&lt; " bytes." &lt;&lt; std::endl;
+        iconv_close(cd);
+        return std::string();
+    }
+
     iconv_close(cd);
-    return std::string();
-  }
 
-  std::size_t n = s.length() * 6 + 1; // Each character might use up to six CUs.
-  const std::size_t norig = n;
-  std::size_t m = s.length() * sizeof(std::wstring::value_type);
-
-  std::vector&lt;char&gt; obuf(n);
-  char * outbuf = obuf.data();
-  const char * inbuf = reinterpret_cast&lt;const char*&gt;(&amp;s[0]);
-
-  const std::size_t ir = iconv(cd, const_cast&lt;char**&gt;(&amp;inbuf), &amp;m, &amp;outbuf, &amp;n);
-
-  if (ir == std::size_t(-1))
-  {
-    std::cout &lt;&lt; "Error while converting with iconv(): " &lt;&lt; errno &lt;&lt; ":" &lt;&lt; EINVAL &lt;&lt; ", left " &lt;&lt; m
-              &lt;&lt; ", written " &lt;&lt; std::dec &lt;&lt; norig - n &lt;&lt; " bytes." &lt;&lt; std::endl;
-    iconv_close(cd);
-    return std::string();
-  }
-
-  iconv_close(cd);
-
-  return std::string(obuf.data(), norig - n);
+    return std::string(obuf.data(), norig - n);
 }
 
 int main(int argc, char * argv[])
 {
-  LOCALE = std::setlocale(LC_CTYPE, "");
-  std::wstring progname = get_wstring(std::string(argv[0]));
+    LOCALE = std::setlocale(LC_CTYPE, "");
+    std::wstring progname = get_wstring(std::string(argv[0]));
 }</div>
 
 
@@ -325,13 +326,51 @@ int main()
     // time taken: CLOCK_REPORT(tacc) milliseconds.
 }</div>
 
+    <p>With the <code>&lt;chrono&gt;</code> features of C++11, we can build a better timer:</p>
+
+    <div class="listing">#include &lt;chrono&gt;
+
+class stopwatch
+{
+    std::chrono::high_resolution_clock::time_point p;
+    std::chrono::high_resolution_clock::duration   d;
+ 
+public:
+    void tick()  { p  = std::chrono::high_resolution_clock::now();            }
+    void tock()  { d += std::chrono::high_resolution_clock::now() - p;        }
+    void reset() { d  = std::chrono::high_resolution_clock::duration::zero(); }
+
+    unsigned int report_ms() { return std::chrono::duration_cast&lt;std::chrono::milliseconds&gt;(d).count(); }
+
+    stopwatch() : p(), d() { }
+};</div>
+
+    <p>Usage:</p>
+
+<div class="listing">#include &lt;iostream&gt;
+
+int main()
+{
+    stopwatch sw;
+
+    sw.tick();
+    some_function();
+    sw.tock();
+
+    // time taken: sw.report_ms() milliseconds
+}</div>
+
 
     <h2><a name="typeerasure">Type erasure</a></h2>
 
     <p>The following framework defines a public class <code>TEClass</code> which
     has a templated family of constructors that accept arguments whose type will
     be erased. All accepted argument types must expose some common interface as
-    required by the private virtual placeholder base class.</p>
+    required by the private virtual placeholder base class <code>TEImplBase</code>.
+    The crucial feature of type erasure is that there is only one single public
+    type (namely <code>TEClass</code>), but it can be constructed with an arbitrarily
+    typed value. The type of the constructor argument is &ldquo;forgotten&rdquo; by the
+    class.</p>
 
     <div class="listing">#include &lt;memory&gt;
 #include &lt;type_traits&gt;
@@ -386,6 +425,7 @@ private:
 
     <ul>
       <li><a href="http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags/1732454#1732454">Parsing HTML with regular expressions</a></li>
+      <li><a href="http://louisdx.github.com/cxx-prettyprint/">A C++ container pretty-printer</a></li>
     </ul>
 
   </body>
