@@ -329,21 +329,46 @@ int main()
     <p>With the <code>&lt;chrono&gt;</code> features of C++11, we can build a better timer:</p>
 
     <div class="listing">#include &lt;chrono&gt;
+#include &lt;ctime&gt;
 
-class stopwatch
+template &lt;typename T&gt; class basic_stopwatch
 {
-    std::chrono::high_resolution_clock::time_point p;
-    std::chrono::high_resolution_clock::duration   d;
+    typedef T clock;
+    typename clock::time_point p;
+    typename clock::duration   d;
  
 public:
-    void tick()  { p  = std::chrono::high_resolution_clock::now();            }
-    void tock()  { d += std::chrono::high_resolution_clock::now() - p;        }
-    void reset() { d  = std::chrono::high_resolution_clock::duration::zero(); }
+    void tick()  { p  = clock::now();            }
+    void tock()  { d += clock::now() - p;        }
+    void reset() { d  = clock::duration::zero(); }
 
-    unsigned int report_ms() { return std::chrono::duration_cast&lt;std::chrono::milliseconds&gt;(d).count(); }
+    template &lt;typename S&gt; unsigned long long int report() const
+    {
+        return std::chrono::duration_cast&lt;S&gt;(d).count();
+    }
 
-    stopwatch() : p(), d() { }
-};</div>
+    unsigned long long int report_ms() const
+    {
+        return report&lt;std::chrono::milliseconds&gt;
+    }
+
+    basic_stopwatch() : p(), d() { }
+};
+
+struct c_clock
+{
+    typedef std::clock_t time_point;
+    typedef std::clock_t duration;
+    static time_point now() { return std::clock(); }
+};
+
+template &lt;&gt; unsigned long long int basic_stopwatch&lt;c_clock&gt;::report_ms() const
+{
+  return 1000. * double(d) / double(CLOCKS_PER_SEC);
+}
+
+typedef basic_stopwatch&lt;std::chrono::high_resolution_clock&gt; stopwatch;
+typedef basic_stopwatch&lt;c_clock&gt; cstopwatch;</div>
 
     <p>Usage:</p>
 
