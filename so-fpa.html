@@ -39,6 +39,7 @@
       <li><span><a href="#erase">remove/erase</a></span></li>
       <li><span><a href="#timing">timing</a></span></li>
       <li><span><a href="#typeerasure">type erasure</a></span></li>
+      <li><span><a href="#hash">combining hashes</a></span></li>
     </ul>
 
     <h1>To C++ and Beyond</h1>
@@ -439,6 +440,97 @@ private:
         void do_something() { }
     };
 };</div>
+
+
+    <h2><a name="hash">Combining hashes</a></h2>
+
+    <p>The standard library provides specializations of <code>std::hash&lt;T&gt;</code> for
+    the fundamental types and for strings, but it does not include a mechanism for defining
+    a composite hash in terms of hashable components. Boost provides this facility in the
+    form of <code>hash_combine()</code>. This is easily replicated, and the following code
+    demonstrates how to use it to hash pairs, arrays and tuples of hashable objects.</p>
+
+    <div class="listing">#include &lt;array&gt;
+#include &lt;tuple&gt;
+#include &lt;utility&gt;
+
+template &lt;class T&gt;
+inline void hash_combine(std::size_t &amp; seed, const T &amp; v)
+{
+    std::hash&lt;T&gt; hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed &lt;&lt; 6) + (seed &gt;&gt; 2);
+}
+
+template &lt;class Tuple, std::size_t Index = std::tuple_size&lt;Tuple&gt;::value - 1&gt;
+struct tuple_hash_impl
+{
+    static inline void apply(std::size_t &amp; seed, Tuple const &amp; tuple)
+    {
+        tuple_hash_impl&lt;Tuple, Index - 1&gt;::apply(seed, tuple);
+        hash_combine(seed, std::get&lt;Index&gt;(tuple));
+    }
+};
+
+template &lt;class Tuple&gt;
+struct tuple_hash_impl&lt;Tuple, 0&gt;
+{
+    static inline void apply(std::size_t &amp; seed, Tuple const &amp; tuple)
+    {
+        hash_combine(seed, std::get&lt;0&gt;(tuple));
+    }
+};
+
+namespace std
+{
+    template&lt;typename S, typename T&gt; struct hash&lt;pair&lt;S, T&gt;&gt;
+    {
+        inline size_t operator()(const pair&lt;S, T&gt; &amp; v) const
+        {
+            size_t seed = 0;
+            ::hash_combine(seed, v.first);
+            ::hash_combine(seed, v.second);
+            return seed;
+        }
+    };
+
+    template&lt;typename T, size_t N&gt; struct hash&lt;array&lt;T, N&gt;&gt;
+    {
+        inline size_t operator()(const array&lt;T, N&gt; &amp; a) const
+        {
+            size_t seed = 0;
+            for (size_t i = 0; i != N; ++i)
+            {
+                ::hash_combine(seed, a[i]);
+            }
+            return seed;
+        }
+    };
+
+    template&lt;typename ...Args&gt; struct hash&lt;tuple&lt;Args...&gt;&gt;
+    {
+        inline size_t operator()(const tuple&lt;Args...&gt; &amp; v) const
+        {
+            size_t seed = 0;
+            tuple_hash_impl&lt;tuple&lt;Args...&gt;&gt;::apply(seed, v);
+            return seed;
+        }
+    };
+}</div>
+
+    <p>Usage example:</p>
+
+    <div class="listing">#include &lt;unordered_set&gt;
+
+typedef std::pair&lt;int, int&gt;       P;
+typedef std::tuple&lt;int, int, int&gt; T;
+typedef std::array&lt;int, 4&gt;        A;
+
+int main()
+{
+  std::unordered_set&lt;P&gt; s1 { {1,1} };
+  std::unordered_set&lt;T&gt; s2 { T{2,2,2} };
+  std::unordered_set&lt;A&gt; s3 { {{3,3,3,3}} };
+}</div>
 
 
     <h2><a name="java">Any Java question</a></h2>
