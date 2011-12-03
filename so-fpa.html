@@ -14,9 +14,11 @@
       ul.nav li span a:link, ul.nav li span a:visited { color: inherit; text-decoration: none; }
       ul.nav a:link, ul.nav a:visited { border: none; border-radius: 0; margin: 0; padding: 0; }
       ul.nav a:link:hover, ul.nav a:visited:hover { background-color: inherit; color: inherit; }
-      h1 { color: #DDD; font-weight: normal; font-size: xx-large; font-style: italic; border-bottom: medium dotted #DDD;
+      h1, h2, h3 { color: #DDD; }
+      h1 { font-weight: normal; font-size: xx-large; font-style: italic; border-bottom: medium dotted #DDD;
            margin: 1em 0 1ex 0; padding: 0 0 .25ex 0; }
-      h2 { color: #DDD; font-size: large;  border-bottom: thin solid #DDD; margin: 2em 0 1em 0; padding: 0 0 1ex 0; display: inline-block; }
+      h2 { font-size: large;  border-bottom: thin solid #DDD; margin: 2em 0 1em 0; padding: 0 0 1ex 0; display: inline-block; }
+      h3 { font-size: medium; font-weight: bold; }
       p { color: #DFDFDF; line-height: 150%; margin: 0; padding: 0; }
       div.listing, code { font-family: "DejaVu Sans Mono", Consolas, Courier, monospace; }
       div.listing { white-space: pre; }
@@ -40,6 +42,7 @@
       <li><span><a href="#timing">timing</a></span></li>
       <li><span><a href="#typeerasure">type erasure</a></span></li>
       <li><span><a href="#hash">combining hashes</a></span></li>
+      <li><span><a href="#multimap">multimap</a></span></li>
     </ul>
 
     <h1>To C++ and Beyond</h1>
@@ -66,6 +69,10 @@ int main()
         if (iss &gt;&gt; n &gt;&gt; d &gt;&gt; s)
         {
             // process tokens
+        }
+        else
+        {
+            // error processing this line
         }
     }
 }</div>
@@ -350,7 +357,7 @@ public:
 
     unsigned long long int report_ms() const
     {
-        return report&lt;std::chrono::milliseconds&gt;
+        return report&lt;std::chrono::milliseconds&gt;();
     }
 
     basic_stopwatch() : p(), d() { }
@@ -533,6 +540,29 @@ int main()
 }</div>
 
 
+    <h2><a name="multimap">Iterating a multimap</a></h2>
+
+    <div class="listing">#include &lt;multimap&gt;
+
+typedef std::multimap&lt;K, V&gt; mmap_t;
+
+mmap_t m;
+
+for (mmap_t::const_iterator it1 = m.begin(), it2 = it1, end = m.end(); it1 != end; it1 = it2)
+{
+    // outer loop over unique keys
+
+    for ( ; it1-&gt;first == it2-&gt;first; ++it2)
+    {
+        // inner loop, all keys equal to it1-&gt;first
+    }
+}</div>
+
+    <p>The construction is identical for <code>std::unordered_multimap&lt;K, V&gt;</code>.
+    It is also similar for <code>std::set&lt;T&gt;</code> and <code>std::unordered_set&lt;T&gt;</code>.
+    in which case the condition in the inner loop should read <code>*it1 == *it2</code>.</p>
+
+
     <h2><a name="java">Any Java question</a></h2>
     <p style="font-style: italic;" class="listing">&ldquo;You'll need an abstract factory class. Usually those are good for creating abstract wrappers for concrete types in a generic fashion. Factories are often implemented as singletons, too.&rdquo;</p>
 
@@ -543,6 +573,17 @@ int main()
     <ul>
       <li><a href="http://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags/1732454#1732454">Parsing HTML with regular expressions</a></li>
       <li><a href="http://louisdx.github.com/cxx-prettyprint/">A C++ container pretty-printer</a></li>
+      <li><a href="http://drdobbs.com/high-performance-computing/212201163">Herb Sutter's lock-free queue</a></li>
+    </ul>
+
+    <h2 style="margin-bottom: 0;"><a href="http://nuwen.net/stl.html">Stephan T. Lavavaj</a>&rsquo;s Channel 9 lectures</h2>
+    <h3>The Standard Template Library</h3>
+    <ul>
+      <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-10-of-10">Episode 10: Type Traits</a> (<a href="http://media.ch9.ms/ch9/332E/63C3FB77-7D6B-4701-85EC-9E540016332E/C9LecturesSTLonSTLp10_2MB_ch9.wmv">large WMV</a>, <a href="http://media.ch9.ms/ch9/332E/63C3FB77-7D6B-4701-85EC-9E540016332E/C9LecturesSTLonSTLp10_ch9.wmv">medium WMV</a>)</li>
+    </ul>
+    <h3>Advanced STL</h3>
+    <ul>
+      <li></li>
     </ul>
 
   </body>
