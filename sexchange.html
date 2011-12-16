@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+  <head>
+    <title>Secret Exchange</title>
+  </head>
+
+  <body>
+    <h1>Secret Exchange</h1>
+
+    <form>
+      <fieldset>
+      <legend>The public data</legend>
+      <table>
+        <tbody>
+          <tr>
+            <th><var>g</var> (public)</th>
+            <td><input name="in_g" id="in_g"></td>
+          </tr>
+          <tr>
+            <th><var>p</var> (public)</th>
+            <td><input name="in_p" id="in_p"></td>
+          </tr>
+          <tr>
+            <th><var>g</var><sup><var>a</var></sup> (public)</th>
+            <td><input name="in_ga" id="in_ga"></td>
+          </tr>
+          <tr>
+            <th><var>g</var><sup><var>b</var></sup> (public)</th>
+            <td><input name="in_gb" id="in_gb"></td>
+          </tr>
+        </tbody>
+      </table>
+      </fieldset>
+    </form>
+
+    <form>
+      <fieldset>
+      <legend>Alice's private data</legend>
+      <table>
+        <tbody>
+          <tr>
+            <th><var>a</var> (secret)</th>
+            <td><input name="in_a" id="in_a"></td>
+          </tr>
+        </tbody>
+      </table>
+      </fieldset>
+    </form>
+
+    <form>
+      <fieldset>
+      <legend>Bob's private data</legend>
+      <table>
+        <tbody>
+          <tr>
+            <th><var>b</var> (secret)</th>
+            <td><input name="in_b" id="in_b"></td>
+          </tr>
+        </tbody>
+      </table>
+      </fieldset>
+    </form>
+
+    <form>
+      <fieldset>
+      <legend>The shared secret</legend>
+      <table>
+        <tbody>
+          <tr>
+            <th><var>g</var><sup><var>ab</var></sup> (secret)</th>
+            <td><input name="in_b" id="in_b"></td>
+          </tr>
+        </tbody>
+      </table>
+      </fieldset>
+    </form>
+
+    <p><strong>If you are Alice:</strong> Enter <label for="in_p"><var>p</var></label>,
+    <label for="in_g"><var>g</var></label> and <label for="in_a"><var>a</var></label>.
+    Then transmit the data to Bob. <input type="button" id="go_a" value="I am Alice"></p>
+
+    <p><strong>If you are Bob:</strong> Wait for the data and enter <label for="in_p"><var>p</var></label>,
+    <label for="in_g"><var>g</var></label>, <label for="in_b"><var>b</var></label> and
+    <label for="in_ga"><var>g</var><sup><var>a</var></label>. Then send
+    <label for="in_gb"><var>g</var><sup><var>b</var></label> to Bob.
+    <input type="button" id="go_b" value="I am Bob"></p>
+
+    <p><strong>Alice again:</strong> Upon receiving Bob's message, enter
+    <label for="in_gb"><var>g</var><sup><var>b</var></label>, <input type="button" id="go_c" value="Compute Alice's shared secret">
+
+  </body>
+</html>
