@@ -2,6 +2,72 @@
 <html>
   <head>
     <title>Secret Exchange</title>
+
+    <script type="text/javascript">
+
+      var in_a, in_b, in_ga, in_gb, in_p, in_g;
+      var in_put, out_put;
+      var but_a, but_b, but_c, but_rb;
+
+      function Init() {
+          if (document.getElementById) {
+              in_a  = document.getElementById("in_a");
+              in_b  = document.getElementById("in_b");
+              in_ga = document.getElementById("in_ga");
+              in_gb = document.getElementById("in_gb");
+              in_g  = document.getElementById("in_g");
+              in_p  = document.getElementById("in_p");
+
+              in_put  = document.getElementById("in_put");
+              out_put = document.getElementById("out_put");
+
+              but_a  = document.getElementById("go_a");
+              but_b  = document.getElementById("go_b");
+              but_c  = document.getElementById("go_c");
+              but_rb = document.getElementById("but_rb");
+          }
+
+          if (but_a) {
+              but_a.addEventListener("click", runAlice1, false);
+          }
+          if (but_c) {
+              but_c.addEventListener("click", runAlice2, false);
+          }
+          if (but_b) {
+              but_b.addEventListener("click", runBob, false);
+          }
+          if (but_rb) {
+              but_rb.addEventListener("click", fillBobInput, false);
+          }
+      }
+
+      window.addEventListener("load", Init, false);
+
+      function Extract(input) {
+          var pattern = /^\s*\[\s*(\d+),\s*(\d+);\s*(\d+)\s*\]\s*$/;
+          var match = pattern.exec(input);
+          return {
+              'p' : match[1],
+              'g' : match[2],
+              'A' : match[3] };
+      }
+
+      function fillBobInput(ev) {
+          var r = Extract(in_put);
+          alert(r);
+      }
+
+      function runAlice1(ev) {
+          in_ga.value = Math.pow(in_g.value, in_a.value) % in_p.value;
+          out_put.value = "[" + in_g.value + ", " + in_p.value + "; " + in_ga.value + "]";
+      }
+      function runAlice2(ev) {
+      }
+      function runBob(ev) {
+      }
+
+    </script>
+
   </head>
 
   <body>
@@ -87,6 +153,26 @@
 
     <p><strong>Alice again:</strong> Upon receiving Bob's message, enter
     <label for="in_gb"><var>g</var><sup><var>b</var></label>, <input type="button" id="go_c" value="Compute Alice's shared secret">
+
+    <form>
+      <fieldset>
+      <legend>Input/Output</legend>
+      <table>
+        <tbody>
+          <tr>
+            <th>Input</th>
+            <td><input name="in_put" id="in_put"></td>
+            <td><input type="button" id="but_rb" value="Read as Bob"></td>
+          </tr>
+          <tr>
+            <th>Output</th>
+            <td><input name="out_put" id="out_put"></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      </fieldset>
+    </form>
 
   </body>
 </html>
