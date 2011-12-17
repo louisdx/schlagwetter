@@ -26,6 +26,8 @@
       var TheP = new BigNumber("124325339146889384540494091085456630009856882741872806181731279018491820800119460022367403769795008250021191767583423221479185609066059226301250167164084041279837566626881119772675984258163062926954046545485368458404445166682380071370274810671501916789361956272226105723317679562001235501455748016154805420913");
       var TheG = new BigNumber("115740200527109164239523414760926155534485715860090261532154107313946218459149402375178179458041461723723231563839316251515439564315555249353831328479173170684416728715378198172203100328308536292821245983596065287318698169565702979765910089654821728828592422299160041156491980943427556153020487552135890973413");
 
+      var limit = new BigNumber(2).pow(100);
+
       function Init() {
           if (document.getElementById) {
               in_a    = document.getElementById("in_a");
@@ -86,14 +88,14 @@
 
       function ExpMod(Base, Expo, Modu) {
           var result = new BigNumber(1);
-          while (Expo >= 1) {
+          while (Expo != 0) {
               if (Expo.mod(2) != 0) {
                   result = result.multiply(Base);
                   result = result.mod(Modu);
               }
               Base = Base.multiply(Base);
               Base = Base.mod(Modu);
-              Expo = Expo.divide(2);
+              Expo = Expo.divide(2).intPart();
           }
           return result;
       }
@@ -138,18 +140,23 @@
       function Encrypt(ev) {
           var msg = document.getElementById("in_pt").value;
           var secret = new BigNumber(out_gab.value);
-          var r = new BigNumber(0);
 
-          var b1 = secret.mod(256);
+          var r = new BigNumber(0);
+          var pad = 100 - msg.length;
 
           for (var i = 0; i < msg.length; ++i) {
-              secret = secret.divide(256);
+              r = r.multiply(256);
               var b = secret.mod(256);
               r = r.add(msg.charCodeAt(i) ^ b);
-              r = r.multiply(256);
+              secret = secret.divide(256);
           }
 
-          r = r.add(msg.length ^ b1);
+          for (var i = msg.length; i < 100; ++i) {
+              r = r.multiply(256);
+              var b = secret.mod(256);
+              r = r.add(pad ^ b);
+              secret = secret.divide(256);
+          }
 
           document.getElementById("in_et").value = r;
       }
@@ -157,21 +164,22 @@
       function Decrypt(ev) {
           var msg = new BigNumber(document.getElementById("in_et").value);
           var secret = new BigNumber(out_gab.value);
-          var len = msg.mod(256) ^ secret.mod(256);
 
           var raw = Object();
-          for (var i = 0; i < len; ++i) {
-              msg = msg.divide(256);
+          for (var i = 0; i < 100; ++i) {
               raw[i] = msg.mod(256);
+              msg = msg.divide(256);
           }
 
           var r = "";
-          for (var i = 0; i < len; ++i) {
+          var pad;
+          for (var i = 0; i < 100; ++i) {
+              pad = raw[100 - i - 1] ^ secret.mod(256);
+              r += String.fromCharCode(pad);
               secret = secret.divide(256);
-              r += String.fromCharCode(raw[len - i - 1] ^ secret.mod(256));
           }
 
-          document.getElementById("in_pt").value = r;
+          document.getElementById("in_pt").value = r.substring(0, 100 - pad);
       }
 
     </script>
