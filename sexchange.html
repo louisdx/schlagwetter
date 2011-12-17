@@ -158,7 +158,6 @@
           var msg = new BigNumber(document.getElementById("in_et").value);
           var secret = new BigNumber(out_gab.value);
           var len = msg.mod(256) ^ secret.mod(256);
-alert(len);
 
           var raw = Object();
           for (var i = 0; i < len; ++i) {
@@ -185,7 +184,7 @@ alert(len);
 
     <h2>Handshake</h2>
 
-    <form style="float: left; margin: 0 2em 0 0">
+    <form action="" style="float: left; margin: 0 2em 0 0">
       <fieldset>
       <legend>The public data</legend>
       <table>
@@ -211,7 +210,7 @@ alert(len);
       </fieldset>
     </form>
 
-    <form>
+    <form action="">
       <fieldset>
       <legend>Alice's private data</legend>
       <table>
@@ -225,7 +224,7 @@ alert(len);
       </fieldset>
     </form>
 
-    <form>
+    <form action="">
       <fieldset>
       <legend>Bob's private data</legend>
       <table>
@@ -239,7 +238,7 @@ alert(len);
       </fieldset>
     </form>
 
-    <form>
+    <form action="">
       <fieldset>
       <legend>The shared secret</legend>
       <table>
@@ -253,20 +252,19 @@ alert(len);
       </fieldset>
     </form>
 
-    <p><strong>If you are Alice:</strong> Enter <label for="in_p"><var>p</var></label>,
-    <label for="in_g"><var>g</var></label> and <label for="in_a"><var>a</var></label>.
-    Then transmit the data to Bob. <input type="button" id="go_a" value="1. I am Alice; initiate."></p>
+    <p><strong>If you are Alice:</strong> Enter a secret <label for="in_a"><var>a</var></label> and
+    then transmit <var>g</var><sup><var>a</var></sup> to Bob.
+    <input type="button" id="go_a" value="1. I am Alice; initiate."></p>
 
-    <p><strong>If you are Bob:</strong> Wait for the data and enter <label for="in_p"><var>p</var></label>,
-    <label for="in_g"><var>g</var></label>, <label for="in_b"><var>b</var></label> and
-    <label for="in_ga"><var>g</var><sup><var>a</var></label>. Then send
-    <label for="in_gb"><var>g</var><sup><var>b</var></label> to Bob.
+    <p><strong>If you are Bob:</strong> Wait for the data from Alice, read it, and enter
+    a secret <label for="in_b"><var>b</var></label>. Then send
+    <label for="in_gb"><var>g</var><sup><var>b</var></sup></label> to Bob and compute the shared secret.
     <input type="button" id="go_b" value="4. I am Bob; make shared secret."></p>
 
-    <p><strong>Alice again:</strong> Upon receiving Bob's message, enter
-    <label for="in_gb"><var>g</var><sup><var>b</var></label> below.</p>
+    <p><strong>Alice again:</strong> Read Bob's token
+    <label for="in_gb"><var>g</var><sup><var>b</var></sup></label> below and compute the shared secret.</p>
 
-    <form>
+    <form action="">
       <fieldset>
       <legend>Input/Output</legend>
       <table>
@@ -289,8 +287,7 @@ alert(len);
 
     <h2>Talk</h2>
 
-    <form>
-      <fieldset>
+    <form action="">
       <table>
         <tbody>
           <tr>
@@ -305,7 +302,6 @@ alert(len);
           </tr>
         </tbody>
       </table>
-      </fieldset>
     </form>
 
   </body>
