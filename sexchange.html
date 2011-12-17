@@ -3,11 +3,13 @@
   <head>
     <title>Secret Exchange</title>
 
+    <script type="text/javascript" src="bignumber.js"></script>
+
     <script type="text/javascript">
 
       var in_a, in_b, in_ga, in_gb, in_p, in_g;
-      var in_put, out_put;
-      var but_a, but_b, but_c, but_rb;
+      var in_put, out_put, out_gab;
+      var but_a, but_b, but_c, but_ra, but_rb;
 
       function Init() {
           if (document.getElementById) {
@@ -20,10 +22,12 @@
 
               in_put  = document.getElementById("in_put");
               out_put = document.getElementById("out_put");
+              out_gab = document.getElementById("out_gab");
 
               but_a  = document.getElementById("go_a");
               but_b  = document.getElementById("go_b");
               but_c  = document.getElementById("go_c");
+              but_ra = document.getElementById("but_ra");
               but_rb = document.getElementById("but_rb");
           }
 
@@ -35,6 +39,9 @@
           }
           if (but_b) {
               but_b.addEventListener("click", runBob, false);
+          }
+          if (but_ra) {
+              but_ra.addEventListener("click", fillAliceInput, false);
           }
           if (but_rb) {
               but_rb.addEventListener("click", fillBobInput, false);
@@ -49,21 +56,42 @@
           return {
               'p' : match[1],
               'g' : match[2],
-              'A' : match[3] };
+              'A' : match[3]
+          };
+      }
+
+      function fillAliceInput(ev) {
+          in_gb.value = in_put.value;
       }
 
       function fillBobInput(ev) {
-          var r = Extract(in_put);
-          alert(r);
+          var r = Extract(in_put.value);
+          in_g.value  = r['g'];
+          in_p.value  = r['p'];
+          in_ga.value = r['A'];
+      }
+
+      function compute(gx, px, nx) {
+          var g = new BigNumber(gx);
+          var p = new BigNumber(px);
+          var n = new BigNumber(nx);
+
+          return res = (g.pow(n)).mod(p);
       }
 
       function runAlice1(ev) {
-          in_ga.value = Math.pow(in_g.value, in_a.value) % in_p.value;
-          out_put.value = "[" + in_g.value + ", " + in_p.value + "; " + in_ga.value + "]";
+          in_ga.value = compute(in_g.value, in_p.value, in_a.value);
+          out_put.value = "[" + in_p.value + ", " + in_g.value + "; " + in_ga.value + "]";
       }
+
       function runAlice2(ev) {
+          out_gab.value = compute(in_gb.value, in_p.value, in_a.value);
       }
+
       function runBob(ev) {
+          in_gb.value = compute(in_g.value, in_p.value, in_b.value);
+          out_gab.value = compute(in_ga.value, in_p.value, in_b.value);
+          out_put.value = in_gb.value;
       }
 
     </script>
@@ -134,7 +162,7 @@
         <tbody>
           <tr>
             <th><var>g</var><sup><var>ab</var></sup> (secret)</th>
-            <td><input name="in_b" id="in_b"></td>
+            <td><input name="out_gab" id="out_gab"></td>
           </tr>
         </tbody>
       </table>
@@ -143,16 +171,16 @@
 
     <p><strong>If you are Alice:</strong> Enter <label for="in_p"><var>p</var></label>,
     <label for="in_g"><var>g</var></label> and <label for="in_a"><var>a</var></label>.
-    Then transmit the data to Bob. <input type="button" id="go_a" value="I am Alice"></p>
+    Then transmit the data to Bob. <input type="button" id="go_a" value="1. I am Alice; initiate."></p>
 
     <p><strong>If you are Bob:</strong> Wait for the data and enter <label for="in_p"><var>p</var></label>,
     <label for="in_g"><var>g</var></label>, <label for="in_b"><var>b</var></label> and
     <label for="in_ga"><var>g</var><sup><var>a</var></label>. Then send
     <label for="in_gb"><var>g</var><sup><var>b</var></label> to Bob.
-    <input type="button" id="go_b" value="I am Bob"></p>
+    <input type="button" id="go_b" value="4. I am Bob; make shared secret."></p>
 
     <p><strong>Alice again:</strong> Upon receiving Bob's message, enter
-    <label for="in_gb"><var>g</var><sup><var>b</var></label>, <input type="button" id="go_c" value="Compute Alice's shared secret">
+    <label for="in_gb"><var>g</var><sup><var>b</var></label> below.</p>
 
     <form>
       <fieldset>
@@ -162,12 +190,13 @@
           <tr>
             <th>Input</th>
             <td><input name="in_put" id="in_put"></td>
-            <td><input type="button" id="but_rb" value="Read as Bob"></td>
+            <td><input type="button" id="but_rb" value="3. Read as Bob">
+                <input type="button" id="but_ra" value="6. Read as Alice and compute shared secret"></td>
           </tr>
           <tr>
             <th>Output</th>
             <td><input name="out_put" id="out_put"></td>
-            <td></td>
+            <td>2. Send to Bob. 5. Send to Alice.</td>
           </tr>
         </tbody>
       </table>
