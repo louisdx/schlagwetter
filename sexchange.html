@@ -140,14 +140,16 @@
           var secret = new BigNumber(out_gab.value);
           var r = new BigNumber(0);
 
+          var b1 = secret.mod(256);
+
           for (var i = 0; i < msg.length; ++i) {
+              secret = secret.divide(256);
               var b = secret.mod(256);
               r = r.add(msg.charCodeAt(i) ^ b);
               r = r.multiply(256);
-              secret = secret.divide(256);
           }
 
-          r = r.add(msg.length ^ secret.mod(256));
+          r = r.add(msg.length ^ b1);
 
           document.getElementById("in_et").value = r;
       }
@@ -156,12 +158,18 @@
           var msg = new BigNumber(document.getElementById("in_et").value);
           var secret = new BigNumber(out_gab.value);
           var len = msg.mod(256) ^ secret.mod(256);
+alert(len);
+
+          var raw = Object();
+          for (var i = 0; i < len; ++i) {
+              msg = msg.divide(256);
+              raw[i] = msg.mod(256);
+          }
 
           var r = "";
           for (var i = 0; i < len; ++i) {
-              msg = msg.divide(256);
               secret = secret.divide(256);
-              r = String.fromCharCode(msg.mod(256) ^ secret.mod(256)) + r;
+              r += String.fromCharCode(raw[len - i - 1] ^ secret.mod(256));
           }
 
           document.getElementById("in_pt").value = r;
