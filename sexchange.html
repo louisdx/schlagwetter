@@ -9,7 +9,7 @@
 
       var in_a, in_b, in_ga, in_gb, in_p, in_g;
       var in_put, out_put, out_gab;
-      var but_a, but_b, but_c, but_ra, but_rb;
+      var but_a, but_b, but_ra, but_rb;
 
       function Init() {
           if (document.getElementById) {
@@ -26,16 +26,12 @@
 
               but_a  = document.getElementById("go_a");
               but_b  = document.getElementById("go_b");
-              but_c  = document.getElementById("go_c");
               but_ra = document.getElementById("but_ra");
               but_rb = document.getElementById("but_rb");
           }
 
           if (but_a) {
-              but_a.addEventListener("click", runAlice1, false);
-          }
-          if (but_c) {
-              but_c.addEventListener("click", runAlice2, false);
+              but_a.addEventListener("click", runAlice, false);
           }
           if (but_b) {
               but_b.addEventListener("click", runBob, false);
@@ -62,6 +58,7 @@
 
       function fillAliceInput(ev) {
           in_gb.value = in_put.value;
+          out_gab.value = compute(in_gb.value, in_p.value, in_a.value);
       }
 
       function fillBobInput(ev) {
@@ -79,13 +76,9 @@
           return res = (g.pow(n)).mod(p);
       }
 
-      function runAlice1(ev) {
+      function runAlice(ev) {
           in_ga.value = compute(in_g.value, in_p.value, in_a.value);
           out_put.value = "[" + in_p.value + ", " + in_g.value + "; " + in_ga.value + "]";
-      }
-
-      function runAlice2(ev) {
-          out_gab.value = compute(in_gb.value, in_p.value, in_a.value);
       }
 
       function runBob(ev) {
